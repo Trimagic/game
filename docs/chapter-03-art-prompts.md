@@ -1,0 +1,13 @@
+# Chapter 03 — Правильная закупка
+
+Images generated with the built-in image generation tool, using chapter-01-comic.png as the protagonist/style reference.
+
+## Comic — public/art/chapter-03-comic.png
+
+Use case: illustration-story. Asset: chapter three of a satirical interactive comic. Reference image is character and linework reference ONLY. Keep same adult sturdy fair-skinned ginger curly-haired bearded protagonist, white tshirt and dark trousers. Portrait 1024x1536 page, EXACT four equal panels in a 2x2 grid. Black ink outlines, warm ivory gutters, halftone shading, teal and orange accents, expressive European comic aesthetic. TOP LEFT: hero opens nearly empty home refrigerator, only tiny mustard jar inside, face lit by fridge, bemused. TOP RIGHT: hero at kitchen table reads a simple recipe on phone, imagines a plate with chicken rice broccoli tomatoes; optimistic. BOTTOM LEFT: close medium view hero confidently writes shopping list on blank paper with pencil, reusable orange tote bag beside him, ready to shop. BOTTOM RIGHT: hero with empty wire shopping basket enters colorful supermarket with comically oversized blank orange discount starbursts and heaps of products, overwhelmed but determined. No legible text, no letters, no speech balloons, captions will be added in HTML. Faces and actions remain legible when each panel shown separately. Full environments, four coherent scenes. No extra panels, no logos.
+
+## Products — public/art/chapter-03-products.png
+
+Use case: illustration-story. Asset: grocery game sprite sheet. Match attached comic bold dark ink, warm muted teal-orange-yellow palette and subtle halftone. EXACTLY EIGHT separate isolated grocery illustrations arranged in a precise 4-column by 2-row grid on a transparent background, equal square cells, every object centered with generous 15 percent empty margin so can be cropped into equal cells. Landscape 1536x1024 if possible, equal cell sizing. TOP ROW left to right: 1 raw chicken breast in teal supermarket tray with clear lid; 2 cream paper rice bag with visible rice grains and teal band; 3 fresh green broccoli head; 4 two red tomatoes with green stalks. BOTTOM ROW left to right: 5 tall bottle golden cooking oil with green cap; 6 cream cake slice with pink icing; 7 large yellow sauce bucket with orange lid; 8 chocolate bar half unwrapped in green paper. No lettering, no labels, no numbers, no shadows outside each cell, no people, no borders or grid lines, actual transparent background. Distinct complete objects usable as small game icons.
+
+The products are rendered as eight clipped SVG atlas frames; labels, prices, narration and dialogue remain accessible HTML. Comic panels use the actual horizontal gutter at y=715.

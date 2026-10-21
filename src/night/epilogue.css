@@ -1,0 +1,5 @@
+.comic-panel.epilogue-panel{aspect-ratio:1;background-size:300% 200%;background-repeat:no-repeat;isolation:isolate}
+.epilogue-blackout:after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse,transparent 25%,#101d23cc 100%);pointer-events:none;z-index:-1}
+.epilogue-choice{background:#f5cc5c;max-width:75%}
+.epilogue-end{text-align:center}.epilogue-end .epilogue-wish{font-size:clamp(22px,5vw,32px);line-height:1.4;color:#252b29;font-weight:800}.epilogue-end .text-button{display:block;margin:20px auto 0}
+@media(max-width:480px){.epilogue-reader .comic-navigation{gap:10px}.epilogue-choice{font-size:13px;padding:12px}}

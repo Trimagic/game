@@ -20,6 +20,10 @@ async function request(id, level) {
 try {
   const db = await mf.getD1Database('DB');
   await db.prepare(await readFile('migrations/0001_progress.sql', 'utf8')).run();
+  await db.prepare("INSERT INTO progress (user_id,completed,updated_at) VALUES ('migration-check',9,'2026-01-01')").run();
+  const migration = await readFile('migrations/0002_eleven_chapters.sql', 'utf8');
+  await db.batch(migration.split(';').map(s => s.trim()).filter(Boolean).map(s => db.prepare(s)));
+  assert.deepEqual(await db.prepare("SELECT completed,updated_at FROM progress WHERE user_id='migration-check'").first(),{completed:9,updated_at:'2026-01-01'});
   assert.equal((await mf.dispatchFetch('https://game.test/api/progress')).status, 401);
   assert.equal((await request(101)).data.completed, 0);
   assert.equal((await request(101, 2)).status, 409);
@@ -29,7 +33,7 @@ try {
   assert.equal((await request(101, 2)).data.completed, 2);
   assert.equal((await request(101, 1)).data.completed, 2);
   assert.equal((await request(202)).data.completed, 0);
-  for (let level = 3; level <= 10; level++) assert.equal((await request(101, level)).data.completed, level);
-  assert.equal((await request(101, 11)).status, 400);
-  console.log('PASS: authentication, D1 persistence, sequential unlocks, concurrency, replay, user isolation, ten levels');
+  for (let level = 3; level <= 11; level++) assert.equal((await request(101, level)).data.completed, level);
+  assert.equal((await request(101, 12)).status, 400);
+  console.log('PASS: authentication, D1 persistence, sequential unlocks, concurrency, replay, user isolation, eleven levels, migration preserves existing progress');
 } finally { await mf.dispose(); }

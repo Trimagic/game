@@ -17,7 +17,7 @@ export default {
         if (text.length > 1024) return json({ error: 'Payload too large' }, 413);
         let level: unknown;
         try { level = JSON.parse(text).level; } catch { return json({ error: 'Invalid JSON' }, 400); }
-        if (typeof level !== 'number' || !Number.isInteger(level) || level < 1 || level > 10) return json({ error: 'Invalid level' }, 400);
+        if (typeof level !== 'number' || !Number.isInteger(level) || level < 1 || level > 11) return json({ error: 'Invalid level' }, 400);
         // Atomic, sequential and idempotent: concurrent requests cannot skip chapters.
         await env.DB.prepare('UPDATE progress SET completed = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ? AND completed = ?').bind(level, user, level - 1).run();
         const row = await env.DB.prepare('SELECT completed FROM progress WHERE user_id = ?').bind(user).first<{ completed: number }>();
