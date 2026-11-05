@@ -1,3 +1,4 @@
+import {SoundButton,useSound} from '../audio/useSound';
 import { useEffect, useRef, useState } from 'react';
 import { enemyNames, GOAL, initial, type Direction } from './model';
 import './sleep.css';
@@ -8,6 +9,7 @@ export default function SleepGame({onWin,onExit}:{onWin:()=>void;onExit:()=>void
   const host=useRef<HTMLDivElement>(null),controls=useRef<SleepControls|null>(null);
   const [view,setView]=useState(initial),[attempt,setAttempt]=useState(0);
   const [mode,setMode]=useState<'loading'|'error'|'ready'|'playing'|'paused'>('loading');
+  useSound('sleep',view.status==='playing'?mode:view.status,view.score,view.lives);
   function choose(d:Direction){controls.current?.choose(d);}
   function pause(){controls.current?.pause();}
   function start(retry=false){controls.current?.start(retry);setMode('playing');}
@@ -27,7 +29,7 @@ export default function SleepGame({onWin,onExit}:{onWin:()=>void;onExit:()=>void
   const ready=view.score>=GOAL;
   const overlay=mode!=='playing'||view.status!=='playing';
   const stage=ready?'К КРОВАТИ!':view.score>=300?'АВТОВОСПРОИЗВЕДЕНИЕ':'ТИХИЙ ЧАС';
-  return <section className={`sleep-game ${view.quiet>0?'quiet':''}`} aria-label="Ещё пять минут">
+  return <section className={`sleep-game ${view.quiet>0?'quiet':''}`} aria-label="Ещё пять минут"><SoundButton/>
     <div className="sleep-toolbar"><button className="small-button" onClick={onExit}>← Главы</button><span>23:58 · {stage}</span><button className="small-button" onClick={pause} disabled={overlay}>Пауза</button></div>
     <div className="sleep-hud"><div><small>ОЧКИ СНА</small><strong>{view.score}<i> / {GOAL}</i></strong></div><div><small>НЕ ОТВЛЕЧЬСЯ</small><strong aria-label={`Осталось попыток: ${view.lives}`}>{'♥'.repeat(view.lives)}{'♡'.repeat(3-view.lives)}</strong></div></div>
     <div className="sleep-meter" role="progressbar" aria-label="Накопленный сон" aria-valuemin={0} aria-valuemax={GOAL} aria-valuenow={Math.min(GOAL,view.score)}><span style={{width:`${Math.min(100,view.score/GOAL*100)}%`}}/></div>
@@ -41,3 +43,4 @@ export default function SleepGame({onWin,onExit}:{onWin:()=>void;onExit:()=>void
     <p className="control-hint">Поворот можно задать заранее · Esc — пауза</p>
   </section>;
 }
+

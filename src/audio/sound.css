@@ -1,0 +1,2 @@
+.sound-toggle{position:fixed;right:12px;bottom:calc(8px + var(--game-safe-bottom));z-index:80;min-width:44px;min-height:44px;padding:7px 10px;background:#fff5dd;font-size:20px;line-height:1;display:flex;align-items:center;gap:6px}.sound-toggle span{font-size:10px}.ride,.sleep-game{position:relative}
+@media(max-width:650px){.sound-toggle span{display:none}.sound-toggle{right:6px;bottom:calc(4px + var(--game-safe-bottom));width:44px;box-shadow:2px 2px #293a34}}

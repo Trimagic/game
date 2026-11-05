@@ -19,7 +19,7 @@ import CookGame from './cook/CookGame';
 import { CookBrief, cookPanels, cookComicStyle } from './cook/CookIntro';
 import { ShopBrief, shopPanels, shopComicStyle } from './shop/ShopIntro';
 import { PoolBrief, PoolFacts, poolPanels } from './pool/PoolIntro';
-import { isTelegram, progress, telegram } from './telegram';
+import { isTelegram, progress } from './telegram';
 
 function CastIcon({ viewBox }: { viewBox: string }) {
   return <svg className="cast-portrait" viewBox={viewBox} aria-hidden="true"><image href="/art/chapter-01-sprites.png" width="1000" height="1000" /></svg>;
@@ -47,7 +47,7 @@ export default function App({initialChapter}:{initialChapter?:1|2|3|4|5|6|7|8|9|
     catch (e) { setError(e instanceof Error ? e.message : 'Ошибка загрузки'); }
     finally { setBusy(false); }
   }, []);
-  useEffect(() => { telegram?.ready(); telegram?.expand(); void load(); }, [load]);
+  useEffect(() => { void load(); }, [load]);
   useEffect(() => { window.scrollTo({ top: 0, behavior: 'instant' }); }, [screen, panel]);
   const win = useCallback(() => setScreen('win'), []);
   const exit = useCallback(() => { setError(''); setScreen('map'); }, []);
@@ -86,7 +86,7 @@ export default function App({initialChapter}:{initialChapter?:1|2|3|4|5|6|7|8|9|
     {screen === 'brief' && chapter === 4 && <CookBrief onContinue={() => setScreen('game')} onComic={() => { setPanel(0); setScreen('comic'); }}/>}
     {screen === 'brief' && chapter === 3 && <ShopBrief onContinue={() => setScreen('game')} onComic={() => { setPanel(0); setScreen('comic'); }}/>}
     {screen === 'brief' && chapter === 2 && <PoolBrief onContinue={() => setScreen('facts')} onComic={() => { setPanel(0); setScreen('comic'); }}/>}
-    {screen === 'brief' && chapter === 1 && <PagedPanel className="brief paper-panel"><span className="eyebrow">ЭТАП 01 / КРУТИ ПЕДАЛИ</span><h1>Парк полон<br/><em>сюрпризов.</em></h1><p>Проедь 500 метров. Перестраивайся между тремя полосами и оставляй прохожим достаточно места.</p><div className="obstacle-legend"><div><CastIcon viewBox="580 30 300 550"/><b>Бабушки</b><small>Гуляют по парку</small></div><div><CastIcon viewBox="140 600 230 380"/><b>Дети</b><small>Играют с мячом</small></div><div><CastIcon viewBox="520 640 410 310"/><b>Кожура</b><small>Лучше объехать</small></div></div><div className="rules"><b>← →</b><p>Стрелки на клавиатуре или кнопки на экране.<br/>Три ошибки — перезапуск. Один заезд — 40 секунд.</p></div><button className="full-button" onClick={() => setScreen('facts')}>Дальше →</button><button className="text-button" onClick={() => { setPanel(0); setScreen('comic'); }}>Прочитать комикс</button></PagedPanel>}
+    {screen === 'brief' && chapter === 1 && <PagedPanel className="brief paper-panel"><span className="eyebrow">ЭТАП 01 / КРУТИ ПЕДАЛИ</span><h1>Парк полон<br/><em>сюрпризов.</em></h1><p>Проедь 500 метров. Перестраивайся между тремя полосами и оставляй прохожим достаточно места. Звёзды подсказывают свободную полосу: собирай их подряд, и серия умножит очки. Сердечко вернёт потерянную попытку.</p><div className="obstacle-legend"><div><CastIcon viewBox="580 30 300 550"/><b>Бабушки</b><small>Гуляют по парку</small></div><div><CastIcon viewBox="140 600 230 380"/><b>Дети</b><small>Играют с мячом</small></div><div><CastIcon viewBox="520 640 410 310"/><b>Кожура</b><small>Лучше объехать</small></div></div><div className="rules"><b>← →</b><p>Стрелки на клавиатуре или кнопки на экране.<br/>Три ошибки — перезапуск. Один заезд — 40 секунд.</p></div><button className="full-button" onClick={() => setScreen('facts')}>Дальше →</button><button className="text-button" onClick={() => { setPanel(0); setScreen('comic'); }}>Прочитать комикс</button></PagedPanel>}
     {screen === 'facts' && chapter === 2 && <PoolFacts onContinue={() => setScreen('game')}/>}
     {screen === 'facts' && chapter === 1 && <PagedPanel className="paper-panel facts" aria-labelledby="facts-title">
       <span className="eyebrow">ПЕРЕД ЗАЕЗДОМ / МИР · 2021 ГОД</span>

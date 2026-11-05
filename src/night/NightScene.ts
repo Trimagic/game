@@ -1,3 +1,4 @@
+import {sound} from '../audio/sound';
 import Phaser from 'phaser';
 import SceneBase from '../arcade/SceneBase';
 import type {ArcadeEvents} from '../arcade/types';
@@ -29,5 +30,6 @@ export default class NightScene extends SceneBase{
   this.hud.setText(`НОЧНОЙ МАРШРУТ / ${Math.min(3,1+Math.floor(s.x/870))} ИЗ 3\nТЕРПЕНИЕ ${Math.ceil(s.patience)}% · ДО ДВЕРИ ${Math.ceil(Math.max(0,GOAL-s.x)/20)} М`);g.fillStyle(0x425a60);g.fillRect(16,58,388,6);g.fillStyle(s.patience<25?0xe47e65:0xebc977);g.fillRect(16,58,388*s.patience/100,6);
   this.sign.setText(s.status==='ending'?'ЩЁЛК. Дверь не открывается.':'Перепрыгивай разрывы пола · Держи прыжок выше');
  }
- update(_t:number,delta:number){if(!this.running)return;if(delta>500){this.pause();return;}const values=[...this.held.values()];this.model=step(this.model,delta/1000,{move:Number(values.includes('right'))-Number(values.includes('left')),jump:values.includes('jump')});this.paint();if(this.model.status==='lost'){this.held.clear();this.finish(false,'Не добрался.',this.model.reason+' Попробуй ещё раз: не задерживайся и рассчитывай прыжки.');return;}if(this.model.status==='done'){this.running=false;this.bridge.publish({status:'story',title:'Закрыто на ночь.',detail:'До туалета добрался. Осталось решить последнюю проблему.',actions:[]});return;}this.stamp+=delta;if(this.stamp>150){this.stamp=0;this.sync();}}
+ update(_t:number,delta:number){if(!this.running)return;if(delta>500){this.pause();return;}const values=[...this.held.values()];const before=this.model;this.model=step(this.model,delta/1000,{move:Number(values.includes('right'))-Number(values.includes('left')),jump:values.includes('jump')});if(this.model.hits>before.hits&&this.model.status!=='lost')sound.cue('hit');else if(this.model.collected.length>before.collected.length)sound.cue('good');else if(before.grounded&&!this.model.grounded&&this.model.vy<0)sound.cue('jump');this.paint();if(this.model.status==='lost'){this.held.clear();this.finish(false,'Не добрался.',this.model.reason+' Попробуй ещё раз: не задерживайся и рассчитывай прыжки.');return;}if(this.model.status==='done'){this.running=false;this.bridge.publish({status:'story',title:'Закрыто на ночь.',detail:'До туалета добрался. Осталось решить последнюю проблему.',actions:[]});return;}this.stamp+=delta;if(this.stamp>150){this.stamp=0;this.sync();}}
 }
+

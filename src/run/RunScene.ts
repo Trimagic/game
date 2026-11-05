@@ -1,3 +1,5 @@
+import {haptics} from '../haptics';
+import {sound} from '../audio/sound';
 import Phaser from 'phaser';
 import SceneBase from '../arcade/SceneBase';
 import type {ArcadeEvents} from '../arcade/types';
@@ -22,7 +24,7 @@ export default class RunScene extends SceneBase{
  private setDuck(id:string,down:boolean){if(!this.running)return;down?this.crouching.add(id):this.crouching.delete(id);this.model=runAction(this.model,this.crouching.size?'down':'up');this.paint();}
  protected pause(){this.crouching.clear();this.pointerIds.clear();this.model=runAction(this.model,'up');super.pause();}
  protected key(e:KeyboardEvent){if(['ArrowUp','KeyW','Space','ArrowDown','KeyS','KeyF'].includes(e.code)){if(e.target instanceof HTMLButtonElement&&e.code==='Space')return;e.preventDefault();if(['ArrowDown','KeyS'].includes(e.code))this.setDuck(e.code,true);else this.action(e.code==='KeyF'?'focus':'jump');}}
- action(id:string){if(!this.running)return;if(id.startsWith('down:')||id.startsWith('up:')){const [kind,...source]=id.split(':');this.setDuck(source.join(':'),kind==='down');return;}if(id==='jump'||id==='focus'){const old=this.model;this.model=runAction(old,id);if(id==='focus'&&old!==this.model)this.pop(210,245,'ФОКУС · ВРЕМЯ МЕДЛЕННЕЕ','#286b56');}this.paint();this.sync();}
+ action(id:string){if(!this.running)return;if(id.startsWith('down:')||id.startsWith('up:')){const [kind,...source]=id.split(':');this.setDuck(source.join(':'),kind==='down');return;}if(id==='jump'||id==='focus'){const old=this.model;this.model=runAction(old,id);if(id==='jump'&&this.model!==old)sound.cue('jump');if(id==='focus'&&old!==this.model)this.pop(210,245,'ФОКУС · ВРЕМЯ МЕДЛЕННЕЕ','#286b56');}this.paint();this.sync();}
  protected sync(){const s=this.model,r=s.runner;this.view={status:'playing',title:`${Math.floor(r.time/DURATION*1000)} / 1000 м · ${r.lives} сердца · ${s.score} очков`,detail:`Серия ×${s.combo} · искры ${s.collected.length-s.spent}. Прыжок: ↑ / W / пробел. Пригибание: удерживай ↓ / S. Фокус: F.`,actions:[{id:'focus',label:s.focus>0?`Фокус · ${s.focus.toFixed(1)} с`:`Фокус · ${s.collected.length-s.spent}/5 искр`,disabled:s.focus>0||s.collected.length-s.spent<5}]};this.bridge.publish(this.view);}
  private paint(){const s=this.model,r=s.runner,t=r.time,d=travel(t),g=this.ink;g.clear();
   this.hud.setText(`${'♥'.repeat(r.lives)}${'♡'.repeat(3-r.lives)}     ${Math.floor(t/60*1000)} / 1000 М\nОЧКИ ${s.score}    СЕРИЯ ×${s.combo}    ИСКРЫ ${s.collected.length-s.spent}`);
@@ -57,10 +59,12 @@ export default class RunScene extends SceneBase{
   g.fillStyle(0xefba91);g.fillCircle(x+3,y-61,12);g.fillStyle(0xaf6533);for(let i=0;i<5;i++)g.fillCircle(x-7+i*5,y-71+(i%2)*2,5);g.fillRoundedRect(x-4,y-58,18,9,5);g.fillStyle(0x30453e);g.fillCircle(x+10,y-63,2);
  }
  update(_time:number,delta:number){if(!this.running)return;if(delta>500){this.pause();return;}const old=this.model;this.model=runTick(old,delta/1000);const s=this.model;
-  if(s.runner.lives<old.runner.lives){this.pop(210,200,'ОЙ! МИНУС СЕРДЦЕ','#aa4933');if(!this.reduced)this.cameras.main.shake(110,.004);}
-  else if(s.combo>old.combo)this.pop(210,210,`ЧИСТО! СЕРИЯ ×${s.combo}`,'#286b56');this.paint();
+  if(s.runner.lives<old.runner.lives){this.pop(210,200,'ОЙ! МИНУС СЕРДЦЕ','#aa4933',s.runner.status==='playing');if(!this.reduced)this.cameras.main.shake(110,.004);}
+  else if(s.collected.length>old.collected.length)haptics.cue('good');
+  if(s.runner.lives===old.runner.lives&&s.combo>old.combo)this.pop(210,210,`ЧИСТО! СЕРИЯ ×${s.combo}`,'#286b56');this.paint();
   if(s.runner.status!=='playing'){this.finish(s.runner.status==='won',s.runner.status==='won'?'Километр позади!':'Сбавим обороты?',`${Math.floor(s.runner.time/60*1000)} метров · ${s.score} очков · лучшая серия ×${s.best}. ${s.runner.status==='won'?'Утро началось с победы.':'Прыгай заранее, под ветками удерживай ↓. Пять искр дают замедление.'}`);return;}
   if(s.runner.time-this.lastHud>.12){this.lastHud=s.runner.time;this.sync();}
  }
 }
+
 

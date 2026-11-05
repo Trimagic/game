@@ -1,3 +1,5 @@
+import {haptics} from '../haptics';
+import {sound} from '../audio/sound';
 import Phaser from 'phaser';
 import SceneBase from '../arcade/SceneBase';
 import type {ArcadeEvents} from '../arcade/types';
@@ -8,7 +10,7 @@ export default class GymScene extends SceneBase {
  private ink!:Phaser.GameObjects.Graphics; private stats!:Phaser.GameObjects.Text;
  private coach!:Phaser.GameObjects.Text; private judgement!:Phaser.GameObjects.Text;
  private sources=[new Set<string>(),new Set<string>()]; private pointers=new Map<number,Lane>();
- private audio:AudioContext|null=null; private muted=false; private beat=''; private stage=-1;
+  private beat=''; private stage=-1;
  constructor(events:ArcadeEvents){super('gym',events);}
  create(){
   this.view={status:'ready',title:'Железо тоже любит ритм.',detail:'Три подхода: гантели, приседания и финальный жим. Круг — нажми, хвост — держи и отпусти на белой линии, пара — обе руки. После серии из 8 попаданий можно один раз вернуть 25 сил: пробел или «Второе дыхание».',actions:[]};
@@ -22,17 +24,17 @@ export default class GymScene extends SceneBase {
   this.input.on('pointerup',(p:Phaser.Input.Pointer)=>this.releasePointer(p));
   this.input.on('pointerupoutside',(p:Phaser.Input.Pointer)=>this.releasePointer(p));
   this.input.keyboard?.on('keyup',(e:KeyboardEvent)=>{const lane=this.lane(e.code);if(lane!==undefined)this.setSource(lane,e.code,false);});
-  this.events.once('shutdown',()=>{void this.audio?.close();this.audio=null;});this.paint();
+  this.paint();
  }
  private lane(code:string):Lane|undefined{return ['KeyA','ArrowLeft'].includes(code)?0:['KeyD','ArrowRight'].includes(code)?1:undefined;}
  protected key(e:KeyboardEvent){const lane=this.lane(e.code);if(lane!==undefined){e.preventDefault();this.setSource(lane,e.code,true);}if(e.code==='Space'&&!(e.target instanceof HTMLButtonElement)){e.preventDefault();this.action('wind');}if(e.code==='KeyM')this.action('mute');}
  private releasePointer(p:Phaser.Input.Pointer){const lane=this.pointers.get(p.id);if(lane!==undefined){this.pointers.delete(p.id);this.setSource(lane,'p'+p.id,false);}}
- private setSource(lane:Lane,id:string,down:boolean){if(!this.running)return;down?this.sources[lane].add(id):this.sources[lane].delete(id);const before=this.model;this.model=input(before,lane,this.sources[lane].size>0,this.elapsed);if(this.model.score>before.score){this.pop(lane?310:110,435,this.model.feedback,this.model.feedback==='В ТОЧКУ!'?'#9b5725':'#286b56');}this.paint();this.publishResult();}
+ private setSource(lane:Lane,id:string,down:boolean){if(!this.running)return;down?this.sources[lane].add(id):this.sources[lane].delete(id);const before=this.model;this.model=input(before,lane,this.sources[lane].size>0,this.elapsed);if(this.model.score>before.score){this.pop(lane?310:110,435,this.model.feedback,this.model.feedback==='В ТОЧКУ!'?'#9b5725':'#286b56');}if(this.model.energy<before.energy&&this.model.status==='playing')haptics.cue('error');this.paint();this.publishResult();}
  protected pause(){this.sources.forEach(s=>s.clear());this.pointers.clear();this.model={...this.model,pressed:[false,false]};super.pause();}
- action(id:string){if(!this.running)return;if(id==='unlock'){try{this.audio??=new AudioContext();void this.audio.resume().catch(()=>{});}catch{/* Visual timing works without sound. */}}else if(id==='mute')this.muted=!this.muted;else if(id==='wind'){const old=this.model;this.model=secondWind(old);if(this.model!==old)this.pop(210,330,'ВТОРОЕ ДЫХАНИЕ!','#286b56');}else {const [kind,lane,source]=id.split(':');if(kind==='down'||kind==='up')this.setSource(Number(lane) as Lane,source??'button',kind==='down');}this.sync();}
- protected sync(){const judged=Object.keys(this.model.results).length;this.view={status:'playing',title:`Подход ${Math.max(0,this.stage)+1}/3 · точность ${judged?Math.floor(this.model.score/judged):100}% · серия ×${this.model.combo}`,detail:'Круг — нажми. Хвост — удерживай и отпусти на линии. Пара — обе руки. После паузы удержание нужно зажать снова.',actions:[{id:'wind',label:this.model.windUsed?'Второе дыхание использовано':`Второе дыхание · ${Math.min(8,this.model.combo)}/8`,disabled:this.model.windUsed||this.model.combo<8},{id:'mute',label:this.muted?'Звук: выкл.':'Звук: вкл.'}]};this.bridge.publish(this.view);}
+ action(id:string){if(!this.running)return;if(id==='unlock'){sound.unlock();}else if(id==='mute')sound.toggle();else if(id==='wind'){const old=this.model;this.model=secondWind(old);if(this.model!==old)this.pop(210,330,'ВТОРОЕ ДЫХАНИЕ!','#286b56');}else {const [kind,lane,source]=id.split(':');if(kind==='down'||kind==='up')this.setSource(Number(lane) as Lane,source??'button',kind==='down');}this.sync();}
+ protected sync(){const judged=Object.keys(this.model.results).length;this.view={status:'playing',title:`Подход ${Math.max(0,this.stage)+1}/3 · точность ${judged?Math.floor(this.model.score/judged):100}% · серия ×${this.model.combo}`,detail:'Круг — нажми. Хвост — удерживай и отпусти на линии. Пара — обе руки. После паузы удержание нужно зажать снова.',actions:[{id:'wind',label:this.model.windUsed?'Второе дыхание использовано':`Второе дыхание · ${Math.min(8,this.model.combo)}/8`,disabled:this.model.windUsed||this.model.combo<8},{id:'mute',label:!sound.enabled?'Звук: выкл.':'Звук: вкл.'}]};this.bridge.publish(this.view);}
  private publishResult(){if(this.model.status!=='playing'){const accuracy=Math.floor(this.model.score/Math.max(1,Object.keys(this.model.results).length));this.finish(this.model.status==='won',this.model.status==='won'?'Вот теперь последний!':'Сбились с ритма?',`Точность ${accuracy}% · лучшая серия ×${this.model.best}. ${this.model.status==='won'?'Все три подхода позади.':this.model.energy===0?'Силы закончились. Попробуй спокойнее ловить белую линию.':'Для победы нужна точность от 65%.'}`);}else this.sync();}
- private playBeat(){const phase=phases[Math.max(0,this.stage)];const beat=Math.floor((this.elapsed-phase.start)/(60000/phase.bpm));const id=phase.start+':'+beat;if(id===this.beat||beat>=phase.beats||beat< -4)return;this.beat=id;const ctx=this.audio;if(!ctx||ctx.state!=='running'||this.muted)return;const o=ctx.createOscillator(),g=ctx.createGain();o.frequency.value=beat%4===0?660:330;g.gain.setValueAtTime(.1,ctx.currentTime);g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.09);o.connect(g);g.connect(ctx.destination);o.start();o.stop(ctx.currentTime+.1);o.onended=()=>{o.disconnect();g.disconnect();};}
+ private playBeat(){const phase=phases[Math.max(0,this.stage)];const beat=Math.floor((this.elapsed-phase.start)/(60000/phase.bpm));const id=phase.start+':'+beat;if(id===this.beat||beat>=phase.beats||beat< -4)return;this.beat=id;sound.tone(beat%4===0?660:330,.09,'sine',.5);}
  private paint(){
   const s=this.model,t=this.elapsed;this.stage=t<21000?0:t<38000?1:2;const phase=phases[this.stage];const rest=t>19000&&t<22000||t>35500&&t<39000;const beat=(t-phase.start)/(60000/phase.bpm);
   const g=this.ink;g.clear();g.fillStyle(0x8b7a60);g.fillRect(12,67,396,7);g.fillStyle(s.energy<30?0xe66b48:0x86c8a5);g.fillRect(12,67,396*s.energy/100,7);
@@ -54,7 +56,8 @@ export default class GymScene extends SceneBase {
   const next=phases.find(p=>t<p.start);this.judgement.setText(t<3000||rest?`ГОТОВЬСЯ · ${Math.max(1,Math.ceil(((next?.start??t)-t)/1000))}`:s.feedback);
   g.fillStyle(0xefb569);g.fillRect(0,558,420*t/END,2);
  }
- update(_time:number,delta:number){if(!this.running)return;if(delta>500){this.pause();return;}this.elapsed+=delta;this.model=tick(this.model,this.elapsed);this.paint();this.playBeat();if(this.model.status!=='playing')this.publishResult();else if(this.elapsed-this.hudAt>120){this.hudAt=this.elapsed;this.sync();}}
+ update(_time:number,delta:number){if(!this.running)return;if(delta>500){this.pause();return;}this.elapsed+=delta;const before=this.model;this.model=tick(this.model,this.elapsed);if(this.model.energy<before.energy&&this.model.status==='playing')haptics.cue('error');this.paint();this.playBeat();if(this.model.status!=='playing')this.publishResult();else if(this.elapsed-this.hudAt>120){this.hudAt=this.elapsed;this.sync();}}
 }
+
 
 

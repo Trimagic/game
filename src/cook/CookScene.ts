@@ -1,3 +1,4 @@
+import {haptics} from '../haptics';
 import Phaser from 'phaser';
 import SceneBase from '../arcade/SceneBase';
 import type {ArcadeEvents} from '../arcade/types';
@@ -16,10 +17,10 @@ export default class CookScene extends SceneBase{
   this.view={title:'Сегодня ты — шеф.',detail:'Нарежь продукты, поймай зелёную зону на двух конфорках и собери тарелку. Три пропуска — повтор. За точность растёт оценка ужина.',status:'ready',actions:[]};this.setup();this.draw();
   this.input.on('pointerdown',(p:Phaser.Input.Pointer)=>{if(this.running&&this.model.cook.stage==='prep'&&p.x>=20&&p.x<=400&&p.y>=130&&p.y<=430){this.stroke={x:(p.x-20)/380,y:(p.y-130)/300,id:p.id};this.trail=this.add.graphics().setDepth(40);}});
   this.input.on('pointermove',(p:Phaser.Input.Pointer)=>{if(this.running&&this.stroke?.id===p.id&&p.isDown){this.trail?.clear().lineStyle(3,0xfff5d4).lineBetween(20+this.stroke.x*380,130+this.stroke.y*300,p.x,p.y);}});
-  this.input.on('pointerup',(p:Phaser.Input.Pointer)=>{if(this.running&&this.stroke?.id===p.id){const line=this.model.cook.cuts%2===0?.44:.56;if(validCut(this.stroke,{x:(p.x-20)/380,y:(p.y-130)/300},line))this.action('cut');else{this.model.feedback='Проведи через всю доску вдоль пунктирной линии.';this.sync();}}this.stroke=null;this.trail?.destroy();});
+  this.input.on('pointerup',(p:Phaser.Input.Pointer)=>{if(this.running&&this.stroke?.id===p.id){const line=this.model.cook.cuts%2===0?.44:.56;if(validCut(this.stroke,{x:(p.x-20)/380,y:(p.y-130)/300},line))this.action('cut');else{if(this.running)haptics.cue('error');this.model.feedback='Проведи через всю доску вдоль пунктирной линии.';this.sync();}}this.stroke=null;this.trail?.destroy();});
   this.input.on('pointerupoutside',()=>{this.stroke=null;this.trail?.destroy();});
   this.input.on('drag',(_p:Phaser.Input.Pointer,obj:Phaser.GameObjects.Image,x:number,y:number)=>{if(this.running)obj.setPosition(x,y);});
-  this.input.on('dragend',(_p:Phaser.Input.Pointer,obj:Phaser.GameObjects.Image)=>{const id=obj.getData('part') as number;const target=this.platePosition(id);if(this.running&&Phaser.Math.Distance.Between(obj.x,obj.y,target.x,target.y)<63)this.action(`plate:${id}`);else{this.model.feedback='Перенеси часть блюда в подсвеченную область с её названием.';this.draw();this.sync();}});
+  this.input.on('dragend',(_p:Phaser.Input.Pointer,obj:Phaser.GameObjects.Image)=>{const id=obj.getData('part') as number;const target=this.platePosition(id);if(this.running&&Phaser.Math.Distance.Between(obj.x,obj.y,target.x,target.y)<63)this.action(`plate:${id}`);else{if(this.running)haptics.cue('error');this.model.feedback='Перенеси часть блюда в подсвеченную область с её названием.';this.draw();this.sync();}});
  }
  protected pause(){this.stroke=null;this.trail?.destroy();super.pause();}
  protected key(e:KeyboardEvent){if(['Space','Digit1','Digit2','KeyM'].includes(e.code))e.preventDefault();if(e.code==='Space'&&this.model.cook.stage==='prep')this.action('cut');if(e.code==='Digit1')this.action('act:pan');if(e.code==='Digit2')this.action('act:pot');if(e.code==='KeyM')this.action('dismiss');}
@@ -28,7 +29,7 @@ export default class CookScene extends SceneBase{
   if(type==='cut'||type==='start'||type==='dismiss'||type==='serve')a={type};
   if(type==='act'&&(value==='pan'||value==='pot'))a={type:'act',station:value};
   if(type==='plate')a={type:'plate',part:Number(value)};
-  if(!a)return;const old=this.model;this.model=preciseAction(this.model,a);this.draw();
+  if(!a)return;const old=this.model;this.model=preciseAction(this.model,a);if(type==='act'&&this.model.quality===old.quality)haptics.cue('error');this.draw();
   if(type==='act'&&this.model.quality>old.quality&&!this.reduced){const food=this.foodSprites[value==='pan'?0:1];if(food)this.tweens.add({targets:food,angle:value==='pan'?16:8,y:food.y-9,duration:180,yoyo:true});}
   if(this.model.quality>old.quality)this.pop(210,170,`+${this.model.quality-old.quality} ${type==='act'?'ВКУСНО!':'✓'}`);
   if(this.model.cook.stage==='won'){this.finish(true,`${this.model.quality>=160?'★★★':this.model.quality>=110?'★★':'★'} Ужин готов!`,`${this.model.quality} очков мастерства. Лучшая серия: ${this.model.best}. Курица, гарнир и овощи на тарелке. Маме можно перезвонить.`);}else this.sync();
@@ -69,5 +70,5 @@ export default class CookScene extends SceneBase{
   this.steam.forEach((p,i)=>{const done=s.results[i<3?'pan-off':'rice-off'];const phase=(s.elapsed/1800+i/3)%1;p.setY(this.reduced?216:240-phase*40).setAlpha(done?0:this.reduced?.2:(1-phase)*.5);});
   const call=phoneActive(s);this.phone?.setFillStyle(call?0xefb085:0xd3ddd0);this.phoneText?.setText(call?'МАМА: «ТЫ ПОЕЛ?»\nНАЖМИ, ЧТОБЫ ПЕРЕЗВОНИТЬ · M':s.dismissed?'«МАМ, Я ПЕРЕЗВОНЮ ПОСЛЕ УЖИНА»':'МАМА ПОЗВОНИТ. КАК ВСЕГДА ВОВРЕМЯ.');
  }
- update(_time:number,delta:number){if(!this.running||this.model.cook.stage!=='stove')return;this.model=preciseAction(this.model,{type:'tick',delta:Math.min(50,delta)});if(this.model.cook.stage==='lost'){this.finish(false,'Дым — не приправа.', 'Три действия пропущены. Следи за обеими конфорками и нажимай, когда бегунок в зелёной зоне. Звонок можно сразу отклонить.');return;}if(this.drawn!==this.model.cook.stage)this.draw();else this.refreshStove();if(this.model.cook.elapsed-this.lastHud>=100||this.model.cook.stage==='plate'){this.lastHud=this.model.cook.elapsed;this.sync();}}
+ update(_time:number,delta:number){if(!this.running||this.model.cook.stage!=='stove')return;const before=this.model;this.model=preciseAction(this.model,{type:'tick',delta:Math.min(50,delta)});if(this.model.cook.mistakes>before.cook.mistakes&&this.model.cook.stage!=='lost')haptics.cue('error');if(this.model.cook.stage==='lost'){this.finish(false,'Дым — не приправа.', 'Три действия пропущены. Следи за обеими конфорками и нажимай, когда бегунок в зелёной зоне. Звонок можно сразу отклонить.');return;}if(this.drawn!==this.model.cook.stage)this.draw();else this.refreshStove();if(this.model.cook.elapsed-this.lastHud>=100||this.model.cook.stage==='plate'){this.lastHud=this.model.cook.elapsed;this.sync();}}
 }

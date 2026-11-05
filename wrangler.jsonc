@@ -4,5 +4,5 @@
   "main": "worker/index.ts",
   "compatibility_date": "2026-10-12",
   "assets": { "directory": "./dist/client", "binding": "ASSETS", "not_found_handling": "single-page-application", "run_worker_first": ["/api/*"] },
-  "d1_databases": [{ "binding": "DB", "database_name": "game-progress", "database_id": "00000000-0000-0000-0000-000000000000", "migrations_dir": "migrations" }]
+  "d1_databases": [{ "binding": "DB", "database_name": "game-progress", "database_id": "e6ccecba-d683-4589-b4cd-93e7a0a581e7", "migrations_dir": "migrations" }]
 }

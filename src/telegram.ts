@@ -1,4 +1,6 @@
-declare global { interface Window { Telegram?: { WebApp: { initData: string; ready(): void; expand(): void } } } }
+import type { HapticApi } from './haptics';
+import type { TelegramDisplay } from './telegram-display';
+declare global { interface Window { Telegram?: { WebApp: TelegramDisplay & { initData: string; HapticFeedback?: HapticApi } } } }
 export const telegram = window.Telegram?.WebApp;
 export const isTelegram = Boolean(telegram?.initData);
 export async function progress(level?: number): Promise<number> {

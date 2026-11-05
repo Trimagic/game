@@ -1,3 +1,4 @@
+import {haptics} from '../haptics';
 import Phaser from 'phaser';
 import SceneBase from '../arcade/SceneBase';
 import type {ArcadeEvents} from '../arcade/types';
@@ -20,7 +21,7 @@ export default class ShopScene extends SceneBase{
  private visible(){return beltOffers(this.model).filter(o=>o.x>=20&&o.x<=400);}
  action(id:string){if(!this.running)return;const [type,value]=id.split(':');const old=this.model;
   if(type==='buy'||type==='remove')this.model=beltStep(old,{type,id:Number(value)});else if(type==='freeze'||type==='checkout')this.model=beltStep(old,{type});
-  if(this.model.cart.length>old.cart.length){this.pop(210,398,this.model.combo?'СЕРИЯ '+this.model.combo+'!':'ЛИШНЕЕ','#286b56');}
+  if(this.model.cart.length>old.cart.length){if(!this.model.combo)haptics.cue('error');this.pop(210,398,this.model.combo?'СЕРИЯ '+this.model.combo+'!':'ЛИШНЕЕ','#286b56');}
   this.draw();this.moveCards();if(this.model.status==='won')this.result();else this.sync();
  }
  private result(){const win=this.model.status==='won';this.finish(win,win?'Ужин пойман!':'Лента уехала. Ужин — не весь.',win?'Пять продуктов, '+beltCost(this.model)+' монет. Лучшая серия: '+this.model.best+'. Очки внимательности: '+this.model.score+'.':beltCount(this.model)+' из 5 продуктов. Используй стоп-ленту и возвращай лишнее. Продукты появляются снова.');}
