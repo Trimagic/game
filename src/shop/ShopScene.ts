@@ -4,26 +4,31 @@ import SceneBase from '../arcade/SceneBase';
 import type {ArcadeEvents} from '../arcade/types';
 import {products,recipe} from './model';
 import {saveBest} from '../best';
-import {aim,cartCost,cartInitial,cartRating,hold,level,LEVELS,tickCart,CART_HALF,CART_Y,MEDAL_POINTS,WIDTH} from './cart';
+import {aim,cartCost,cartInitial,cartRating,hold,level,LEVELS,tickCart,CART_HALF,CART_Y,MEDAL_POINTS,SPAWN_Y,WIDTH} from './cart';
 const frames=[[0,70,405,400],[410,40,330,455],[745,45,405,435],[1150,60,385,420],[65,490,215,480],[350,550,405,410],[770,530,380,405],[1165,535,371,440]];
 const keys:Record<string,number>={ArrowLeft:-1,KeyA:-1,ArrowRight:1,KeyD:1};
 export default class ShopScene extends SceneBase{
  private model=cartInitial();private lastHud=0;private drawnLevel=-1;
  private header!:Phaser.GameObjects.Text;private budget!:Phaser.GameObjects.Text;private chips:Phaser.GameObjects.Text[]=[];
  private cartBody!:Phaser.GameObjects.Container;private cartLoad!:Phaser.GameObjects.Text;private banner!:Phaser.GameObjects.Text;
- private sprites=new Map<number,Phaser.GameObjects.Container>();private held=new Set<string>();
+ private sprites=new Map<number,Phaser.GameObjects.Container>();private held=new Set<string>();private drag:{id:number;x:number;cart:number}|null=null;private lane!:Phaser.GameObjects.Rectangle;
  constructor(events:ArcadeEvents){super('belt',events);}
  preload(){this.load.image('products','/art/chapter-03-products.png');this.load.on('loaderror',this.bridge.error);}
  create(){if(!this.textures.exists('products'))return;frames.forEach(([x,y,w,h],i)=>this.textures.get('products').add(i,0,x,y,w,h));
   this.view={title:'Лови будущий ужин!',detail:'Три списка подряд: «Ужин», «Гости придут» и «Распродажа». Продукты падают с полок — веди тележку пальцем или стрелками и лови только то, что в списке. Лишнее, просрочка и перерасход бюджета отнимают жизнь. Дешёвая копия по акции заменит дорогую. Быстрее соберёшь — больше очков.',status:'ready',actions:[]};
   this.setup();this.drawStatic();
-  const steer=(p:Phaser.Input.Pointer)=>{if(this.running&&p.y>96){this.held.clear();this.model=aim(this.model,p.x);}};
-  this.input.on('pointerdown',steer);this.input.on('pointermove',(p:Phaser.Input.Pointer)=>{if(p.isDown)steer(p);});
-  this.input.keyboard?.on('keyup',(e:KeyboardEvent)=>{if(keys[e.code]===undefined)return;this.held.delete(e.code);this.model=hold(this.model,[...this.held].reduce((n,c)=>n+keys[c],0));});
+  // Drag works like a touchpad anywhere on the board, so the finger never hides the cart.
+  this.input.on('pointerdown',(p:Phaser.Input.Pointer)=>{if(!this.running)return;this.held.clear();this.drag={id:p.id,x:p.x,cart:this.model.cartX};});
+  this.input.on('pointermove',(p:Phaser.Input.Pointer)=>{if(this.running&&this.drag?.id===p.id&&p.isDown)this.model=aim(this.model,this.drag.cart+(p.x-this.drag.x)*1.4);});
+  const release=(p:Phaser.Input.Pointer)=>{if(this.drag?.id===p.id)this.drag=null;};this.input.on('pointerup',release);this.input.on('pointerupoutside',release);
+  this.input.keyboard?.on('keyup',(e:KeyboardEvent)=>{if(keys[e.code]===undefined)return;this.held.delete(e.code);this.model=hold(this.model,this.heldDir());});
  }
- protected pause(){this.held.clear();this.model=hold(this.model,0);super.pause();}
- protected key(e:KeyboardEvent){if(keys[e.code]===undefined)return;e.preventDefault();this.held.add(e.code);this.model=hold(this.model,[...this.held].reduce((n,c)=>n+keys[c],0));}
- action(id:string){if(!this.running)return;if(id==='left'||id==='right')this.model=aim(this.model,this.model.cartX+(id==='left'?-90:90));}
+ private heldDir(){return [...this.held].reduce((n,c)=>n+(keys[c]??(c.startsWith('padleft')?-1:c.startsWith('padright')?1:0)),0);}
+ protected pause(){this.held.clear();this.drag=null;this.model=hold(this.model,0);super.pause();}
+ protected key(e:KeyboardEvent){if(keys[e.code]===undefined)return;e.preventDefault();this.held.add(e.code);this.model=hold(this.model,this.heldDir());}
+ action(id:string){if(!this.running)return;const [kind,dir,source]=id.split(':');
+  if(kind==='down'||kind==='up'){const code='pad'+dir+(source??'');kind==='down'?this.held.add(code):this.held.delete(code);this.model=hold(this.model,this.heldDir());}
+  else if(id==='left'||id==='right')this.model=aim(this.model,this.model.cartX+(id==='left'?-110:110));}
  private drawStatic(){
   this.box(210,28,420,56,0x274e49);this.header=this.text(15,10,'',13,'#fff3d6');
   this.box(210,76,420,40,0xfff6e0);this.budget=this.text(405,76,'',13,'#293a34').setOrigin(1,.5);
@@ -31,6 +36,8 @@ export default class ShopScene extends SceneBase{
   // Shelves behind the falling goods.
   for(const y of [118,170])this.box(210,y,420,8,0xb6a27e,0x8a7656);
   this.box(210,CART_Y+40,420,28,0x455c54);
+  // A faint column shows where falling goods will land in the cart.
+  this.lane=this.add.rectangle(this.model.cartX,(SPAWN_Y+CART_Y)/2,CART_HALF*2,CART_Y-SPAWN_Y,0xf1bb64,.12).setDepth(5);this.root.add(this.lane);
   const g=this.add.graphics();g.fillStyle(0xf1bb64);g.lineStyle(3,0x293a34);g.beginPath();g.moveTo(-CART_HALF,-18);g.lineTo(CART_HALF,-18);g.lineTo(CART_HALF-10,16);g.lineTo(-CART_HALF+10,16);g.closePath();g.fillPath();g.strokePath();
   g.lineStyle(2,0x293a34);for(const x of [-24,0,24])g.lineBetween(x,-18,x*.8,16);g.fillStyle(0x293a34);g.fillCircle(-26,22,6);g.fillCircle(26,22,6);g.lineStyle(4,0x293a34);g.lineBetween(CART_HALF,-18,CART_HALF+12,-30);
   this.cartLoad=this.add.text(0,-34,'',{fontFamily:'Arial',fontSize:'12px',fontStyle:'bold',color:'#293a34',backgroundColor:'#fff6e0',padding:{x:4,y:1},resolution:2}).setOrigin(.5);
@@ -77,12 +84,12 @@ export default class ShopScene extends SceneBase{
  private result(){const s=this.model;if(s.status==='lost'){this.finish(false,'Магазин закрылся. Ужин — не весь.',`Дошёл до списка «${level(s).name}». Лови только то, что в списке, следи за бюджетом и не хватай просрочку. Дешёвая копия по акции спасает от перерасхода.`);return;}
   const saved=saveBest('shop-best',s.score),stars=cartRating(s);
   this.finish(true,`${'★'.repeat(stars)}${'☆'.repeat(3-stars)} Всё куплено! ${s.score} очков`,`Три списка за ${(s.cleared.reduce((n,c)=>n+c.time,0)/1000).toFixed(0)} с, жизней осталось ${s.lives}, лучшая серия ${s.best}. ${s.medals.length?'Медали: '+s.medals.join(', ')+' (+'+s.medals.length*MEDAL_POINTS+'). ':'Медали: без промахов, две акции, все списки за 45 с, серия из 10. '}${saved.record?'Новый личный рекорд!':'Рекорд: '+saved.best+'.'}`);}
- protected sync(){const s=this.model,lv=level(s);this.view={status:'playing',title:`Список ${s.level+1}/${LEVELS.length} «${lv.name}» · ${cartCost(s)} / ${lv.budget} монет · ★ ${s.score}`,detail:s.notice,actions:[{id:'left',label:'← Тележку влево'},{id:'right',label:'Тележку вправо →'}]};this.bridge.publish(this.view);}
+ protected sync(){const s=this.model,lv=level(s);this.view={status:'playing',title:`Список ${s.level+1}/${LEVELS.length} «${lv.name}» · ${cartCost(s)} / ${lv.budget} монет · ★ ${s.score}`,detail:s.notice,actions:[]};this.bridge.publish(this.view);}
  update(_time:number,delta:number){
   if(!this.running)return;
   const before=this.model;this.model=tickCart(this.model,Math.min(50,delta));
   this.react();if(this.model.level!==this.drawnLevel)this.drawList();
-  this.cartBody.setX(this.model.cartX).setAngle(this.reduced?0:Phaser.Math.Clamp((this.model.cartX-before.cartX)*.8,-6,6));
+  this.lane.setX(this.model.cartX);this.cartBody.setX(this.model.cartX).setAngle(this.reduced?0:Phaser.Math.Clamp((this.model.cartX-before.cartX)*.8,-6,6));
   this.syncItems();this.refreshHud();
   if(this.model.status!=='playing'){this.result();return;}
   if(this.model.time-this.lastHud>=150||this.model.events.length){this.lastHud=this.model.time;this.sync();}

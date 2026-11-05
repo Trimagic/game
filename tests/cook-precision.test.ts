@@ -1,11 +1,16 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {precisionInitial,preciseAction,cookRating,PREP_PAR,type PrecisionCook} from '../src/cook/precision.ts';
+import {good} from '../src/cook/chop.ts';
 import {actStove,answerPhone,createStove,DISHES,finished,heat,PERFECT,PHONE_MS,READY,ready,tickStove,BURN_RESET,type Stove} from '../src/cook/stove.ts';
 
-function prepared(seed?:number,cutMs=1200,precise=true){
+function prepared(seed?:number,skill:'sharp'|'sloppy'='sharp'){
  let s=precisionInitial(seed);
- for(let n=0;n<6;n++){for(let t=0;t<cutMs;t+=100)s=preciseAction(s,{type:'tick',delta:100});s=preciseAction(s,{type:'cut',precise});}
+ for(let i=0;i<2000&&s.cook.stage==='prep';i++){
+  s=preciseAction(s,{type:'tick',delta:50});
+  if(skill==='sharp'){for(const p of s.chop.pieces)if(good(s.chop.board,p.kind)&&p.y>200)s=preciseAction(s,{type:'slice',from:{x:p.x,y:p.y-30},to:{x:p.x,y:p.y+30}});}
+  else if(i%14===0)s=preciseAction(s,{type:'cut'});
+ }
  return preciseAction(s,{type:'start'});
 }
 function cook(s:PrecisionCook,skill:'sharp'|'sloppy'){
@@ -52,13 +57,13 @@ test('Seeds vary the stove and heat rises over time',()=>{
 });
 test('Full kitchen round: fast precise prep, juggling, plating and victory',()=>{
  for(const seed of [1,4,9,16]){
-  const s=cook(prepared(seed),'sharp');
+  const s=cook(prepared(seed),'sharp');assert.equal(s.chop.board,'done');assert.ok(s.prepBonus>0);
   assert.equal(s.cook.stage,'won',`seed ${seed}: ${s.feedback}`);assert.equal(s.stove.mistakes,0);assert.equal(s.stove.phone,'answered');
-  assert.equal(s.prepBonus,Math.round((PREP_PAR-7200)/250));assert.equal(cookRating(s.quality),3,`quality ${s.quality}`);
+  assert.ok(s.prepMs<PREP_PAR);assert.equal(cookRating(s.quality),3,`quality ${s.quality}`);
  }
 });
 test('A sloppy cook still wins but earns fewer stars',()=>{
- for(const seed of [2,5,11]){const s=cook(prepared(seed,3000,false),'sloppy');assert.equal(s.cook.stage,'won');assert.ok(cookRating(s.quality)<3,`quality ${s.quality}`);}
+ for(const seed of [2,5,11]){const s=cook(prepared(seed,'sloppy'),'sloppy');assert.equal(s.cook.stage,'won');assert.ok(cookRating(s.quality)<3,`quality ${s.quality}`);}
 });
 test('Ignoring the stove burns dinner and ends the round',()=>{
  let s=prepared(3);for(let i=0;i<2000&&s.cook.stage==='stove';i++)s=preciseAction(s,{type:'tick',delta:50});

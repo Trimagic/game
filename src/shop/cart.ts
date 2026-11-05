@@ -3,8 +3,8 @@ import {products,type Purchase} from './model.ts';
 export const WIDTH=420;
 export const CART_Y=486;
 export const SPAWN_Y=100;
-export const CART_HALF=46;
-export const CART_SPEED=520;
+export const CART_HALF=52;
+export const CART_SPEED=760;
 export const BREAK_MS=1800;
 export const MEDAL_POINTS=40;
 export const LEVELS=[
