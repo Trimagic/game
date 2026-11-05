@@ -4,44 +4,87 @@ import SceneBase from '../arcade/SceneBase';
 import type {ArcadeEvents} from '../arcade/types';
 import {products,recipe} from './model';
 import {saveBest} from '../best';
-import {BELT_MS,beltInitial,beltStep,beltOffers,beltReady,beltCost,beltCount,beltSpeed,beltRating,rivalReaching,RIVAL_WARN_X,RIVAL_GRAB_X,MEDAL_POINTS} from './belt';
+import {aim,cartCost,cartInitial,cartRating,hold,level,LEVELS,tickCart,CART_HALF,CART_Y,MEDAL_POINTS,WIDTH} from './cart';
 const frames=[[0,70,405,400],[410,40,330,455],[745,45,405,435],[1150,60,385,420],[65,490,215,480],[350,550,405,410],[770,530,380,405],[1165,535,371,440]];
+const keys:Record<string,number>={ArrowLeft:-1,KeyA:-1,ArrowRight:1,KeyD:1};
 export default class ShopScene extends SceneBase{
- private model=beltInitial(Date.now());private clock!:Phaser.GameObjects.Text;private banner!:Phaser.GameObjects.Text;private rollers:Phaser.GameObjects.Rectangle[]=[];
- private cards=new Map<number,Phaser.GameObjects.Container>();private held:number|null=null;private lastHud=0;
+ private model=cartInitial();private lastHud=0;private drawnLevel=-1;
+ private header!:Phaser.GameObjects.Text;private budget!:Phaser.GameObjects.Text;private chips:Phaser.GameObjects.Text[]=[];
+ private cartBody!:Phaser.GameObjects.Container;private cartLoad!:Phaser.GameObjects.Text;private banner!:Phaser.GameObjects.Text;
+ private sprites=new Map<number,Phaser.GameObjects.Container>();private held=new Set<string>();
  constructor(events:ArcadeEvents){super('belt',events);}
  preload(){this.load.image('products','/art/chapter-03-products.png');this.load.on('loaderror',this.bridge.error);}
  create(){if(!this.textures.exists('products'))return;frames.forEach(([x,y,w,h],i)=>this.textures.get('products').add(i,0,x,y,w,h));
-  this.view={title:'Лови будущий ужин!',detail:'60 секунд, 35 монет, порядок товаров каждый раз новый. Нажимай или тащи нужное в корзину. Жёлтые карточки — акция −50%: дешёвая копия сама заменит дорогую. Красный штамп «ПРОСРОЧЕНО» — не бери. Сосед по очереди тянется к нужным товарам: успей схватить первым! Оплатить можно сразу, как всё собрано: секунды, монеты и медали — очки.',status:'ready',actions:[]};this.setup();this.draw();this.moveCards();
-  this.input.on('dragstart',(_p:Phaser.Input.Pointer,o:Phaser.GameObjects.Container)=>{if(this.running){this.held=o.getData('offer');o.setDepth(30).setScale(1.05);}});
-  this.input.on('drag',(_p:Phaser.Input.Pointer,o:Phaser.GameObjects.Container,x:number,y:number)=>{if(this.running&&this.held===o.getData('offer'))o.setPosition(x,y);});
-  this.input.on('dragend',(_p:Phaser.Input.Pointer,o:Phaser.GameObjects.Container)=>{const id=o.getData('offer') as number;const drop=o.y>=375&&o.y<=505&&o.x>=0&&o.x<=420;this.held=null;if(this.running&&drop)this.action('buy:'+id);if(o.active)o.setScale(1).setDepth(10).setY(255);this.moveCards();});
+  this.view={title:'Лови будущий ужин!',detail:'Три списка подряд: «Ужин», «Гости придут» и «Распродажа». Продукты падают с полок — веди тележку пальцем или стрелками и лови только то, что в списке. Лишнее, просрочка и перерасход бюджета отнимают жизнь. Дешёвая копия по акции заменит дорогую. Быстрее соберёшь — больше очков.',status:'ready',actions:[]};
+  this.setup();this.drawStatic();
+  const steer=(p:Phaser.Input.Pointer)=>{if(this.running&&p.y>96){this.held.clear();this.model=aim(this.model,p.x);}};
+  this.input.on('pointerdown',steer);this.input.on('pointermove',(p:Phaser.Input.Pointer)=>{if(p.isDown)steer(p);});
+  this.input.keyboard?.on('keyup',(e:KeyboardEvent)=>{if(keys[e.code]===undefined)return;this.held.delete(e.code);this.model=hold(this.model,[...this.held].reduce((n,c)=>n+keys[c],0));});
  }
- protected pause(){this.held=null;for(const c of this.cards.values())c.setY(255).setScale(1).setDepth(10);super.pause();}
- protected key(e:KeyboardEvent){if(['Space','Enter','Digit1','Digit2','Digit3'].includes(e.code))e.preventDefault();if(e.code==='Space')this.action('freeze');if(e.code==='Enter')this.action('checkout');const n=['Digit1','Digit2','Digit3'].indexOf(e.code);const offer=this.visible()[n];if(n>=0&&offer)this.action('buy:'+offer.id);}
- private visible(){return beltOffers(this.model).filter(o=>o.x>=20&&o.x<=400);}
- action(id:string){if(!this.running)return;const [type,value]=id.split(':');const old=this.model;
-  if(type==='buy'||type==='remove')this.model=beltStep(old,{type,id:Number(value)});else if(type==='freeze'||type==='checkout')this.model=beltStep(old,{type});
-  if(this.model.cart.length>old.cart.length){const last=this.model.cart[this.model.cart.length-1];if(!this.model.combo)haptics.cue('error');this.pop(210,398,last.expired?'ПРОСРОЧЕНО!':this.model.snatched>old.snatched?'УВЁЛ У СОСЕДА!':this.model.combo?'СЕРИЯ '+this.model.combo+'!':'ЛИШНЕЕ',this.model.combo?'#286b56':'#aa4933');}else if(this.model.taken.length>old.taken.length)this.pop(210,398,'АКЦИЯ! −'+(beltCost(old)-beltCost(this.model))+' МОНЕТ','#9b5725');
-  this.draw();this.moveCards();if(this.model.status==='won')this.result();else this.sync();
+ protected pause(){this.held.clear();this.model=hold(this.model,0);super.pause();}
+ protected key(e:KeyboardEvent){if(keys[e.code]===undefined)return;e.preventDefault();this.held.add(e.code);this.model=hold(this.model,[...this.held].reduce((n,c)=>n+keys[c],0));}
+ action(id:string){if(!this.running)return;if(id==='left'||id==='right')this.model=aim(this.model,this.model.cartX+(id==='left'?-90:90));}
+ private drawStatic(){
+  this.box(210,28,420,56,0x274e49);this.header=this.text(15,10,'',13,'#fff3d6');
+  this.box(210,76,420,40,0xfff6e0);this.budget=this.text(405,76,'',13,'#293a34').setOrigin(1,.5);
+  this.box(210,308,420,424,0xd8e6d9);
+  // Shelves behind the falling goods.
+  for(const y of [118,170])this.box(210,y,420,8,0xb6a27e,0x8a7656);
+  this.box(210,CART_Y+40,420,28,0x455c54);
+  const g=this.add.graphics();g.fillStyle(0xf1bb64);g.lineStyle(3,0x293a34);g.beginPath();g.moveTo(-CART_HALF,-18);g.lineTo(CART_HALF,-18);g.lineTo(CART_HALF-10,16);g.lineTo(-CART_HALF+10,16);g.closePath();g.fillPath();g.strokePath();
+  g.lineStyle(2,0x293a34);for(const x of [-24,0,24])g.lineBetween(x,-18,x*.8,16);g.fillStyle(0x293a34);g.fillCircle(-26,22,6);g.fillCircle(26,22,6);g.lineStyle(4,0x293a34);g.lineBetween(CART_HALF,-18,CART_HALF+12,-30);
+  this.cartLoad=this.add.text(0,-34,'',{fontFamily:'Arial',fontSize:'12px',fontStyle:'bold',color:'#293a34',backgroundColor:'#fff6e0',padding:{x:4,y:1},resolution:2}).setOrigin(.5);
+  this.cartBody=this.add.container(this.model.cartX,CART_Y,[g,this.cartLoad]).setDepth(20);this.root.add(this.cartBody);
+  this.banner=this.text(210,300,'',22,'#fff3d6',true).setBackgroundColor('#274e49').setPadding(14,10,14,10).setDepth(40).setVisible(false);
+  this.drawList();
  }
- private result(){const s=this.model,win=s.status==='won';if(!win){this.finish(false,'Лента уехала. Ужин — не весь.',beltCount(s)+' из 5 продуктов. Используй стоп-ленту и возвращай лишнее. Продукты появляются снова.');return;}const saved=saveBest('shop-best',s.score);const stars=beltRating(s);this.finish(true,'★'.repeat(stars)+'☆'.repeat(3-stars)+' Ужин пойман! '+s.score+' очков','Пять продуктов за '+beltCost(s)+' монет. Сэкономлено '+s.savings+' монет (+'+s.savings*5+'), запас времени +'+s.timeBonus+', лучшая серия '+s.best+'. '+(s.medals.length?'Медали: '+s.medals.join(', ')+' (+'+s.medals.length*MEDAL_POINTS+'). ':'Медалей нет — попробуй без лишних покупок, быстрее 30 секунд, на двух акциях или увести у соседа два товара. ')+(saved.record?'Новый личный рекорд!':'Рекорд: '+saved.best+'.'));}
- protected sync(){this.view={status:'playing',title:beltCount(this.model)+' / 5 · '+beltCost(this.model)+' / 35 монет · серия '+this.model.combo,detail:this.model.notice,actions:[...this.visible().map((o,i)=>({id:'buy:'+o.id,label:(i+1)+'. '+products[o.product].name+' · '+o.price+(o.sale?' · АКЦИЯ':'')+(o.expired?' · ПРОСРОЧЕНО':'')+(o.rival&&o.x<RIVAL_WARN_X?' · СОСЕД!':'')})),{id:'freeze',label:'Стоп-лента · '+this.model.freezes,disabled:this.model.freezes===0||this.model.freeze>0},...this.model.cart.map(p=>({id:'remove:'+p.offer,label:'Убрать: '+products[p.product].name+' #'+p.offer})),{id:'checkout',label:beltReady(this.model)?'Оплатить → +'+Math.floor((BELT_MS-this.model.elapsed)/1000)*3:'Касса: '+beltCount(this.model)+' / 5',disabled:!beltReady(this.model)}]};this.bridge.publish(this.view);}
- private draw(){this.clear();this.rollers=[];const s=this.model;
-  this.box(210,32,420,64,0x274e49);this.text(15,12,'ЛОВИ УЖИН / СЕРИЯ '+s.combo,14,'#fff3d6');this.clock=this.text(405,39,'',17,'#ffe0a4').setOrigin(1,.5);
-  recipe.forEach((r,i)=>{const got=s.cart.some(p=>!p.expired&&products[p.product].key===r.key);this.box(43+i*83,86,78,36,got?0xb8d9bd:0xfff6e0);this.text(43+i*83,86,(got?'✓ ':'○ ')+r.name,10,'#293a34',true);});
-  this.banner=this.text(210,128,'',13,'#785438',true);this.box(210,263,420,214,0xc3d6c6);this.box(210,352,420,26,0x455c54);
-  for(let i=0;i<16;i++)this.rollers.push(this.box(i*30,352,8,20,0x91a494,0x91a494));
-  this.box(210,439,400,128,0xe5d6b6);this.text(22,380,'КОРЗИНА · ЛИШНЕЕ ВЕРНИ НАЖАТИЕМ',10);this.text(397,399,beltCost(s)+' / 35',17,beltCost(s)>35?'#ac412c':'#293a34').setOrigin(1,0);
-  s.cart.forEach((p,i)=>{const x=39+i%5*82,y=433+Math.floor(i/5)*43;const image=this.image(x,y,'products',products[p.product].icon,35,35).setInteractive({useHandCursor:true});this.text(x,y+15,p.expired?'ПРОСР.':(p.price??products[p.product].price)+'',9,p.expired?'#ac412c':p.price!==undefined&&p.price<products[p.product].price?'#ac412c':'#6b5a3c',true);image.on('pointerup',()=>this.action('remove:'+p.offer));this.text(x+21,y-12,'×',14,'#a23e2b',true);});
-  if(!s.cart.length)this.text(210,456,'ТАЩИ ПОКУПКИ СЮДА ↓',15,'#897751',true);
-  this.button(105,534,190,37,'СТОП-ЛЕНТА · '+s.freezes,()=>this.action('freeze'),0xb8d9cd);this.button(310,534,190,37,beltReady(s)?'ОПЛАТИТЬ →':'КАССА · '+beltCount(s)+' / 5',()=>this.action('checkout'),beltReady(s)?0xf1bb64:0xe3d4bb);this.refresh();
+ private drawList(){
+  this.chips.forEach(c=>c.destroy());const lv=level(this.model);this.drawnLevel=this.model.level;
+  this.chips=lv.list.map((_,i)=>this.text(14+i*(320/lv.list.length),76,'',11,'#293a34').setOrigin(0,.5));
+  this.refreshHud();
  }
- private moveCards(){const offers=beltOffers(this.model);const live=new Set(offers.map(o=>o.id));
-  for(const [id,c] of this.cards)if(!live.has(id)&&id!==this.held){c.destroy();this.cards.delete(id);}
-  for(const offer of offers){let c=this.cards.get(offer.id);if(!c){const p=products[offer.product];const panel=this.add.rectangle(0,0,116,170,offer.sale?0xffe08a:offer.expired?0xe9e3d3:0xfff7e3).setStrokeStyle(offer.sale?3:2,offer.sale?0xc4552d:0x293a34);const image=this.add.image(0,-15,'products',p.icon);image.setScale(Math.min(75/image.width,80/image.height));const label=this.add.text(0,-72,offer.sale?'АКЦИЯ −50%':p.label,{fontFamily:'Arial',fontSize:offer.sale?'11px':'8px',fontStyle:offer.sale?'bold':'normal',color:offer.sale?'#c4552d':'#825b39',resolution:2}).setOrigin(.5);const title=this.add.text(0,40,p.name,{fontFamily:'Arial',fontSize:'11px',fontStyle:'bold',color:'#293a34',align:'center',wordWrap:{width:108},resolution:2}).setOrigin(.5);const price=this.add.text(offer.sale?14:0,67,offer.price+' монет',{fontFamily:'Arial',fontSize:'15px',fontStyle:'bold',color:offer.sale?'#c4552d':'#80512b',resolution:2}).setOrigin(.5);const parts:Phaser.GameObjects.GameObject[]=[panel,image,label,title,price];if(offer.sale){const old=this.add.text(-36,67,p.price+'',{fontFamily:'Arial',fontSize:'12px',color:'#7d6a4c',resolution:2}).setOrigin(.5);parts.push(old,this.add.rectangle(-36,67,18,2,0xc4552d));}if(offer.expired)parts.push(this.add.text(0,-12,'ПРОСРОЧЕНО',{fontFamily:'Arial',fontSize:'15px',fontStyle:'bold',color:'#c4302b',backgroundColor:'#fff7e3cc',padding:{x:4,y:2},resolution:2}).setOrigin(.5).setAngle(-18));if(offer.rival){const sleeve=this.add.rectangle(18,-130,26,50,0x7a4b8c).setStrokeStyle(2,0x293a34);const hand=this.add.circle(18,-110,15,0xf0ba94).setStrokeStyle(2,0x293a34);const warn=this.add.text(0,-72,'СОСЕД ХВАТАЕТ!',{fontFamily:'Arial',fontSize:'11px',fontStyle:'bold',color:'#fff7e3',backgroundColor:'#c4302b',padding:{x:4,y:2},resolution:2}).setOrigin(.5);for(const o of [sleeve,hand,warn])o.setVisible(false);parts.push(sleeve,hand,warn);}c=this.add.container(offer.x,255,parts).setDepth(10).setSize(116,170).setInteractive(new Phaser.Geom.Rectangle(0,0,116,170),Phaser.Geom.Rectangle.Contains);c.setData('offer',offer.id);c.setData('rival',offer.rival);this.input.setDraggable(c);c.on('pointerup',()=>{if(this.held===null)this.action('buy:'+offer.id);});this.cards.set(offer.id,c);}if(offer.id!==this.held)c.setX(offer.x);if(offer.rival){const reach=Phaser.Math.Clamp((RIVAL_WARN_X-offer.x)/(RIVAL_WARN_X-RIVAL_GRAB_X),0,1);const [sleeve,hand,warn]=c.list.slice(-3) as [Phaser.GameObjects.Rectangle,Phaser.GameObjects.Arc,Phaser.GameObjects.Text];const show=reach>0&&offer.id!==this.held;sleeve.setVisible(show).setY(-135+reach*35);hand.setVisible(show).setY(-105+reach*35);warn.setVisible(show).setAlpha(this.reduced?1:.6+.4*Math.abs(Math.sin(this.model.elapsed/120)));}}
+ private refreshHud(){
+  const s=this.model,lv=level(s);
+  this.header.setText(`${s.level+1}/${LEVELS.length} · ${lv.name.toUpperCase()}   ${Math.max(0,Math.ceil((lv.ms-s.levelTime)/1000))} С   ★ ${s.score}\n${'♥'.repeat(Math.max(0,s.lives))}${'♡'.repeat(Math.max(0,3-s.lives))}   СЕРИЯ ${s.combo}`);
+  lv.list.forEach((key,i)=>{const got=s.cart.some(p=>products[p.product].key===key);const name=recipe.find(r=>r.key===key)!.name;this.chips[i]?.setText(`${got?'✓':'○'} ${name}`).setColor(got?'#286b56':'#293a34');});
+  const cost=cartCost(s);this.budget.setText(`${cost} / ${lv.budget}`).setColor(cost>lv.budget-4?'#ac412c':'#293a34');
+  this.cartLoad.setText(`${s.cart.length} / ${lv.list.length}`);
  }
- private refresh(){const s=this.model;this.clock.setText(Math.ceil((BELT_MS-s.elapsed)/1000)+' С · '+s.score+' ОЧКОВ');this.banner.setText(rivalReaching(s).length?'СОСЕД ТЯНЕТСЯ К ТОВАРУ! ХВАТАЙ ПЕРВЫМ!':s.freeze>0?'❄ СТОП-ЛЕНТА · '+Math.ceil(s.freeze/1000)+' С':beltOffers(s).some(o=>o.sale&&o.x>0&&o.x<420)?'АКЦИЯ НА ЛЕНТЕ! ДЕШЁВАЯ КОПИЯ ЗАМЕНИТ ДОРОГУЮ':beltReady(s)?'ВСЁ ЕСТЬ! ОПЛАТИ СЕЙЧАС: +'+Math.floor((BELT_MS-s.elapsed)/1000)*3+' ЗА ВРЕМЯ':s.elapsed<30000?'ЛОВИ НУЖНОЕ. РЕКЛАМУ ПРОПУСКАЙ.':s.elapsed<45000?'ЛЕНТА УСКОРЯЕТСЯ!':'ФИНАЛЬНЫЙ РАЗГОН!');this.rollers.forEach((r,i)=>r.x=(i*30-this.model.distance%30));}
- update(_time:number,delta:number){if(!this.running)return;const oldPhase=beltSpeed(this.model.elapsed);const stolen=this.model.stolen.length;this.model=beltStep(this.model,{type:'tick',delta:Math.min(50,delta)});if(this.model.stolen.length>stolen){haptics.cue('error');this.pop(140,170,'СОСЕД УТАЩИЛ!','#aa4933',false);this.sync();}this.moveCards();if(oldPhase!==beltSpeed(this.model.elapsed))this.draw();this.refresh();if(this.model.status!=='playing'){this.held=null;this.result();return;}if(this.model.elapsed-this.lastHud>=150){this.lastHud=this.model.elapsed;this.sync();}}
+ private syncItems(){
+  const live=new Set(this.model.items.map(i=>i.id));
+  for(const [id,c] of this.sprites)if(!live.has(id)){c.destroy();this.sprites.delete(id);}
+  for(const item of this.model.items){
+   let c=this.sprites.get(item.id);
+   if(!c){
+    const p=products[item.product];const image=this.add.image(0,0,'products',p.icon);image.setScale(Math.min(58/image.width,62/image.height));
+    const parts:Phaser.GameObjects.GameObject[]=[image];
+    if(item.sale)parts.push(this.add.text(0,-34,'−50%',{fontFamily:'Arial',fontSize:'12px',fontStyle:'bold',color:'#fff7e3',backgroundColor:'#c4552d',padding:{x:4,y:1},resolution:2}).setOrigin(.5));
+    if(item.expired)parts.push(this.add.text(0,4,'ПРОСРОЧЕНО',{fontFamily:'Arial',fontSize:'11px',fontStyle:'bold',color:'#c4302b',backgroundColor:'#fff7e3dd',padding:{x:3,y:1},resolution:2}).setOrigin(.5).setAngle(-18));
+    c=this.add.container(item.x,item.y,parts).setDepth(10);this.sprites.set(item.id,c);
+   }
+   c.setPosition(item.x,item.y).setAngle(this.reduced?0:Math.sin((item.y+item.id*40)/40)*8);
+  }
+ }
+ private react(){
+  for(const e of this.model.events){
+   const bad=e.type==='slip'||e.type==='timeout';if(bad)haptics.cue('error');
+   if(e.type==='clear'){this.flash(e.label);continue;}
+   this.pop(Math.max(60,Math.min(WIDTH-60,e.x)),CART_Y-60,e.type==='slip'?'МИНУС ЖИЗНЬ':e.label,bad?'#aa4933':e.type==='swap'?'#9b5725':'#286b56',e.type!=='dup');
+   if(bad&&!this.reduced)this.cameras.main.shake(140,.006);
+  }
+ }
+ private flash(label:string){this.banner.setText(label).setVisible(true).setAlpha(1);this.tweens.killTweensOf(this.banner);this.tweens.add({targets:this.banner,alpha:0,delay:1200,duration:400,onComplete:()=>this.banner.setVisible(false)});}
+ private result(){const s=this.model;if(s.status==='lost'){this.finish(false,'Магазин закрылся. Ужин — не весь.',`Дошёл до списка «${level(s).name}». Лови только то, что в списке, следи за бюджетом и не хватай просрочку. Дешёвая копия по акции спасает от перерасхода.`);return;}
+  const saved=saveBest('shop-best',s.score),stars=cartRating(s);
+  this.finish(true,`${'★'.repeat(stars)}${'☆'.repeat(3-stars)} Всё куплено! ${s.score} очков`,`Три списка за ${(s.cleared.reduce((n,c)=>n+c.time,0)/1000).toFixed(0)} с, жизней осталось ${s.lives}, лучшая серия ${s.best}. ${s.medals.length?'Медали: '+s.medals.join(', ')+' (+'+s.medals.length*MEDAL_POINTS+'). ':'Медали: без промахов, две акции, все списки за 45 с, серия из 10. '}${saved.record?'Новый личный рекорд!':'Рекорд: '+saved.best+'.'}`);}
+ protected sync(){const s=this.model,lv=level(s);this.view={status:'playing',title:`Список ${s.level+1}/${LEVELS.length} «${lv.name}» · ${cartCost(s)} / ${lv.budget} монет · ★ ${s.score}`,detail:s.notice,actions:[{id:'left',label:'← Тележку влево'},{id:'right',label:'Тележку вправо →'}]};this.bridge.publish(this.view);}
+ update(_time:number,delta:number){
+  if(!this.running)return;
+  const before=this.model;this.model=tickCart(this.model,Math.min(50,delta));
+  this.react();if(this.model.level!==this.drawnLevel)this.drawList();
+  this.cartBody.setX(this.model.cartX).setAngle(this.reduced?0:Phaser.Math.Clamp((this.model.cartX-before.cartX)*.8,-6,6));
+  this.syncItems();this.refreshHud();
+  if(this.model.status!=='playing'){this.result();return;}
+  if(this.model.time-this.lastHud>=150||this.model.events.length){this.lastHud=this.model.time;this.sync();}
+ }
 }
-

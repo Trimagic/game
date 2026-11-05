@@ -1,56 +1,69 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {precisionInitial,preciseAction,needle,inGreen,activeSplash,splashPlan,cookRating,SPLASH_MS,PREP_PAR,type PrecisionCook} from '../src/cook/precision.ts';
-import {nextTask,phoneActive,type Station} from '../src/cook/model.ts';
-test('Full kitchen round supports all precision actions, phone, plating and victory',()=>{
- let s=precisionInitial();for(let n=0;n<6;n++)s=preciseAction(s,{type:'cut'});s=preciseAction(s,{type:'start'});
- while(s.cook.stage==='stove'){
-  if(phoneActive(s.cook))s=preciseAction(s,{type:'dismiss'});
-  if(activeSplash(s)>=0)s=preciseAction(s,{type:'splash'});
-  for(const station of ['pan','pot'] as Station[]){const task=nextTask(s.cook,station);if(task&&s.cook.elapsed>=task.at&&inGreen(needle(s.cook.elapsed,station)))s=preciseAction(s,{type:'act',station});}
-  s=preciseAction(s,{type:'tick',delta:50});
+import {precisionInitial,preciseAction,cookRating,PREP_PAR,type PrecisionCook} from '../src/cook/precision.ts';
+import {actStove,answerPhone,createStove,DISHES,finished,heat,PERFECT,PHONE_MS,READY,ready,tickStove,BURN_RESET,type Stove} from '../src/cook/stove.ts';
+
+function prepared(seed?:number,cutMs=1200,precise=true){
+ let s=precisionInitial(seed);
+ for(let n=0;n<6;n++){for(let t=0;t<cutMs;t+=100)s=preciseAction(s,{type:'tick',delta:100});s=preciseAction(s,{type:'cut',precise});}
+ return preciseAction(s,{type:'start'});
+}
+function cook(s:PrecisionCook,skill:'sharp'|'sloppy'){
+ for(let i=0;i<4000&&s.cook.stage==='stove';i++){
+  if(s.stove.phone==='ringing'&&(skill==='sharp'||s.stove.time>s.stove.phoneAt+2))s=preciseAction(s,{type:'answer'});
+  s.stove.burners.forEach((b,j)=>{if(ready(s.stove,j)&&(skill==='sharp'?b.progress>=(PERFECT[0]+PERFECT[1])/2:b.progress>=.95))s=preciseAction(s,{type:'burner',index:j});});
+  s=preciseAction(s,{type:'tick',delta:25});
  }
- assert.equal(s.cook.stage,'plate');assert.equal(s.cook.mistakes,0);assert.equal(s.best,9);assert.ok(s.cook.dismissed);
- for(let part=0;part<3;part++)s=preciseAction(s,{type:'plate',part});s=preciseAction(s,{type:'serve'});assert.equal(s.cook.stage,'won');assert.ok(s.quality>=160);
+ for(let part=0;part<3;part++)s=preciseAction(s,{type:'plate',part});
+ return preciseAction(s,{type:'serve'});
+}
+
+test('Dishes fill, wait in a ready window and burn if ignored',()=>{
+ let s=createStove();assert.equal(ready(s,0),false);
+ while(!ready(s,0))s=tickStove(s,.05);assert.ok(s.burners[0].progress>=READY);
+ let burnt=s;while(burnt.mistakes===0)burnt=tickStove(burnt,.05);
+ assert.equal(burnt.burners[0].progress<BURN_RESET+.1,true);assert.equal(burnt.burners[0].burns,1);assert.equal(burnt.combo,0);
+ assert.ok(burnt.events.some(e=>e.type==='burn'&&e.burner===0));
 });
-test('Off-beat input is retryable, cannot award points repeatedly, and phone blocks actions',()=>{
- let s=precisionInitial();for(let n=0;n<6;n++)s=preciseAction(s,{type:'cut'});s=preciseAction(s,{type:'start'});
- s={...s,cook:{...s.cook,elapsed:8500}};const failed=preciseAction(s,{type:'act',station:'pan'});assert.equal(failed.quality,s.quality);assert.equal(failed.cook.results['pan-first'],undefined);
- s={...s,cook:{...s.cook,elapsed:8925}};s=preciseAction(s,{type:'act',station:'pan'});assert.equal(s.cook.results['pan-first'],'done');const score=s.quality;s=preciseAction(s,{type:'act',station:'pan'});assert.equal(s.quality,score);
- s={...s,cook:{...s.cook,elapsed:27000}};assert.equal(preciseAction(s,{type:'act',station:'pot'}),s);
+test('Pressing early only breaks the streak; pressing in time advances the dish',()=>{
+ let s:Stove={...createStove(),combo:4};s={...s,burners:s.burners.map((b,i)=>i===0?{...b,delay:0,progress:.3}:b)};
+ const early=actStove(s,0);assert.equal(early.combo,0);assert.equal(early.burners[0].step,0);assert.equal(early.mistakes,0);
+ const perfect=actStove({...s,burners:s.burners.map((b,i)=>i===0?{...b,progress:.85}:b)},0);
+ assert.equal(perfect.burners[0].step,1);assert.equal(perfect.burners[0].progress,0);assert.equal(perfect.gained,30);assert.equal(perfect.combo,5);
+ const late=actStove({...s,burners:s.burners.map((b,i)=>i===0?{...b,progress:.97}:b)},0);assert.equal(late.gained,20);
+});
+test('Finishing every step on all burners ends cooking; three burns lose',()=>{
+ let s=createStove();s={...s,burners:s.burners.map((b,i)=>({...b,delay:0,step:DISHES[i].steps.length-1,progress:.85}))};
+ s=actStove(s,0);s=actStove(s,1);assert.equal(s.status,'cooking');assert.ok(finished(s,0));assert.equal(actStove(s,0),s);
+ s=actStove(s,2);assert.equal(s.status,'done');
+ let lost:Stove={...createStove(),mistakes:2,burners:createStove().burners.map((b,i)=>i===0?{...b,delay:0,progress:.999}:b)};
+ lost=tickStove(lost,.05);assert.equal(lost.status,'lost');assert.deepEqual(tickStove(lost,1),lost);
+});
+test('The phone blocks the hands until answered and gives up after a while',()=>{
+ let s=createStove();while(s.phone==='off')s=tickStove({...s,burners:s.burners.map(b=>({...b,progress:0}))},.05);assert.equal(s.phone,'ringing');
+ const busy={...s,burners:s.burners.map((b,i)=>i===0?{...b,delay:0,progress:.85}:b)};
+ assert.equal(actStove(busy,0).burners[0].step,0);
+ const answered=answerPhone(busy);assert.equal(answered.phone,'answered');assert.equal(answered.gained,10);assert.equal(actStove(answered,0).burners[0].step,1);
+ let missed=s;for(let t=0;t<PHONE_MS+.2;t+=.05)missed=tickStove({...missed,burners:missed.burners.map(b=>({...b,progress:0}))},.05);assert.equal(missed.phone,'missed');
+});
+test('Seeds vary the stove and heat rises over time',()=>{
+ assert.notDeepEqual(createStove(1).burners,createStove(2).burners);assert.deepEqual(createStove(),createStove());
+ assert.ok(heat(30)>heat(0));for(let seed=1;seed<50;seed++){const s=createStove(seed);assert.ok(s.phoneAt>=9&&s.phoneAt<=14);}
+});
+test('Full kitchen round: fast precise prep, juggling, plating and victory',()=>{
+ for(const seed of [1,4,9,16]){
+  const s=cook(prepared(seed),'sharp');
+  assert.equal(s.cook.stage,'won',`seed ${seed}: ${s.feedback}`);assert.equal(s.stove.mistakes,0);assert.equal(s.stove.phone,'answered');
+  assert.equal(s.prepBonus,Math.round((PREP_PAR-7200)/250));assert.equal(cookRating(s.quality),3,`quality ${s.quality}`);
+ }
+});
+test('A sloppy cook still wins but earns fewer stars',()=>{
+ for(const seed of [2,5,11]){const s=cook(prepared(seed,3000,false),'sloppy');assert.equal(s.cook.stage,'won');assert.ok(cookRating(s.quality)<3,`quality ${s.quality}`);}
+});
+test('Ignoring the stove burns dinner and ends the round',()=>{
+ let s=prepared(3);for(let i=0;i<2000&&s.cook.stage==='stove';i++)s=preciseAction(s,{type:'tick',delta:50});
+ assert.equal(s.cook.stage,'lost');assert.equal(preciseAction(s,{type:'burner',index:0}),s);
 });
 test('Invalid and duplicate plating never increases mastery',()=>{
  let s=precisionInitial();s={...s,cook:{...s.cook,stage:'plate'}};s=preciseAction(s,{type:'plate',part:0});const score=s.quality;s=preciseAction(s,{type:'plate',part:0});s=preciseAction(s,{type:'plate',part:9});assert.equal(s.quality,score);
-});
-function play(seed:number,skill:'sharp'|'sloppy'){
- let s:PrecisionCook=precisionInitial(seed);
- for(let n=0;n<6;n++){for(let t=0;t<(skill==='sharp'?1200:3000);t+=100)s=preciseAction(s,{type:'tick',delta:100});s=preciseAction(s,{type:'cut',precise:skill==='sharp'});}
- s=preciseAction(s,{type:'start'});
- while(s.cook.stage==='stove'){
-  if(phoneActive(s.cook))s=preciseAction(s,{type:'dismiss'});
-  if(activeSplash(s)>=0&&(skill==='sharp'||s.cook.elapsed%2000<50))s=preciseAction(s,{type:'splash'});
-  for(const station of ['pan','pot'] as Station[]){const task=nextTask(s.cook,station);const v=needle(s.cook.elapsed,station);if(task&&s.cook.elapsed>=task.at&&(skill==='sharp'?v>=.45&&v<=.55:inGreen(v)&&s.cook.elapsed>task.until-2500))s=preciseAction(s,{type:'act',station});}
-  s=preciseAction(s,{type:'tick',delta:25});
- }
- for(let part=0;part<3;part++)s=preciseAction(s,{type:'plate',part});return preciseAction(s,{type:'serve'});
-}
-test('Fast precise prep earns more than slow sloppy prep',()=>{
- const fast=play(1,'sharp'),slow=play(1,'sloppy');
- assert.equal(fast.prepBonus,Math.round((PREP_PAR-7200)/250));assert.equal(slow.prepBonus,0);
- let s=precisionInitial();s=preciseAction(s,{type:'cut',precise:true});assert.equal(s.quality,10);s=preciseAction(s,{type:'cut'});assert.equal(s.quality,15);
- assert.equal(preciseAction(precisionInitial(),{type:'tick',delta:100}).prepMs,100);
-});
-test('Splashes reward a quick tap and missing one only resets the combo',()=>{
- let s=play(4,'sharp');assert.ok(Object.values(s.splashResults).every(r=>r==='done'));assert.equal(Object.keys(s.splashResults).length,4);
- let t=precisionInitial();for(let n=0;n<6;n++)t=preciseAction(t,{type:'cut'});t=preciseAction(t,{type:'start'});
- t={...t,combo:3,cook:{...t.cook,elapsed:t.splashes[0].at}};assert.ok(activeSplash(t)>=0);
- const caught=preciseAction(t,{type:'splash'});assert.equal(caught.quality,t.quality+15);assert.equal(preciseAction(caught,{type:'splash'}),caught);
- let missed=t;for(let ms=0;ms<SPLASH_MS;ms+=100)missed=preciseAction(missed,{type:'tick',delta:100});assert.equal(missed.combo,0);assert.equal(missed.cook.mistakes,0);assert.equal(missed.splashResults[0],'missed');
-});
-test('Seeded splashes avoid the phone call and the needle stays continuous when it speeds up',()=>{
- for(let seed=1;seed<=100;seed++)for(const p of splashPlan(seed))assert.ok(p.at+SPLASH_MS<=26_000||p.at>=31_000);
- assert.ok(Math.abs(needle(19_999,'pan')-needle(20_001,'pan'))<.01);
-});
-test('Rating separates a sharp cook from a sloppy one',()=>{
- for(const seed of [2,5,9]){const sharp=play(seed,'sharp'),sloppy=play(seed,'sloppy');assert.equal(sharp.cook.stage,'won');assert.equal(sloppy.cook.stage,'won');assert.equal(cookRating(sharp.quality),3,`sharp ${sharp.quality}`);assert.ok(cookRating(sloppy.quality)<3,`sloppy ${sloppy.quality}`);}
 });

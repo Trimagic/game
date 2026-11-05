@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { advancePool, BOSS_DARTS, createPoolState, DART_WARN, GAP_Y, PLAYER_X, poolRating, ROUND_MS, SOAP_FOR_SHIELD, type PoolState } from '../src/pool/model.ts';
+import { advancePool, BOSS_DARTS, createPoolState, DART_WARN, GAP_Y, PLAYER_X, poolRating, TOP, BOTTOM, WALL_BOUNCE, ROUND_MS, SOAP_FOR_SHIELD, type PoolState } from '../src/pool/model.ts';
 
 function rng(seed: number) {
   let a = seed >>> 0;
@@ -21,12 +21,22 @@ function bot(state: PoolState) {
   return best(0);
 }
 
-test('swimmer responds to hold and stays inside pool', () => {
-  const state = createPoolState();
-  for (let i=0;i<50;i++) advancePool(state, 20, true, () => 1);
-  assert.ok(Math.abs(state.y - 110) < 1e-8);
-  for (let i=0;i<400;i++) advancePool(state, 20, false, () => 0);
-  assert.equal(state.y,530);
+test('touching either pool edge costs a life and bounces the swimmer back', () => {
+  const top = createPoolState();
+  for (let i=0;i<100&&top.lives===3;i++) advancePool(top, 20, true, () => 1);
+  assert.equal(top.lives,2); assert.equal(top.y,TOP+WALL_BOUNCE); assert.ok(top.events.includes('wall')); assert.equal(top.invincible,1500);
+  const bottom = createPoolState();
+  for (let i=0;i<100&&bottom.lives===3;i++) advancePool(bottom, 20, false, () => 0);
+  assert.equal(bottom.lives,2); assert.equal(bottom.y,BOTTOM-WALL_BOUNCE);
+  // While still blinking, the edge only stops the swimmer.
+  for (let i=0;i<20;i++) advancePool(bottom, 20, false, () => 0);
+  assert.equal(bottom.lives,2); assert.ok(bottom.y<=BOTTOM);
+});
+test('the bubble shield absorbs a wall hit and the third hit loses', () => {
+  const s = { ...createPoolState(), shield: true, y: TOP + 1 };
+  advancePool(s, 20, true, () => 1); assert.equal(s.lives,3); assert.equal(s.shield,false); assert.ok(s.events.includes('block'));
+  const last = { ...createPoolState(), lives: 1, y: BOTTOM - 1 };
+  advancePool(last, 20, false, () => 0); assert.equal(last.status,'lost');
 });
 test('boss appears at end, each wave leaves a reachable opening with soap in it', () => {
   const state = createPoolState(); state.elapsed = 31_980; state.y = GAP_Y[1];

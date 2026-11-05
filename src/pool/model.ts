@@ -4,6 +4,9 @@ export const PRE_BOSS_MS = 27_000;
 export const PLAYER_X = 78;
 export const GAP_Y = [135, 255, 375, 495];
 export const SOAP_FOR_SHIELD = 4;
+export const TOP = 100;
+export const BOTTOM = 530;
+export const WALL_BOUNCE = 70;
 export const DART_WARN = 750;
 export const BOSS_DARTS = [33_500, 36_500, 39_500];
 export const phases = [
@@ -14,7 +17,7 @@ export const phases = [
 export type HazardKind = 'float' | 'bob' | 'dart' | 'wave';
 export type PoolHazard = { id: number; x: number; y: number; boss: boolean; kind?: HazardKind; baseY?: number; warn?: number };
 export type Soap = { id: number; x: number; y: number; speed: number };
-export type PoolEvent = 'soap' | 'shield' | 'block' | 'hit';
+export type PoolEvent = 'soap' | 'shield' | 'block' | 'hit' | 'wall';
 export type PoolState = {
   elapsed: number; y: number; lives: number; invincible: number;
   hazards: PoolHazard[]; nextSpawn: number; nextWave: number;
@@ -64,8 +67,18 @@ export function advancePool(state: PoolState, delta: number, up: boolean, random
   if (state.status !== 'playing') return;
   const dt = Math.max(0, Math.min(delta, 50));
   state.elapsed += dt;
-  state.y = Math.max(100, Math.min(530, state.y + (up ? -205 : 150) * dt / 1000));
+  state.y = Math.max(TOP, Math.min(BOTTOM, state.y + (up ? -205 : 150) * dt / 1000));
   state.invincible = Math.max(0, state.invincible - dt);
+  if (state.invincible === 0 && (state.y <= TOP || state.y >= BOTTOM)) {
+    // The pool edge hurts like a hazard; the swimmer bounces back into open water.
+    state.y = state.y <= TOP ? TOP + WALL_BOUNCE : BOTTOM - WALL_BOUNCE;
+    state.events.push('wall');
+    if (state.shield) { state.shield = false; state.invincible = 1000; state.events.push('block'); }
+    else {
+      state.lives--; state.invincible = 1500; state.events.push('hit');
+      if (state.lives === 0) { state.status = 'lost'; return; }
+    }
+  }
   if (state.elapsed >= state.nextSpawn && state.elapsed < PRE_BOSS_MS) {
     spawnHazard(state, random);
     state.nextSpawn += [1300, 1150, 1000][phaseAt(state.elapsed)];

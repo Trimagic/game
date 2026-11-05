@@ -2,7 +2,7 @@ import {SoundButton,useSound} from '../audio/useSound';
 import {sound} from '../audio/sound';
 import { useEffect, useRef, useState } from 'react';
 import { saveBest } from '../best';
-import { advancePool, BOSS_MS, createPoolState, phaseAt, phases, PLAYER_X, poolRating, PRE_BOSS_MS, ROUND_MS, SOAP_FOR_SHIELD } from './model';
+import { advancePool, BOTTOM, TOP, BOSS_MS, createPoolState, phaseAt, phases, PLAYER_X, poolRating, PRE_BOSS_MS, ROUND_MS, SOAP_FOR_SHIELD } from './model';
 
 type Status = 'loading' | 'playing' | 'paused' | 'lost' | 'won' | 'error';
 type Result = { score: number; collected: number; spawned: number; lives: number; stars: number; best: number; record: boolean };
@@ -34,6 +34,7 @@ export default function PoolGame({ onWin, onExit }: { onWin: () => void; onExit:
         private warning!: import('phaser').GameObjects.Text;
         private waveText!: import('phaser').GameObjects.Text;
         private foam: import('phaser').GameObjects.Arc[] = [];
+        private edges: import('phaser').GameObjects.Rectangle[] = [];
         private images = new Map<number, import('phaser').GameObjects.Image>();
         private alerts = new Map<number, import('phaser').GameObjects.Text>();
         private soaps = new Map<number, import('phaser').GameObjects.Container>();
@@ -64,6 +65,8 @@ export default function PoolGame({ onWin, onExit }: { onWin: () => void; onExit:
           }
           for (const y of [75, 553]) for (let x = 8; x < 360; x += 18) this.add.circle(x, y, 6, x % 36 === 8 ? 0xffebc4 : 0xde7552).setStrokeStyle(1, 0x273e36);
           for (let i = 0; i < 22; i++) this.foam.push(this.add.circle(Phaser.Math.Between(0,360), Phaser.Math.Between(95,530), Phaser.Math.Between(2,5), 0xe1ffff, .5));
+          // Both pool edges are dangerous now; a faint red strip marks them.
+          this.edges = [TOP - 14, BOTTOM + 14].map(y => this.add.rectangle(180, y, 360, 12, 0xd9473a, .55).setDepth(2));
           this.add.text(14, 44, 'ДОРОЖКА № 2', { fontFamily:'sans-serif',fontSize:'10px',color:'#dcfff8' });
           this.swimmer = this.add.image(PLAYER_X, this.model.y, 'pool-cast', 0).setDepth(5);
           this.swimmer.setScale(116 / this.swimmer.width);
@@ -111,6 +114,12 @@ export default function PoolGame({ onWin, onExit }: { onWin: () => void; onExit:
           for (const event of model.events) {
             if (event === 'soap' && model.score > this.scoreSeen) this.float(`+${model.score - this.scoreSeen}`, PLAYER_X + 30, model.y - 35, '#ffd6e3');
             if (event === 'shield') { this.banner('Пенный щит!', '#2a8c96'); sound.cue('jump'); }
+            if (event === 'wall') {
+              const edge = this.edges[model.y < 315 ? 0 : 1];
+              this.tweens.killTweensOf(edge); edge.setAlpha(1);
+              this.tweens.add({ targets: edge, alpha: .55, duration: 600 });
+              this.float('Бортик!', 180, model.y < 315 ? TOP + 20 : BOTTOM - 20, '#ffd2c8', 20);
+            }
             if (event === 'block') {
               this.float('Щит лопнул!', 180, model.y - 50, '#e1ffff', 20); sound.cue('hit');
               const ring = this.add.circle(PLAYER_X, model.y, 50).setStrokeStyle(4, 0xffffff).setDepth(7);
@@ -209,13 +218,13 @@ export default function PoolGame({ onWin, onExit }: { onWin: () => void; onExit:
         <button onClick={onWin}>Дальше →</button>
         <button className="text-button" onClick={() => setAttempt(n => n + 1)}>Ещё заплыв за рекорд</button>
       </div></div>}
-      {status !== 'playing' && status !== 'won' && <div className="game-overlay" role="status"><div><span className="eyebrow">{hud.boss ? 'КАКУН НЕ ДРЕМЛЕТ' : 'АБОНЕМЕНТ БЕЗ ВОЗВРАТА'}</span><h2>{status === 'loading' ? 'Наполняем бассейн…' : status === 'paused' ? 'Перерыв на бортике' : status === 'lost' ? 'Заплыв не задался.' : 'Не удалось загрузить бассейн'}</h2><p>{status === 'lost' ? `Продержался ${hud.seconds} с. Собирай мыло: четыре куска дают пенный щит. Красный «!» у бортика — сейчас прилетит торпеда.` : status === 'paused' ? 'Всё замерло. Даже Какун.' : status === 'error' ? 'Проверь подключение и попробуй снова.' : 'Готовим пловца и его неприятности.'}</p>
+      {status !== 'playing' && status !== 'won' && <div className="game-overlay" role="status"><div><span className="eyebrow">{hud.boss ? 'КАКУН НЕ ДРЕМЛЕТ' : 'АБОНЕМЕНТ БЕЗ ВОЗВРАТА'}</span><h2>{status === 'loading' ? 'Наполняем бассейн…' : status === 'paused' ? 'Перерыв на бортике' : status === 'lost' ? 'Заплыв не задался.' : 'Не удалось загрузить бассейн'}</h2><p>{status === 'lost' ? `Продержался ${hud.seconds} с. Собирай мыло: четыре куска дают пенный щит. Красный «!» у края — сейчас прилетит торпеда. Бортики тоже опасны: не касайся верха и дна.` : status === 'paused' ? 'Всё замерло. Даже Какун.' : status === 'error' ? 'Проверь подключение и попробуй снова.' : 'Готовим пловца и его неприятности.'}</p>
       {status === 'paused' && <button onClick={pause}>Продолжить →</button>}
       {(status === 'lost' || status === 'error') && <button onClick={() => setAttempt(n => n + 1)}>Попробовать снова →</button>}
       <button className="text-button" onClick={onExit}>К истории</button></div></div>}
     </div>
     <div className="ride-controls"><button className="swim-hold" disabled={status !== 'playing'} onPointerDown={e => { e.currentTarget.setPointerCapture(e.pointerId); controls.current?.hold(true); }} onPointerUp={() => controls.current?.hold(false)} onPointerCancel={() => controls.current?.hold(false)} onLostPointerCapture={() => controls.current?.hold(false)} onContextMenu={e => e.preventDefault()}>↑ Удерживай — плыви вверх</button></div>
-    <p className="control-hint">Отпусти — вниз · Пробел / ↑ · 4 мыла = пенный щит</p>
+    <p className="control-hint">Отпусти — вниз · Не касайся бортиков · Пробел / ↑ · 4 мыла = щит</p>
     <button className="text-button" onClick={onExit}>Выйти из заплыва</button>
   </section>;
 }
