@@ -1,7 +1,8 @@
 import { readFile } from 'node:fs/promises';
 import { spawn } from 'node:child_process';
 
-const gameUrl = 'https://telegram-comic-game.nick-pavlovski.workers.dev/';
+const gameUrl = process.argv[2];
+if (!gameUrl || new URL(gameUrl).protocol !== 'https:') throw new Error('Pass the deployed HTTPS game URL as the first argument');
 const vars = await readFile(new URL('../.dev.vars', import.meta.url), 'utf8');
 const token = vars.match(/^BOT_TOKEN=(\d+:[A-Za-z0-9_-]+)\s*$/m)?.[1];
 if (!token) throw new Error('BOT_TOKEN is missing or invalid in .dev.vars');
