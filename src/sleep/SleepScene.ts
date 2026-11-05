@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import {BED,GOAL,MAP,initial,step,turn,type Direction,type State} from './model';
+import {BED,GOAL,MAP,MILK,initial,step,turn,type Direction,type State} from './model';
 
 export type SleepControls={choose:(direction:Direction)=>void;start:(retry:boolean)=>void;pause:()=>void};
 const CELL=24;
@@ -22,6 +22,7 @@ export default class SleepScene extends Phaser.Scene {
   private moons=new Map<string,Phaser.GameObjects.Container>();
   private bed!:Phaser.GameObjects.Rectangle;
   private bedLabel!:Phaser.GameObjects.Text;
+  private milk!:Phaser.GameObjects.Container;
   private swipe:{x:number;y:number;id:number}|null=null;
   private reducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   constructor(private publish:(state:State)=>void,private loaded:(controls:SleepControls)=>void,private paused:()=>void,private failed:()=>void){super('sleep');}
@@ -35,6 +36,7 @@ export default class SleepScene extends Phaser.Scene {
     this.bed=this.add.rectangle(BED.x*CELL+12,BED.y*CELL+12,22,20,0x8a8d9b);
     this.add.rectangle(BED.x*CELL+12,BED.y*CELL+6,16,5,0xfff7de);
     this.bedLabel=this.add.text(BED.x*CELL+12,BED.y*CELL+14,'600',{fontSize:'8px',color:'#172735'}).setOrigin(.5);
+    this.milk=this.add.container(MILK.x*CELL+12,MILK.y*CELL+12,[this.add.rectangle(0,2,13,16,0xfffaf0).setStrokeStyle(2,0x8a6a45),this.add.rectangle(0,-3,13,4,0xf3e2c0),this.add.rectangle(9,2,4,8,0xfffaf0).setStrokeStyle(2,0x8a6a45),this.add.text(0,-14,'~',{fontSize:'10px',color:'#fff6dc'}).setOrigin(.5)]).setDepth(3).setVisible(false);
     this.model.enemies.forEach((e,i)=>{
       const body=this.add.rectangle(0,0,20,20,colors[i]).setStrokeStyle(2,0x101e2a);
       const label=this.add.text(0,0,icons[i],{fontFamily:'sans-serif',fontSize:'14px',fontStyle:'bold',color:'#172735'}).setOrigin(.5);
@@ -67,10 +69,13 @@ export default class SleepScene extends Phaser.Scene {
     for(const [id,moon] of this.moons)moon.setVisible(powers.has(id));
     this.bed.setFillStyle(s.score>=GOAL?0x8ee2bf:0x8a8d9b);this.bedLabel.setVisible(s.score<GOAL);
     if(snap||!previous||s.pos.x!==previous.pos.x||s.pos.y!==previous.pos.y)this.move(this.player,s.pos.x*CELL+12,s.pos.y*CELL+12,snap||!!previous&&s.lives<previous.lives);
+    this.milk.setVisible(s.milk>0).setScale(this.reducedMotion?1:1+Math.sin(s.time*6)*.08).setAlpha(s.milk<2?.5+.5*Math.abs(Math.sin(s.time*8)):1);
+    if(previous&&s.bonus>previous.bonus)this.floatText(`+${s.bonus-previous.bonus}`,s.pos.x*CELL+12,s.pos.y*CELL);
     this.player.setAlpha(s.shield>0?.7:1);this.ring.setStrokeStyle(2,s.quiet>0?0x85ead5:0xfff6dc);
     this.direction.setPosition(s.dir==='left'?-11:s.dir==='right'?11:0,s.dir==='up'?-11:s.dir==='down'?11:0);
-    s.enemies.forEach((e,i)=>{const old=previous?.enemies[i];if(snap||!old||e.pos.x!==old.pos.x||e.pos.y!==old.pos.y)this.move(this.enemies[i],e.pos.x*CELL+12,e.pos.y*CELL+12,snap||!!old&&e.wait>old.wait);this.enemies[i].setAlpha(e.wait>0?.4:1);this.enemyBodies[i].setFillStyle(s.quiet>0?0x718ba2:colors[i]);this.labels[i].setText(e.wait>0?String(Math.ceil(e.wait)):icons[i]);});
+    s.enemies.forEach((e,i)=>{const old=previous?.enemies[i];if(snap||!old||e.pos.x!==old.pos.x||e.pos.y!==old.pos.y)this.move(this.enemies[i],e.pos.x*CELL+12,e.pos.y*CELL+12,snap||!!old&&e.wait>old.wait);this.enemies[i].setAlpha(e.wait>0?.4:1);this.enemyBodies[i].setFillStyle(s.quiet>0?0x718ba2:s.drowsy>0?0x8c95b8:colors[i]);this.labels[i].setText(e.wait>0?String(Math.ceil(e.wait)):s.drowsy>0&&s.quiet===0?'z':icons[i]);});
   }
+  private floatText(text:string,x:number,y:number){const t=this.add.text(x,y,text,{fontFamily:'sans-serif',fontSize:'13px',fontStyle:'bold',color:'#ffe5a9',stroke:'#172735',strokeThickness:3}).setOrigin(.5).setDepth(8);this.tweens.add({targets:t,y:y-22,alpha:0,duration:this.reducedMotion?200:800,onComplete:()=>t.destroy()});}
   update(_time:number,delta:number){
     if(!this.running)return;
     const previous=this.model;this.model=step(previous,Math.min(.05,delta/1000));this.paint(false,previous);
