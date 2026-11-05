@@ -1,13 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { chart, END, initial, input, phases, tick, secondWind } from '../src/gym/model.ts';
+import { chart, END, initial, input, phases, tick, secondWind, regular, accuracy, gymRating, multiplier, bonusSets, BONUS_POINTS, FEVER_STREAK, FEVER_MS } from '../src/gym/model.ts';
 
 test('perfect full chart wins including chords and holds', () => {
   let s = initial();
   const events = chart.flatMap(n => [{ time: n.at, lane: n.lane, down: true }, { time: n.end ?? n.at + 20, lane: n.lane, down: false }]).sort((a,b) => a.time - b.time);
   for (const e of events) s = input(s, e.lane, e.down, e.time);
   s = tick(s, END);
-  assert.equal(s.status, 'won'); assert.equal(s.score, chart.length * 100); assert.equal(s.best, chart.length);
+  assert.equal(s.status, 'won'); assert.equal(s.score, regular.length * 100); assert.equal(s.best, chart.length); assert.equal(s.bonusHits, chart.length - regular.length); assert.equal(gymRating(s), 3); assert.ok(s.fevers >= 3);
 });
 test('chart increases tempo and has playable same-lane spacing', () => {
   assert.ok(phases[0].bpm < phases[1].bpm && phases[1].bpm < phases[2].bpm);
@@ -66,4 +66,28 @@ test('second wind requires a streak, restores capped energy once, and cannot res
  assert.equal(used.energy,65);assert.equal(used.windUsed,true);assert.equal(secondWind(used),used);
  assert.equal(secondWind({...ready,energy:90}).energy,100);
  const lost={...ready,status:'lost' as const};assert.equal(secondWind(lost),lost);
+});
+
+test('bonus reps sit in the rests and skipping them costs nothing',()=>{
+ const bonus=chart.filter(n=>n.bonus);assert.equal(bonus.length,bonusSets.flat().length);
+ for(const b of bonus)assert.ok(!regular.some(n=>Math.abs(n.at-b.at)<400||(n.end&&b.at>n.at-400&&b.at<n.end+400)));
+ const b=bonus[0];const before={...initial(),combo:5,results:Object.fromEntries(regular.filter(n=>n.at<b.at).map(n=>[n.id,100]))};
+ const skipped=tick(before,b.at+WINDOW_PLUS);assert.equal(skipped.energy,100);assert.equal(skipped.combo,5);assert.equal(skipped.results[b.id],0);
+ const hit=input(before,b.lane,true,b.at);assert.equal(hit.points,BONUS_POINTS*multiplier(6));assert.equal(hit.combo,6);assert.equal(hit.score,before.score);
+});
+const WINDOW_PLUS=181;
+test('a streak of twenty starts beast mode with double points until a miss',()=>{
+ const notes=regular.filter(n=>!n.end).slice(0,FEVER_STREAK+2);let s=initial();
+ for(const n of notes.slice(0,FEVER_STREAK)){s=input(s,n.lane,true,n.at);s=input(s,n.lane,false,n.at+20);}
+ assert.equal(s.fevers,1);assert.equal(s.feverUntil,notes[FEVER_STREAK-1].at+FEVER_MS);
+ const n=notes[FEVER_STREAK];const plain={...s,feverUntil:0};
+ assert.equal(input(s,n.lane,true,n.at).points-s.points,2*(input(plain,n.lane,true,n.at).points-plain.points));
+ assert.equal(tick(s,n.at+WINDOW_PLUS).feverUntil,0);
+});
+test('rating follows accuracy on regular notes only',()=>{
+ const all=Object.fromEntries(regular.map(n=>[n.id,100]));
+ assert.equal(gymRating({...initial(),score:regular.length*100,results:all}),3);
+ assert.equal(gymRating({...initial(),score:regular.length*80}),2);
+ assert.equal(gymRating({...initial(),score:regular.length*70}),1);
+ assert.equal(accuracy({...initial(),score:regular.length*100,points:99999}),1);
 });

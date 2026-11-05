@@ -19,7 +19,7 @@ export const products = [
   { name: 'Ведро соуса', key: 'sauce', amount: '2 литра', price: 8, icon: 6, label: 'ОПТОМ ВЫГОДНЕЕ' },
   { name: 'Шоколад «Фитнес»', key: 'chocolate', amount: '100 г', price: 6, icon: 7, label: 'ЗЕЛЁНАЯ ОБЁРТКА' },
 ] as const;
-export type Purchase = { offer: number; product: number; price?: number };
+export type Purchase = { offer: number; product: number; price?: number; expired?: boolean };
 export type ShopState = { elapsed: number; cart: Purchase[]; taken: number[]; status: 'playing' | 'won' | 'lost'; notice: string };
 export type ShopAction = { type: 'tick'; delta: number } | { type: 'add'; offer: number } | { type: 'remove'; offer: number } | { type: 'checkout' };
 export function createShopState(): ShopState { return { elapsed: 0, cart: [], taken: [], status: 'playing', notice: 'Список вверху. Цены в игровых монетах.' }; }
