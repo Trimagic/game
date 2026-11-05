@@ -18,7 +18,7 @@ export type CookState = {
   results: Record<string, 'done' | 'missed'>;
   dismissed: boolean; plated: number[]; notice: string;
 };
-export type CookAction = {type:'cut'} | {type:'start'} | {type:'tick'; delta:number} | {type:'act'; station:Station} | {type:'dismiss'} | {type:'plate'; part:number} | {type:'serve'};
+export type CookAction = {type:'cut'; precise?:boolean} | {type:'start'} | {type:'tick'; delta:number} | {type:'act'; station:Station} | {type:'dismiss'} | {type:'plate'; part:number} | {type:'serve'};
 export function createCookState(): CookState {
   return { stage:'prep', cuts:0, elapsed:0, mistakes:0, results:{}, dismissed:false, plated:[], notice:'Проведи сверху вниз по пунктирной линии.' };
 }
