@@ -136,3 +136,22 @@ test('two lower moons return at the start of the third stage',()=>{
   const from=STAGES[2].from;const s=step({...initial(),score:from-10,dots:['2,11'],powers:[],pos:{x:1,y:11},dir:'right',queued:'right',enemies:initial().enemies.map(e=>({...e,wait:99}))},.19);
   assert.equal(s.powers.length,2);assert.ok(s.powers.every(id=>id.endsWith(',13')));
 });
+
+import { CORNER_GRACE, TURN_READY } from '../src/sleep/model.ts';
+const quietNight=():State=>({...initial(),shield:99,enemies:initial().enemies.map(e=>({...e,wait:99}))});
+test('a new direction is taken almost at once, not on the next full step',()=>{
+  // Row 11 is open both ways; the hero has only just arrived on this tile.
+  let s:State=turn({...quietNight(),pos:{x:5,y:11},dir:'right',queued:'right',meter:0},'left');
+  s=step(s,TURN_READY+.02);assert.deepEqual(s.pos,{x:4,y:11});assert.equal(s.dir,'left');
+  // Straight running keeps its normal pace.
+  let run:State={...quietNight(),pos:{x:1,y:11},dir:'right',queued:'right',meter:0};
+  run=step(run,.14);assert.deepEqual(run.pos,{x:1,y:11});
+});
+test('pressing just after a junction still takes that corner, but not much later',()=>{
+  // (4,11) opens upward to (4,10); (5,11) above is a wall.
+  const passed:State={...quietNight(),pos:{x:5,y:11},prev:{x:4,y:11},dir:'right',queued:'right',meter:0};
+  const late=step(turn(passed,'up'),.02);assert.deepEqual(late.pos,{x:4,y:10});assert.equal(late.dir,'up');
+  const tooLate=step(turn({...passed,meter:CORNER_GRACE+.01},'up'),.02);assert.deepEqual(tooLate.pos,{x:5,y:11});
+  // Forgiveness does not let a blocked pop-up tile be entered.
+  const shut=step(turn({...passed,popups:[{pos:{x:4,y:10},warn:0,life:3}],nextPopup:999},'up'),.02);assert.deepEqual(shut.pos,{x:5,y:11});
+});

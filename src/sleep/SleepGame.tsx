@@ -35,7 +35,7 @@ export default function SleepGame({onWin,onExit}:{onWin:()=>void;onExit:()=>void
   const stage=ready?'СВЕТ ВЫКЛЮЧЕН: К КРОВАТИ!':STAGES[stageAt(view.score)].name;
   return <section className={`sleep-game ${view.quiet>0?'quiet':''}`} aria-label="Ещё пять минут"><SoundButton/>
     <div className="sleep-toolbar"><button className="small-button" onClick={onExit}>← Главы</button><span>{clock(view.time)} · {stage}</span><button className="small-button" onClick={pause} disabled={overlay}>Пауза</button></div>
-    <div className="sleep-hud"><div><small>ОЧКИ СНА</small><strong>{view.score}<i> / {GOAL}</i></strong></div><div><small>БОНУС</small><strong>+{view.bonus}{view.streak>=3&&<i> · зевок {view.streak % 8}/8</i>}</strong></div><div><small>НЕ ОТВЛЕЧЬСЯ</small><strong aria-label={`Осталось попыток: ${view.lives}`}>{'♥'.repeat(view.lives)}{'♡'.repeat(3-view.lives)}</strong></div></div>
+    <div className="sleep-hud"><div><small>ОЧКИ СНА</small><strong>{view.score}<i> / {GOAL}</i></strong></div><div><small>БОНУС · ЗЕВОК {view.streak%8}/8</small><strong>+{view.bonus}</strong></div><div><small>НЕ ОТВЛЕЧЬСЯ</small><strong aria-label={`Осталось попыток: ${view.lives}`}>{'♥'.repeat(view.lives)}{'♡'.repeat(3-view.lives)}</strong></div></div>
     <div className="sleep-meter" role="progressbar" aria-label="Накопленный сон" aria-valuemin={0} aria-valuemax={GOAL} aria-valuenow={Math.min(GOAL,view.score)}><span style={{width:`${Math.min(100,view.score/GOAL*100)}%`}}/></div>
     <div className="sleep-board">
       <div ref={host} className="sleep-phaser" role="img" aria-label="Ночной лабиринт. Кровать наверху, герой начинает снизу. Собирай искры и избегай четырёх экранов."/>
@@ -43,7 +43,7 @@ export default function SleepGame({onWin,onExit}:{onWin:()=>void;onExit:()=>void
     </div>
     <div className="sleep-status" aria-live="polite">{view.quiet>0?`☾ НЕ БЕСПОКОИТЬ · ${Math.ceil(view.quiet)} с`:view.drowsy>0?`☕ ЭКРАНЫ ЗАСЫПАЮТ · ${Math.ceil(view.drowsy)} с`:view.message}</div>
     <div className="sleep-legend">{enemyNames.map((name,i)=><span key={name}><b style={{background:colors[i]}}>{icons[i]}</b>{name}</span>)}</div>
-    <div className="sleep-dpad" aria-label="Направление движения">{(['up','left','down','right'] as Direction[]).map((d,i)=><button key={d} className={`direction-${d} ${view.queued===d?'selected':''}`} aria-label={['Вверх','Влево','Вниз','Вправо'][i]} disabled={overlay} onClick={()=>choose(d)}>{['↑','←','↓','→'][i]}</button>)}</div>
+    <div className="sleep-dpad" aria-label="Направление движения">{(['up','left','down','right'] as Direction[]).map((d,i)=><button key={d} className={`direction-${d} ${view.queued===d?'selected':''}`} aria-label={['Вверх','Влево','Вниз','Вправо'][i]} disabled={overlay} onPointerDown={e=>{e.preventDefault();choose(d);}} onClick={()=>choose(d)}>{['↑','←','↓','→'][i]}</button>)}</div>
     <p className="control-hint">Поворот можно задать заранее · Esc — пауза</p>
   </section>;
 }

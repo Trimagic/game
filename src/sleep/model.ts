@@ -34,6 +34,8 @@ export const DROWSY = 6;
 export const YAWN = 8;
 export const PAR = 120;
 export const HERO_STEP = .18;
+export const TURN_READY = .08;
+export const CORNER_GRACE = .09;
 export const POPUP_WARN = 1;
 export const POPUP_LIFE = 4;
 export const SIGHT = 6;
@@ -50,11 +52,11 @@ const homes = [{x:1,y:3},{x:13,y:3},{x:1,y:7},{x:13,y:7}];
 export const enemyNames = ['Уведомления','YouTube','Кино','Игры'];
 export type Enemy = { pos:Point; home:Point; wait:number; meter:number };
 export type Popup = { pos:Point; warn:number; life:number };
-export type State = { pos:Point; dir:Direction; queued:Direction; enemies:Enemy[]; dots:string[]; powers:string[]; score:number; lives:number; time:number; meter:number; quiet:number; shield:number; status:'playing'|'won'|'lost'; message:string; caught:number; milk:number; milkIndex:number; drowsy:number; streak:number; lastSpark:number; yawns:number; bonus:number; points:number; popups:Popup[]; nextPopup:number; rand:number };
+export type State = { pos:Point; dir:Direction; queued:Direction; enemies:Enemy[]; dots:string[]; powers:string[]; score:number; lives:number; time:number; meter:number; quiet:number; shield:number; status:'playing'|'won'|'lost'; message:string; caught:number; milk:number; milkIndex:number; drowsy:number; streak:number; lastSpark:number; yawns:number; bonus:number; points:number; popups:Popup[]; nextPopup:number; rand:number; prev:Point|null };
 export function initial(seed=1):State {
   const dots:string[]=[],powers:string[]=[];
   MAP.forEach((row,y)=>[...row].forEach((cell,x)=>{if(cell==='.')dots.push(key({x,y}));if(cell==='o')powers.push(key({x,y}));}));
-  return {pos:{...START},dir:'up',queued:'up',enemies:homes.map((home,i)=>({pos:{...home},home,wait:WAKE[i],meter:0})),dots,powers,score:0,lives:3,time:0,meter:0,quiet:0,shield:2,status:'playing',message:'Собери сонные искры. Телефон подождёт.',caught:0,milk:0,milkIndex:0,drowsy:0,streak:0,lastSpark:-1,yawns:0,bonus:0,points:0,popups:[],nextPopup:0,rand:seed>>>0};
+  return {pos:{...START},dir:'up',queued:'up',enemies:homes.map((home,i)=>({pos:{...home},home,wait:WAKE[i],meter:0})),dots,powers,score:0,lives:3,time:0,meter:0,quiet:0,shield:2,status:'playing',message:'Собери сонные искры. Телефон подождёт.',caught:0,milk:0,milkIndex:0,drowsy:0,streak:0,lastSpark:-1,yawns:0,bonus:0,points:0,popups:[],nextPopup:0,rand:seed>>>0,prev:null};
 }
 /** A pop-up blocks its tile only once its warning has run out. */
 export const open = (s:State,p:Point) => walkable(p)&&!s.popups.some(w=>w.warn===0&&same(w.pos,p));
@@ -111,7 +113,7 @@ function collisions(s:State):State {
     if(s.quiet>0){s={...s,enemies:s.enemies.map((e,j)=>j===i?{...e,pos:{...e.home},wait:4,meter:0}:e),caught:s.caught+1,bonus:s.bonus+50,message:`${enemyNames[i]} подождёт до завтра · +50`};}
     else if(s.shield===0){
       const lives=s.lives-1;
-      return {...s,lives,streak:0,status:lives===0?'lost':'playing',pos:{...START},dir:'up',queued:'up',meter:0,shield:2.5,enemies:s.enemies.map((e,j)=>({...e,pos:{...e.home},wait:2+j*.7,meter:0})),message:lives===0?'«Ещё пять минут» снова затянулись.':`${enemyNames[i]} отвлёк! Очки сохранены. Возвращайся к тишине.`};
+      return {...s,lives,streak:0,prev:null,status:lives===0?'lost':'playing',pos:{...START},dir:'up',queued:'up',meter:0,shield:2.5,enemies:s.enemies.map((e,j)=>({...e,pos:{...e.home},wait:2+j*.7,meter:0})),message:lives===0?'«Ещё пять минут» снова затянулись.':`${enemyNames[i]} отвлёк! Очки сохранены. Возвращайся к тишине.`};
     }
   }
   return s;
@@ -141,10 +143,20 @@ export function step(state:State,dt:number):State {
     s={...s,time:s.time+h,meter:s.meter+h,quiet:Math.max(0,s.quiet-h),shield:Math.max(0,s.shield-h),drowsy:Math.max(0,s.drowsy-h),milk:Math.max(0,s.milk-h),popups:s.popups.map(w=>({...w,warn:Math.max(0,w.warn-h),life:w.warn>0?w.life:w.life-h})).filter(w=>w.life>0),message:quietEnded?(s.score>=GOAL?'Сон накоплен! Доберись до кровати наверху.':'Тишина закончилась. Осторожно, экраны снова в погоне!'):s.message,enemies:s.enemies.map(e=>({...e,wait:Math.max(0,e.wait-h),meter:e.wait>0?0:e.meter+h}))};
     if(s.milkIndex<MILK_TIMES.length&&s.time>=MILK_TIMES[s.milkIndex])s={...s,milkIndex:s.milkIndex+1,milk:MILK_LIFE,message:'В центре остывает тёплое молоко!'};
     if(stageAt(s.score)>=1&&s.time>=s.nextPopup)s=spawnPopup(s);
-    if(s.meter>=HERO_STEP){
-      s.meter-=HERO_STEP;
-      if(open(s,neighbor(s.pos,s.queued)))s.dir=s.queued;
-      const next=neighbor(s.pos,s.dir);if(open(s,next))s.pos=next;
+    if(s.queued!==s.dir){
+      const ahead=neighbor(s.pos,s.queued);
+      // A new direction is taken right away instead of waiting for the next step.
+      if(open(s,ahead)){if(s.meter>=TURN_READY)s={...s,meter:HERO_STEP};}
+      // Pressed just after passing a junction: still take that corner.
+      else if(s.prev&&s.meter<CORNER_GRACE&&open(s,neighbor(s.prev,s.queued))){
+        s={...s,pos:neighbor(s.prev,s.queued),dir:s.queued,prev:null,meter:0};
+        s=collisions(collect(s));
+      }
+    }
+    if(s.status==='playing'&&s.meter>=HERO_STEP){
+      s={...s,meter:Math.max(0,s.meter-HERO_STEP)};
+      if(open(s,neighbor(s.pos,s.queued)))s={...s,dir:s.queued};
+      const next=neighbor(s.pos,s.dir);if(open(s,next))s={...s,prev:s.pos,pos:next};
       s=collisions(collect(s));
     }
     for(let i=0;i<4&&s.status==='playing';i++){

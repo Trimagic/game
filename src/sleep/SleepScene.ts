@@ -1,8 +1,11 @@
 import Phaser from 'phaser';
-import {BED,GOAL,HERO_STEP,MAP,MILK,SIZE,STAGES,enemyInterval,initial,key,sees,stageAt,step,turn,type Direction,type State} from './model';
+import {BED,GOAL,MAP,MILK,SIZE,STAGES,enemyInterval,initial,key,sees,stageAt,step,turn,type Direction,type State} from './model';
 
 export type SleepControls={choose:(direction:Direction)=>void;start:(retry:boolean)=>void;pause:()=>void};
 const CELL=24;
+// Short slides keep the drawn hero close to its real tile, so turns feel immediate.
+const HERO_TWEEN=100;
+const ENEMY_TWEEN=130;
 const colors=[0xffbc59,0xef6c70,0xb499ef,0x6dd4ba];
 const icons=['!','▶','▤','✚'];
 const keys:Record<string,Direction>={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};
@@ -82,14 +85,14 @@ export default class SleepScene extends Phaser.Scene {
     for(const [id,dot] of this.dots)dot.setVisible(remaining.has(id));
     for(const [id,moon] of this.moons)moon.setVisible(powers.has(id));
     this.bed.setFillStyle(s.score>=GOAL?0x8ee2bf:0x8a8d9b);this.bedLabel.setVisible(s.score<GOAL);
-    if(snap||!previous||s.pos.x!==previous.pos.x||s.pos.y!==previous.pos.y)this.move(this.player,s.pos.x*CELL+12,s.pos.y*CELL+12,snap||!!previous&&s.lives<previous.lives,HERO_STEP*1000);
+    if(snap||!previous||s.pos.x!==previous.pos.x||s.pos.y!==previous.pos.y)this.move(this.player,s.pos.x*CELL+12,s.pos.y*CELL+12,snap||!!previous&&s.lives<previous.lives,HERO_TWEEN);
     this.milk.setVisible(s.milk>0).setScale(this.reducedMotion?1:1+Math.sin(s.time*6)*.08).setAlpha(s.milk<2?.5+.5*Math.abs(Math.sin(s.time*8)):1);
     if(previous&&s.bonus>previous.bonus)this.floatText(`+${s.bonus-previous.bonus}`,s.pos.x*CELL+12,s.pos.y*CELL);
     this.player.setAlpha(s.shield>0?.7:1);this.ring.setStrokeStyle(2,s.quiet>0?0x85ead5:0xfff6dc);
     const q={left:[-14,0],right:[14,0],up:[0,-14],down:[0,14]}[s.queued];this.queuedDot.setVisible(s.queued!==s.dir).setPosition(q[0],q[1]);
     this.paintStage(s,snap,previous);
     this.direction.setPosition(s.dir==='left'?-11:s.dir==='right'?11:0,s.dir==='up'?-11:s.dir==='down'?11:0);
-    s.enemies.forEach((e,i)=>{const old=previous?.enemies[i];if(snap||!old||e.pos.x!==old.pos.x||e.pos.y!==old.pos.y)this.move(this.enemies[i],e.pos.x*CELL+12,e.pos.y*CELL+12,snap||!!old&&e.wait>old.wait,enemyInterval(s,e)*1000);this.enemies[i].setAlpha(e.wait>0?.4:1);const alert=sees(s,e)&&e.wait===0;this.enemies[i].setScale(alert?1.18:1);this.enemyBodies[i].setStrokeStyle(2,alert?0xffffff:0x101e2a).setFillStyle(s.quiet>0?0x718ba2:s.drowsy>0?0x8c95b8:colors[i]);this.labels[i].setText(e.wait>0?String(Math.ceil(e.wait)):s.drowsy>0&&s.quiet===0?'z':icons[i]);});
+    s.enemies.forEach((e,i)=>{const old=previous?.enemies[i];if(snap||!old||e.pos.x!==old.pos.x||e.pos.y!==old.pos.y)this.move(this.enemies[i],e.pos.x*CELL+12,e.pos.y*CELL+12,snap||!!old&&e.wait>old.wait,Math.min(ENEMY_TWEEN,enemyInterval(s,e)*1000));this.enemies[i].setAlpha(e.wait>0?.4:1);const alert=sees(s,e)&&e.wait===0;this.enemies[i].setScale(alert?1.18:1);this.enemyBodies[i].setStrokeStyle(2,alert?0xffffff:0x101e2a).setFillStyle(s.quiet>0?0x718ba2:s.drowsy>0?0x8c95b8:colors[i]);this.labels[i].setText(e.wait>0?String(Math.ceil(e.wait)):s.drowsy>0&&s.quiet===0?'z':icons[i]);});
   }
   private paintStage(s:State,snap:boolean,previous?:State){
     const stage=stageAt(s.score);
