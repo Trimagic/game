@@ -25,8 +25,10 @@
  .arcade-game .arcade-toolbar{margin-bottom:8px;min-height:44px}
  .arcade-game .arcade-toolbar button{min-height:44px}
  .arcade-game .arcade-stage{width:min(100%,calc((100dvh - 118px - var(--game-safe-top) - var(--game-safe-bottom))*0.75));margin:auto}
- .arcade-game .arcade-copy,.arcade-game>.control-hint,.arcade-game .arcade-actions{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);margin:0;padding:0;min-height:0}
- .arcade-game .arcade-actions:focus-within{position:static;width:auto;height:auto;clip-path:none;overflow:visible}
+ .arcade-game .arcade-copy,.arcade-game>.control-hint,.arcade-game .arcade-actions{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);margin:0;padding:0;min-height:0;border:0;white-space:nowrap;contain:strict}
+ .arcade-game .arcade-actions:focus-within{position:static;width:auto;height:auto;clip-path:none;overflow:visible;white-space:normal;contain:none}
+ html:has(.arcade-game),html:has(.ride),html:has(.sleep-game){overscroll-behavior:none}
+ .arcade-game:has(.arcade-shop-pads) .arcade-stage{width:min(100%,calc((100dvh - 190px - var(--game-safe-top) - var(--game-safe-bottom))*.75))}
  .arcade-game .arcade-overlay{padding:12px;overflow:auto;touch-action:pan-y}
  .arcade-game .arcade-overlay h2{font-size:24px;margin:10px 0}
  .arcade-game .arcade-overlay p{font-size:13px;line-height:1.4;margin:10px 0}
