@@ -1,7 +1,7 @@
 import {useRef,useState} from 'react';
 const REACH=38;
 // A floating stick: it centres wherever the thumb lands, so there is no spot to aim for.
-export default function RemotePad({action,disabled}:{action:(id:string)=>void;disabled:boolean}){
+export default function StickPad({action,disabled,label,hint}:{action:(id:string)=>void;disabled:boolean;label:string;hint:string}){
  const origin=useRef<{x:number;y:number;id:number}|null>(null);const knob=useRef<HTMLSpanElement>(null);const [active,setActive]=useState(false);
  const place=(x:number,y:number)=>{if(knob.current)knob.current.style.transform=`translate(${x}px,${y}px)`;};
  const stop=()=>{origin.current=null;setActive(false);place(0,0);action('stick:0,0');};
@@ -14,6 +14,6 @@ export default function RemotePad({action,disabled}:{action:(id:string)=>void;di
   </div>
   <button className="remote-fire" disabled={disabled} onContextMenu={e=>e.preventDefault()}
    onPointerDown={e=>{e.preventDefault();e.currentTarget.setPointerCapture(e.pointerId);action('press:fire');}} onPointerUp={()=>action('release:fire')} onPointerCancel={()=>action('release:fire')} onLostPointerCapture={()=>action('release:fire')}
-   onKeyDown={e=>{if([' ','Enter'].includes(e.key)){e.preventDefault();if(!e.repeat)action('press:fire');}}} onKeyUp={e=>{if([' ','Enter'].includes(e.key)){e.preventDefault();action('release:fire');}}} onBlur={()=>action('release:fire')}>ОРЕШЕК<small>держи, чтобы бросать</small></button>
+   onKeyDown={e=>{if([' ','Enter'].includes(e.key)){e.preventDefault();if(!e.repeat)action('press:fire');}}} onKeyUp={e=>{if([' ','Enter'].includes(e.key)){e.preventDefault();action('release:fire');}}} onBlur={()=>action('release:fire')}>{label}<small>{hint}</small></button>
  </div>;
 }
