@@ -18,3 +18,21 @@ test('browser, old clients, already fullscreen and rejected requests remain usab
   assert.equal(expanded, 2); assert.equal(requested, 0);
   assert.doesNotThrow(() => initializeTelegramDisplay({...app, isVersionAtLeast: () => true, requestFullscreen() {throw new Error('unsupported');}}));
 });
+
+test('vertical swipes are disabled from Bot API 7.7, independently of fullscreen', () => {
+  const calls: string[] = [];
+  const app = {ready() {}, expand() {}, disableVerticalSwipes() {calls.push('swipes');}, requestFullscreen() {calls.push('fullscreen');}};
+  initializeTelegramDisplay({...app, isVersionAtLeast: version => version === '7.7'});
+  assert.deepEqual(calls, ['swipes']);
+  calls.length = 0;
+  initializeTelegramDisplay({...app, isVersionAtLeast: () => false});
+  assert.deepEqual(calls, []);
+  initializeTelegramDisplay({...app, isVersionAtLeast: () => true, isFullscreen: true});
+  assert.deepEqual(calls, ['swipes']);
+});
+
+test('a failure in one startup request does not cancel the other', () => {
+  let fullscreen = 0;
+  assert.doesNotThrow(() => initializeTelegramDisplay({ready() {}, expand() {}, isVersionAtLeast: () => true, disableVerticalSwipes() {throw new Error('unsupported');}, requestFullscreen() {fullscreen++;}}));
+  assert.equal(fullscreen, 1);
+});
