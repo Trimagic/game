@@ -1,7 +1,7 @@
 import {useRef,useState} from 'react';
 type Dir='left'|'right';
-// Left thumb walks on one gapless surface; right thumb has a big jump and a hide button above it.
-export default function NightPad({action,disabled,hideLabel,canHide}:{action:(id:string)=>void;disabled:boolean;hideLabel:string;canHide:boolean}){
+// Left thumb walks on one gapless surface; right thumb has a big jump with hide and throw above it.
+export default function NightPad({action,disabled,hideLabel,canHide,throwLabel,canThrow}:{action:(id:string)=>void;disabled:boolean;hideLabel:string;canHide:boolean;throwLabel:string;canThrow:boolean}){
  const [active,setActive]=useState<Dir|null>(null);const pointer=useRef<number|null>(null);const current=useRef<Dir|null>(null);
  const choose=(e:React.PointerEvent<HTMLDivElement>)=>{
   const r=e.currentTarget.getBoundingClientRect();const next:Dir=e.clientX<r.left+r.width/2?'left':'right';
@@ -23,7 +23,7 @@ export default function NightPad({action,disabled,hideLabel,canHide}:{action:(id
    <span className={active==='left'?'active':''}>←</span><span className={active==='right'?'active':''}>→</span>
   </div>
   <div className="night-actions">
-   <button className="night-hide" disabled={disabled||!canHide} {...hold('hide','hidebtn')}>{hideLabel}</button>
+   <div className="night-tools"><button className="night-hide" disabled={disabled||!canHide} {...hold('hide','hidebtn')}>{hideLabel}</button><button className="night-throw" disabled={disabled||!canThrow} {...hold('throw','throwbtn')}>{throwLabel}</button></div>
    <button className="night-jump" disabled={disabled} {...hold('jump','jumpbtn')}>ПРЫЖОК</button>
   </div>
  </div>;
