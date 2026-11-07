@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {activeNurse,BELTS,bonuses,BUMPS,CARD,CHAIR,CHECKPOINTS,CONE,CRUMBLE,CRUMBLE_BACK,CRUMBLE_DELAY,DOOR,finalScore,GOAL,GROUND,initial,LURE_TIME,movers,nightRating,NURSES,nurseAt,RIDE,RIDE_END,screenNear,SCREENS,seen,SLIPPER_PICKUPS,solids,spareHearts,SPRING,STEAM,steamState,step,throwSlipper,VENT,ventOn,WIDTH,ZONES,zoneAt,type Input,type State} from '../src/night/model.ts';
+import {activeNurse,BELTS,blinkLeft,BLINKS,bonuses,BOUNCERS,BUMPS,CARD,CHASE_FROM,CHASE_GAP,CHECKPOINTS,CONE,CRUMBLE,CRUMBLE_BACK,CRUMBLE_DELAY,DARK_CONE,DOOR,fallState,FALLS,finalScore,GOAL,GROUND,initial,LAMPS,LURE_TIME,movers,nightRating,NURSES,nurseAt,pressState,PRESSES,RIDES,screenNear,SCREENS,seen,SLICK,SLIPPER_PICKUPS,solids,spareHearts,SPRING,SQUEAKS,STEAM,steamState,step,STICKY,SWITCHES,TANK_FUEL,throwSlipper,VENT,ventOn,WIDTH,WIND,windAt,XRAY,xrayState,ZONES,zoneAt,type Input,type State} from '../src/night/model.ts';
 const idle=(s:State,n:number)=>{for(let i=0;i<n;i++)s=step(s,1/60,{move:0,jump:false});return s;};
 test('Walking cannot pass through furniture; jumping clears it',()=>{
  let s={...initial(),x:270};s=step(s,.1,{move:1,jump:false});assert.ok(s.x<=278);
@@ -22,10 +22,10 @@ test('Hazards have an invulnerability window and moon tokens collect only once',
  let b=step({...initial(),x:505,y:322,grounded:false,patience:50},.025,{move:0,jump:false});assert.deepEqual(b.collected,[0]);assert.ok(b.patience>60);const p=b.patience;b=idle(b,2);assert.deepEqual(b.collected,[0]);assert.ok(b.patience<=p);
 });
 test('Only reaching the door triggers the scripted ending',()=>{
- let s=step({...initial(),x:GOAL,checkpoint:5,card:true,time:0,chairUsed:true},.025,{move:0,jump:false});assert.equal(s.status,'ending');s=idle(s,200);assert.equal(s.status,'done');assert.equal(idle(s,100),s);
+ let s=step({...initial(),x:GOAL,checkpoint:15,card:true,time:0,used:[0,1,2,3],chaser:null},.025,{move:0,jump:false});assert.equal(s.status,'ending');s=idle(s,200);assert.equal(s.status,'done');assert.equal(idle(s,100),s);
 });
-test('The level is laid out as six growing zones',()=>{
- assert.ok(ZONES.every((z,i)=>zoneAt(z.from)===i));assert.equal(ZONES.length,6);assert.ok(GOAL>6000&&GOAL<WIDTH);
+test('The level is laid out as fifteen zones',()=>{
+ assert.ok(ZONES.every((z,i)=>zoneAt(z.from)===i));assert.equal(ZONES.length,15);assert.ok(GOAL>15000&&GOAL<WIDTH);assert.ok(ZONES.every((z,i)=>CHECKPOINTS.includes(z.from)||i===0||CHECKPOINTS.some(c=>Math.abs(c-z.from)<130)),'a cooler at every zone');assert.ok(RIDES.length>=4);
  assert.ok(NURSES.every((n,i)=>i===0||n.speed>NURSES[i-1].speed));
  for(const n of NURSES)assert.ok(SCREENS.some(x=>x>=n.from&&x<=n.to+40),'a screen in every patrol');
  assert.ok(bonuses.every(b=>b.y>=120));assert.ok(CHECKPOINTS.every((x,i)=>i===0||x>CHECKPOINTS[i-1]));
@@ -84,24 +84,33 @@ function search(start:State,done:(s:State)=>boolean,score:(s:State)=>number,step
  return null;
 }
 const at=(i:number,extra:Partial<State>={}):State=>({...initial(),x:CHECKPOINTS[i],checkpoint:i,time:3,...extra});
+const by=(s:State)=>s.x-s.suspicion*40;
+// Each stretch: where it starts from, where it ends, and how many search steps to allow.
+const STRETCHES:[string,number,number,number][]=[
+ ['canteen',5,CHECKPOINTS[6],300],['wet hall',6,CHECKPOINTS[7],260],['x-ray',7,CHECKPOINTS[8],360],['flooded store',8,CHECKPOINTS[9],520],['shaft',9,CHECKPOINTS[10],320],['quiet ward',10,CHECKPOINTS[11],420],['lab',11,CHECKPOINTS[12],400],['bridge',12,CHECKPOINTS[13],360],['ramp',13,CHECKPOINTS[14],260],
+];
 test('Every stretch of the route can be passed without losing a heart',()=>{
- const by=(_goal:number)=>(s:State)=>s.x-s.suspicion*40;
- assert.ok(search(at(0),s=>s.x>=CHECKPOINTS[1],by(CHECKPOINTS[1]),130),'ward');
- assert.ok(search(at(1),s=>s.x>=1700,by(1700),150),'repair: gurney and planks');
+ assert.ok(search(at(0),s=>s.x>=CHECKPOINTS[1],by,130),'ward');
+ assert.ok(search(at(1),s=>s.x>=1700,by,150),'repair: gurney and planks');
  assert.ok(search({...at(1),x:1600},s=>s.card,s=>-Math.abs(s.x-CARD.x)-Math.abs(s.y-CARD.y)*2,120),'mattress to card');
- assert.ok(search(at(2,{card:true}),s=>s.x>=DOOR.x+40,by(DOOR.x+40),320),'first nurse and door');
- assert.ok(search({...at(2,{card:true}),x:DOOR.x+40},s=>s.x>=CHECKPOINTS[3],by(CHECKPOINTS[3]),260),'second nurse and robot');
- assert.ok(search(at(3,{card:true}),s=>s.x>=CHECKPOINTS[4],by(CHECKPOINTS[4]),260),'laundry: belts and steam');
- assert.ok(search(at(4,{card:true}),s=>s.x>=CHECKPOINTS[5],by(CHECKPOINTS[5]),200),'corridor');
- assert.ok(search(at(5,{card:true,chairUsed:true}),s=>s.x>=5800,by(5800),220),'gurney, lift and deck');
- assert.ok(search({...at(5,{card:true,chairUsed:true}),x:5790},s=>s.status==='ending',by(GOAL),300),'last nurse to the door');
+ assert.ok(search(at(2,{card:true}),s=>s.x>=DOOR.x+40,by,320),'first nurse and door');
+ assert.ok(search({...at(2,{card:true}),x:DOOR.x+40},s=>s.x>=CHECKPOINTS[3],by,260),'second nurse and robot');
+ assert.ok(search(at(3,{card:true}),s=>s.x>=CHECKPOINTS[4],by,260),'laundry: belts and steam');
+ assert.ok(search(at(4,{card:true}),s=>s.x>=CHECKPOINTS[5],by,200),'corridor');
+ for(const [name,from,to,steps] of STRETCHES)assert.ok(search(at(from,{card:true,patience:100}),s=>s.x>=to,by,steps),name);
+ assert.ok(search(at(14,{card:true,used:[0,1,2,3]}),s=>s.x>=CHASE_FROM-40,by,520),'gurney, lift, deck and last nurse');
+ assert.ok(search(at(15,{card:true,used:[0,1,2,3]}),s=>s.status==='ending',by,160),'the chase');
+});
+test('Pushing against a floor from inside its edge never throws the hero to its far end',()=>{
+ const floor=solids.find(b=>b.y===GROUND&&b.x>14000)!;let s:State={...initial(),x:floor.x+5,y:GROUND+20,grounded:false,vy:0,checkpoint:14,card:true,used:[0,1,2,3]};
+ for(let i=0;i<10;i++){s=step(s,1/60,{move:-1,jump:false});assert.ok(s.x<floor.x+40,String(s.x));}
 });
 test('A careful full run reaches the door on the patience it has',()=>{
- // Stretch by stretch, carrying over patience, hearts and everything else.
- let s:State|null=initial();const goals=[CHECKPOINTS[1],1700],by=(n:State)=>n.x-n.suspicion*40;
- for(const goal of goals){s=search(s!,n=>n.x>=goal,by,200);assert.ok(s,'to '+goal);}
+ // Stretch by stretch, carrying over patience, hearts and everything else. A player picks up tokens, so patience counts.
+ const by=(n:State)=>n.x-n.suspicion*40+n.patience*1.5;let s:State|null=initial();
+ for(const goal of [CHECKPOINTS[1],1700]){s=search(s!,n=>n.x>=goal,by,200);assert.ok(s,'to '+goal);}
  s=search(s!,n=>n.card,n=>-Math.abs(n.x-CARD.x)-Math.abs(n.y-CARD.y)*2,160);assert.ok(s,'card');
- for(const goal of [DOOR.x+40,CHECKPOINTS[3],CHECKPOINTS[4],CHECKPOINTS[5],5800]){s=search(s!,n=>n.x>=goal,by,340);assert.ok(s,'to '+goal);}
+ for(const goal of [DOOR.x+40,...CHECKPOINTS.slice(3,15),CHASE_FROM-40]){s=search(s!,n=>n.x>=goal,by,540);assert.ok(s,'to '+goal);}
  s=search(s!,n=>n.status==='ending',by,300);assert.ok(s,'door');assert.ok(s!.patience>0);
 });
 test('Belts drag the hero, the vent lifts while it blows, steam hurts on a beat',()=>{
@@ -111,10 +120,54 @@ test('Belts drag the hero, the vent lifts while it blows, steam hurts on a beat'
  assert.equal(steamState(k,2.2),'warn');const cool=step({...initial(),x:k.x+26,y:GROUND,time:1.5},.01,{move:0,jump:false});assert.equal(cool.hits,0);
 });
 test('The wheelchair drives itself, jumps its bumps and crashes into them; it ends on arrival',()=>{
- let s:State={...initial(),x:CHAIR.x-10,y:GROUND,grounded:true,checkpoint:4,card:true};s=step(s,.02,{move:0,jump:false});assert.ok(s.ride>0);assert.equal(s.chairUsed,true);
+ const chair=RIDES[0];let s:State={...initial(),x:chair.x-10,y:GROUND,grounded:true,checkpoint:4,card:true};s=step(s,.02,{move:0,jump:false});assert.equal(s.ride,0);assert.deepEqual(s.used,[0]);
  const from=s.x;for(let i=0;i<30;i++)s=step(s,1/60,{move:0,jump:false});assert.ok(s.x-from>120,'rolls on its own');
- let crash:State={...initial(),x:BUMPS[0]-40,y:GROUND,grounded:true,ride:2,chairUsed:true,card:true};const patience=crash.patience;for(let i=0;i<20&&crash.ride>0;i++)crash=step(crash,1/60,{move:0,jump:false});assert.equal(crash.ride,0);assert.equal(crash.crashes,1);assert.ok(crash.patience<patience-7);
- const end=step({...initial(),x:RIDE_END,y:GROUND,grounded:true,ride:2,chairUsed:true},.02,{move:0,jump:false});assert.equal(end.ride,0);assert.ok(RIDE>2);
+ let crash:State={...initial(),x:BUMPS[0]-40,y:GROUND,grounded:true,ride:0,used:[0],card:true};const patience=crash.patience;for(let i=0;i<20&&crash.ride>=0;i++)crash=step(crash,1/60,{move:0,jump:false});assert.equal(crash.ride,-1);assert.equal(crash.crashes,1);assert.ok(crash.patience<patience-7);
+ const end=step({...initial(),x:chair.end,y:GROUND,grounded:true,ride:0,used:[0]},.02,{move:0,jump:false});assert.equal(end.ride,-1);
+});
+test('Jumping under a low lamp ends the ride; rolling under it is fine',()=>{
+ const under=step({...initial(),x:LAMPS[0]-3,y:GROUND,grounded:true,ride:0,used:[0]},.02,{move:0,jump:false});assert.equal(under.crashes,0);
+ const high=step({...initial(),x:LAMPS[0]-3,y:340,grounded:false,vy:-50,ride:0,used:[0]},.02,{move:0,jump:false});assert.equal(high.crashes,1);
+});
+test('The IV stand gathers speed and takes time to stop; the wet floor slides on foot too',()=>{
+ const stand=RIDES[1];let s:State={...initial(),x:stand.x,y:GROUND,grounded:true,card:true};s=step(s,.02,{move:0,jump:false});assert.equal(s.ride,1);
+ for(let i=0;i<20;i++)s=step(s,1/60,{move:1,jump:false});const v=s.vx;assert.ok(v>60&&v<120,String(v));for(let i=0;i<50;i++)s=step(s,1/60,{move:1,jump:false});assert.ok(s.vx>v+100);
+ const top=s.vx;s=step(s,1/60,{move:0,jump:false});assert.ok(s.vx>top-5,'coasts');
+ let foot:State={...initial(),x:SLICK.x+20,y:GROUND,grounded:true,vx:165,used:[1]};const x0=foot.x;for(let i=0;i<12;i++)foot=step(foot,1/60,{move:0,jump:false});assert.ok(foot.x>x0+15,'still sliding');
+});
+test('The oxygen tank lifts while jump is held, burns only then, and drops when empty',()=>{
+ const tank=RIDES[2];let s:State={...initial(),x:tank.x,y:GROUND,grounded:true,card:true};s=step(s,.02,{move:0,jump:false});assert.equal(s.ride,2);assert.equal(s.fuel,TANK_FUEL);
+ const f=s.fuel;s=step(s,.05,{move:0,jump:false});assert.equal(s.fuel,f,'no burn on coast');
+ for(let i=0;i<40;i++)s=step(s,1/60,{move:0,jump:true});assert.ok(s.y<GROUND-60);assert.ok(s.fuel<f);
+ const dry=step({...s,fuel:.001,ride:2},.05,{move:0,jump:true});assert.equal(dry.ride,-1);
+});
+test('Standing on a robot vacuum keeps feet out of the water and carries you',()=>{
+ const time=1,r=movers(time)[3];let s:State={...initial(),x:r.x+30,y:r.y,grounded:true,on:3,time,card:true};const from=s.x;for(let i=0;i<40;i++)s=step(s,1/60,{move:0,jump:false});assert.equal(s.hits,0);assert.equal(s.on,3);assert.notEqual(s.x,from);
+ let wade:State={...initial(),x:8450,y:GROUND,grounded:true,time:40};wade=step(wade,.02,{move:0,jump:false});assert.equal(wade.hits,1);
+});
+test('Falling things warn first and only hit under them; the press and beam hit on their beat',()=>{
+ const f=FALLS[0];const left=(t:number)=>fallState(f,t-f.phase);assert.equal(left(.1).warn,false);assert.equal(left(f.period-.6).warn,true);assert.equal(left(f.period-.6).y,null);assert.ok(left(f.period-.1).y!==null);
+ const t=f.period-f.phase-.02,under=step({...initial(),x:f.x,y:GROUND,time:t},.01,{move:0,jump:false});assert.equal(under.hits,1);const aside=step({...initial(),x:f.x+60,y:GROUND,time:t},.01,{move:0,jump:false});assert.equal(aside.hits,0);
+ const p=PRESSES[0];assert.equal(pressState(p,0),'down');assert.equal(pressState(p,1.2),'up');assert.equal(pressState(p,2.1),'warn');assert.equal(step({...initial(),x:p.x+25,y:GROUND,time:0},.01,{move:0,jump:false}).hits,1);
+ assert.equal(xrayState(.1).warn,true);const mid=XRAY.warn+XRAY.sweep/2,x=xrayState(mid).x!;assert.ok(x>XRAY.from&&x<XRAY.to);
+ assert.equal(step({...initial(),x,y:GROUND,time:mid},.005,{move:0,jump:false}).hits,1);
+ const near=SCREENS.find(c=>c>=XRAY.from)!;const hid=step({...initial(),x:near,y:GROUND,hidden:true,time:XRAY.warn+XRAY.sweep*(near-XRAY.from)/(XRAY.to-XRAY.from)},.005,{move:0,jump:false});assert.equal(hid.hits,0,'lead screen protects');
+});
+test('Kissel slows, bouncers throw, blinking platforms vanish and wind pushes back',()=>{
+ let k:State={...initial(),x:STICKY.x+20,y:GROUND,grounded:true,time:5,shield:9};const x0=k.x;for(let i=0;i<30;i++)k=step(k,1/60,{move:1,jump:false});assert.ok(k.x-x0<50,String(k.x-x0));
+ const b=BOUNCERS[0];let up:State={...initial(),x:b.x+20,y:GROUND,grounded:true};let top=GROUND;for(let i=0;i<50;i++){up=step(up,1/60,{move:0,jump:i>2});top=Math.min(top,up.y);}assert.ok(top<GROUND-100,String(top));
+ const l=BLINKS[0];assert.ok(blinkLeft(l,.5)>0);assert.equal(blinkLeft(l,2.5),0);let on:State={...initial(),x:l.x+30,y:GROUND,grounded:true,time:1.9,checkpoint:11,card:true};for(let i=0;i<60;i++)on=step(on,1/60,{move:0,jump:false});assert.equal(on.lives,2,'fell through');
+ assert.equal(windAt(WIND.x+50,.5),WIND.v);assert.equal(windAt(WIND.x+50,2.5),0);assert.equal(windAt(WIND.x-50,.5),0);let w:State={...initial(),x:WIND.x+150,y:GROUND,grounded:true,time:.1};const wx=w.x;for(let i=0;i<30;i++)w=step(w,1/60,{move:0,jump:false});assert.ok(w.x<wx-20);
+});
+test('A switch dims the beam, a squeaky board raises suspicion once per step',()=>{
+ const k=SWITCHES[0];const lit=step({...initial(),x:k.x,y:k.y+20,grounded:false},.01,{move:0,jump:false});assert.ok(lit.dark>0);
+ const n=nurseAt(0,0);const pose={x:n.x+n.facing*120,y:GROUND,hidden:false,card:false};assert.equal(seen(pose,0,0),true);assert.equal(seen(pose,0,0,n,DARK_CONE),false);
+ const b=SQUEAKS[0];let s:State={...initial(),x:b.x+20,y:GROUND,grounded:true,time:900};s=step(s,.02,{move:0,jump:false});assert.ok(s.suspicion>.3);const once=s.suspicion;s=step(s,.02,{move:0,jump:false});assert.ok(s.suspicion<once+.1,'one creak per step');
+});
+test('The chase starts past the line; being caught sends you back and calls her off; vehicles return',()=>{
+ let s:State={...initial(),x:CHASE_FROM+1,y:GROUND,grounded:true,checkpoint:15,card:true};s=step(s,.02,{move:0,jump:false});assert.ok(s.chaser!==null);const c=s.chaser!;assert.ok(Math.abs(s.x-c-CHASE_GAP)<5);s=step(s,.05,{move:0,jump:false});assert.ok(s.chaser!>c);
+ for(let i=0;i<120&&s.lives===3;i++)s=step(s,1/30,{move:0,jump:false});assert.equal(s.lives,2);assert.equal(s.chaser,null);assert.equal(s.x,CHECKPOINTS[15]);
+ const fell=idle({...initial(),x:9400,y:500,grounded:false,checkpoint:9,used:[0,1,2],ride:2,fuel:0,card:true},60);assert.equal(fell.lives,2);assert.deepEqual(fell.used,[0,1],'the tank is back');
 });
 test('A thrown slipper lands, the nearest nurse looks at it, then her patrol carries on',()=>{
  const n=0,t=1;const start=nurseAt(n,t);let s:State={...initial(),x:start.x-120,y:GROUND,time:t,facing:1,checkpoint:2,card:true,shield:9};
