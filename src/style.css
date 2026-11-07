@@ -73,3 +73,4 @@
 @media(max-width:650px){.arcade-game:has(.arcade-plan-pads) .arcade-stage{width:min(100%,calc((100dvh - 326px - var(--game-safe-top) - var(--game-safe-bottom))*.75))}}
 @media(max-width:650px){.arcade-game:has(.remote-pads) .arcade-stage{width:min(100%,calc((100dvh - 326px - var(--game-safe-top) - var(--game-safe-bottom))*.75))}}
 @media(max-width:650px){.arcade-game:has(.arrow-pads) .arcade-stage{width:min(100%,calc((100dvh - 208px - min(176px,22dvh) - var(--game-safe-top) - var(--game-safe-bottom))*.75))}}
+@media(max-width:650px){.arcade-game:has(.night-pads) .arcade-stage{width:min(100%,calc((100dvh - 332px - var(--game-safe-top) - var(--game-safe-bottom))*.75))}}

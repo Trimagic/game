@@ -4,6 +4,7 @@ import type {ArcadeControls,ArcadeView} from './types';
 import './arcade.css';
 import StickPad from './StickPad';
 import ArrowPad from './ArrowPad';
+import NightPad from './NightPad';
 const blank:ArcadeView={title:'Готовим сцену…',detail:'Загружаем игру и иллюстрации.',status:'loading',actions:[]};
 export default function ArcadeGame({kind,onWin,onExit}:{kind:'shop'|'cook'|'gym'|'run'|'schedule'|'remote'|'delivery'|'night';onWin:()=>void;onExit:()=>void}){
  const host=useRef<HTMLDivElement>(null),controls=useRef<ArcadeControls|null>(null);
@@ -44,9 +45,9 @@ export default function ArcadeGame({kind,onWin,onExit}:{kind:'shop'|'cook'|'gym'
  onKeyDown={e=>{if([' ','Enter'].includes(e.key)){e.preventDefault();if(!e.repeat)controls.current?.action('down:htmlkey');}}}
  onKeyUp={e=>{if([' ','Enter'].includes(e.key)){e.preventDefault();controls.current?.action('up:htmlkey');}}}
  onBlur={()=>controls.current?.action('up:htmlkey')}>Пригнуться</button></div>}
- {kind==='night'&&<div className="arcade-gym-pads">{(['left','right','jump'] as const).map((dir,i)=><button key={dir} disabled={overlay} onContextMenu={e=>e.preventDefault()} onPointerDown={e=>{e.preventDefault();e.currentTarget.setPointerCapture(e.pointerId);controls.current?.action(`down:${dir}:html${e.pointerId}`);}} onPointerUp={e=>controls.current?.action(`up:html${e.pointerId}`)} onPointerCancel={()=>controls.current?.pause()} onKeyDown={e=>{if([' ','Enter'].includes(e.key)){e.preventDefault();if(!e.repeat)controls.current?.action(`down:${dir}:key${dir}`);}}} onKeyUp={e=>{if([' ','Enter'].includes(e.key)){e.preventDefault();controls.current?.action(`up:key${dir}`);}}} onBlur={()=>controls.current?.action(`up:key${dir}`)}>{['←','→','Прыжок'][i]}</button>)}</div>}
+ {kind==='night'&&<NightPad disabled={overlay} hideLabel={view.actions[0]?.label??'ПРЯТАТЬСЯ'} canHide={!view.actions[0]?.disabled&&!!view.actions[0]} action={id=>controls.current?.action(id)}/>}
  <div className="arcade-copy" role="status"><b>{view.title}</b><p>{view.detail}</p></div><div className="arcade-actions" aria-label="Управление игрой">{view.actions.map(a=><button key={a.id} className="small-button" disabled={overlay||a.disabled} onClick={()=>controls.current?.action(a.id)}>{a.label}</button>)}</div>
- <p className="control-hint">{kind==='shop'?'Тележка: веди пальцем в любом месте поля, кнопки ← → или клавиши ← → / A D':kind==='gym'?'Руки: A / D или ← / → · Второе дыхание: пробел · Звук: M':kind==='run'?'Прыжок: пробел / ↑ / W · Пригнуться: ↓ / S · Фокус: F':kind==='schedule'?'Палец по полю: вести, нажать — поворот, свайп вниз — сброс · ← → ↑ ↓ · Пробел — сброс · C — на завтра · X — отмена':kind==='night'?'← → / A D — идти · Пробел / ↑ / W — прыжок':kind==='delivery'?'Стрелки на экране или WASD / стрелки · отпусти — ждать · Пробел — шум · Enter — дальше':kind==='remote'?'Джойстик или палец по комнате · держи «Орешек» · WASD / стрелки и пробел':'Нарезка: пробел · Конфорки: 1 / 2 / 3 · Телефон: M'} · Esc — пауза</p></section>;
+ <p className="control-hint">{kind==='shop'?'Тележка: веди пальцем в любом месте поля, кнопки ← → или клавиши ← → / A D':kind==='gym'?'Руки: A / D или ← / → · Второе дыхание: пробел · Звук: M':kind==='run'?'Прыжок: пробел / ↑ / W · Пригнуться: ↓ / S · Фокус: F':kind==='schedule'?'Палец по полю: вести, нажать — поворот, свайп вниз — сброс · ← → ↑ ↓ · Пробел — сброс · C — на завтра · X — отмена':kind==='night'?'← → / A D — идти · Пробел / ↑ / W — прыжок (держи — выше) · ↓ / S — за ширму':kind==='delivery'?'Стрелки на экране или WASD / стрелки · отпусти — ждать · Пробел — шум · Enter — дальше':kind==='remote'?'Джойстик или палец по комнате · держи «Орешек» · WASD / стрелки и пробел':'Нарезка: пробел · Конфорки: 1 / 2 / 3 · Телефон: M'} · Esc — пауза</p></section>;
 }
 
 
