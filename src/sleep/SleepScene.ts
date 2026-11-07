@@ -1,3 +1,4 @@
+import {sound} from '../audio/sound';
 import Phaser from 'phaser';
 import {BED,GOAL,MAP,MILK,SIZE,STAGES,enemyInterval,initial,key,sees,stageAt,step,turn,type Direction,type State} from './model';
 
@@ -72,7 +73,7 @@ export default class SleepScene extends Phaser.Scene {
     this.paint(true);
     this.loaded({choose:d=>this.choose(d),start:retry=>this.start(retry),pause:()=>this.pause()});
   }
-  private choose(d:Direction){if(!this.running)return;this.model=turn(this.model,d);this.publish(this.model);}
+  private choose(d:Direction){if(!this.running)return;const was=this.model.queued;this.model=turn(this.model,d);if(this.model.queued!==was)sound.fx('tick');this.publish(this.model);}
   private start(retry:boolean){if(retry){this.model=initial(Date.now());this.lastHud=0;this.stage=0;this.paint(true);}this.scene.resume();this.running=true;this.input.keyboard?.addCapture(captured);this.publish(this.model);}
   private pause(){if(!this.running)return;this.running=false;this.swipe=null;this.input.keyboard?.removeCapture(captured);this.scene.pause();this.publish(this.model);this.paused();}
   private move(object:Phaser.GameObjects.Container,x:number,y:number,snap:boolean,duration=90){

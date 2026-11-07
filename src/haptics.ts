@@ -1,11 +1,15 @@
 export interface HapticApi {
-  impactOccurred(style: 'light' | 'medium'): void;
+  impactOccurred(style: 'light' | 'medium' | 'heavy'): void;
   notificationOccurred(type: 'error' | 'success' | 'warning'): void;
+  selectionChanged?(): void;
 }
-type Event = 'hit' | 'good' | 'win' | 'lose' | 'error';
+type Event = 'hit' | 'good' | 'win' | 'lose' | 'error' | 'thud';
+const LIGHT_GAP = 60;
+const AFTER_STRONG = 90;
 
 export class Haptics {
   private lastAt = -Infinity;
+  private lastLight = -Infinity;
   private lastPriority = 0;
   private lastEvent: Event | undefined;
   private api: () => HapticApi | undefined;
@@ -19,7 +23,21 @@ export class Haptics {
   ) { this.api = api; this.now = now; this.visible = visible; }
 
   cue(event: string) {
-    if (!['hit', 'good', 'win', 'lose', 'error'].includes(event) || !this.visible()) return;
+    if (!this.visible()) return;
+    // Taps and jumps are a light tick: frequent, and never in the way of something that matters.
+    if (event === 'tap' || event === 'jump') {
+      const api = this.api();
+      if (!api) return;
+      const at = this.now();
+      if (at - this.lastLight < LIGHT_GAP || at - this.lastAt < AFTER_STRONG) return;
+      try {
+        if (event === 'tap' && api.selectionChanged) api.selectionChanged();
+        else api.impactOccurred('light');
+        this.lastLight = at;
+      } catch { /* Unsupported clients must not interrupt the game. */ }
+      return;
+    }
+    if (!['hit', 'good', 'win', 'lose', 'error', 'thud'].includes(event)) return;
     const kind = event as Event;
     const api = this.api();
     if (!api) return;
@@ -29,7 +47,8 @@ export class Haptics {
     const cooldown = this.lastEvent === 'win' || this.lastEvent === 'lose' ? 1000 : 350;
     if (at - this.lastAt < cooldown && priority <= this.lastPriority) return;
     try {
-      if (kind === 'hit' || kind === 'good') api.impactOccurred(kind === 'hit' ? 'medium' : 'light');
+      if (kind === 'thud') api.impactOccurred('heavy');
+      else if (kind === 'hit' || kind === 'good') api.impactOccurred(kind === 'hit' ? 'medium' : 'light');
       else api.notificationOccurred(kind === 'win' ? 'success' : 'error');
       this.lastAt = at;
       this.lastPriority = priority;

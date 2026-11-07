@@ -1,3 +1,4 @@
+import {sound} from '../audio/sound';
 import {haptics} from '../haptics';
 import Phaser from 'phaser';
 import SceneBase from '../arcade/SceneBase';
@@ -8,6 +9,7 @@ import {aim,cartCost,cartInitial,cartRating,hold,level,LEVELS,tickCart,CART_HALF
 const frames=[[0,70,405,400],[410,40,330,455],[745,45,405,435],[1150,60,385,420],[65,490,215,480],[350,550,405,410],[770,530,380,405],[1165,535,371,440]];
 const keys:Record<string,number>={ArrowLeft:-1,KeyA:-1,ArrowRight:1,KeyD:1};
 export default class ShopScene extends SceneBase{
+ private countdown=0;
  private model=cartInitial();private lastHud=0;private drawnLevel=-1;
  private header!:Phaser.GameObjects.Text;private budget!:Phaser.GameObjects.Text;private chips:Phaser.GameObjects.Text[]=[];
  private cartBody!:Phaser.GameObjects.Container;private cartLoad!:Phaser.GameObjects.Text;private banner!:Phaser.GameObjects.Text;
@@ -75,7 +77,7 @@ export default class ShopScene extends SceneBase{
  private react(){
   for(const e of this.model.events){
    const bad=e.type==='slip'||e.type==='timeout';if(bad)haptics.cue('error');
-   if(e.type==='clear'){this.flash(e.label);continue;}
+   if(e.type==='clear'){sound.fx('powerup');this.flash(e.label);continue;}if(e.type==='dup')sound.fx('buzz');
    this.pop(Math.max(60,Math.min(WIDTH-60,e.x)),CART_Y-60,e.type==='slip'?'МИНУС ЖИЗНЬ':e.label,bad?'#aa4933':e.type==='swap'?'#9b5725':'#286b56',e.type!=='dup');
    if(bad&&!this.reduced)this.cameras.main.shake(140,.006);
   }
@@ -88,6 +90,8 @@ export default class ShopScene extends SceneBase{
  update(_time:number,delta:number){
   if(!this.running)return;
   const before=this.model;this.model=tickCart(this.model,Math.min(50,delta));
+  // The last seconds of a list count down out loud.
+  const left=Math.ceil((level(this.model).ms-this.model.levelTime)/1000);if(left<=5&&left>0&&left!==this.countdown){this.countdown=left;sound.fx('warn');}
   this.react();if(this.model.level!==this.drawnLevel)this.drawList();
   this.lane.setX(this.model.cartX);this.cartBody.setX(this.model.cartX).setAngle(this.reduced?0:Phaser.Math.Clamp((this.model.cartX-before.cartX)*.8,-6,6));
   this.syncItems();this.refreshHud();

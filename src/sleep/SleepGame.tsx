@@ -2,6 +2,7 @@ import {SoundButton,useSound} from '../audio/useSound';
 import { useEffect, useRef, useState } from 'react';
 import { clock, enemyNames, GOAL, initial, sleepRating, stageAt, STAGES, timeBonus, type Direction } from './model';
 import { saveBest } from '../best';
+import {sound} from '../audio/sound';
 import './sleep.css';
 import type { SleepControls } from './SleepScene';
 const colors=['#ffbc59','#ef6c70','#b499ef','#6dd4ba'];
@@ -11,6 +12,8 @@ export default function SleepGame({onWin,onExit}:{onWin:()=>void;onExit:()=>void
   const [view,setView]=useState(initial),[attempt,setAttempt]=useState(0);
   const [mode,setMode]=useState<'loading'|'error'|'ready'|'playing'|'paused'>('loading');
   useSound('sleep',view.status==='playing'?mode:view.status,view.score,view.lives);
+  const heard=useRef(view);
+  useEffect(()=>{const was=heard.current;heard.current=view;if(view.status!=='playing')return;if((view.quiet>0&&was.quiet<=0)||(view.drowsy>0&&was.drowsy<=0))sound.fx('powerup');if(view.caught>was.caught)sound.fx('coin');if(view.yawns>was.yawns)sound.fx('ding');if(stageAt(view.score)>stageAt(was.score))sound.fx('alarm');},[view]);
   function choose(d:Direction){controls.current?.choose(d);}
   function pause(){controls.current?.pause();}
   function start(retry=false){controls.current?.start(retry);setMode('playing');}

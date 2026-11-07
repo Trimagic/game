@@ -114,7 +114,7 @@ export default function Game({ onWin, onExit }: { onWin: () => void; onExit: () 
         }
         private collect(item: Item) {
           if (item.spawn.kind === 'heart') {
-            if (this.lives < 3) { this.lives++; this.float('+♥', item.body.x, item.body.y, '#ffb3a8', 26); }
+            if (this.lives < 3) { this.lives++; sound.fx('pickup'); this.float('+♥', item.body.x, item.body.y, '#ffb3a8', 26); }
             else { this.score += 50; this.float('+50', item.body.x, item.body.y, '#f5cc5c'); }
             this.cameras.main.flash(120, 255, 240, 220);
           } else {
@@ -148,7 +148,7 @@ export default function Game({ onWin, onExit }: { onWin: () => void; onExit: () 
           const step = speed * dt / 1000;
           for (const stripe of this.markings) { stripe.y += step; if (stripe.y > 650) stripe.y -= 720; }
           const phase = phaseAt(this.elapsed);
-          if (phase !== this.phase) { this.phase = phase; this.banner(phases[phase].name, phase === 2 ? '#c4552d' : '#387c73'); }
+          if (phase !== this.phase) { this.phase = phase; sound.fx('ding'); this.banner(phases[phase].name, phase === 2 ? '#c4552d' : '#387c73'); }
           while (this.next < this.plan.length && this.plan[this.next].at <= this.elapsed) this.spawn(this.plan[this.next++]);
           // The finish banner is timed to cross the rider exactly at 500 m.
           if (!this.finish && this.elapsed >= DURATION - (RIDER_Y + 30) / speed * 1000) {

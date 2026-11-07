@@ -13,7 +13,23 @@ test('haptics throttle repeated collisions and bonuses, but prioritize errors an
   assert.deepEqual(calls, ['light', 'medium', 'error', 'error']);
   now = 700; h.cue('good'); assert.equal(calls.length, 4);
   now = 1400; h.cue('win'); assert.equal(calls.at(-1), 'success');
-  h.cue('tap'); h.cue('jump'); assert.equal(calls.length, 5);
+  h.cue('tap'); assert.equal(calls.length, 5, 'a light tick does not step on a result');
+});
+
+test('taps and jumps are a light tick, a thud is heavy, and neither blocks what matters', () => {
+  let now = 0;
+  const calls: string[] = [];
+  const h = new Haptics(() => ({impactOccurred: value => calls.push(value), notificationOccurred: value => calls.push(value), selectionChanged: () => calls.push('selection')}), () => now);
+  h.cue('tap'); assert.deepEqual(calls, ['selection']);
+  now = 20; h.cue('tap'); assert.equal(calls.length, 1, 'too soon');
+  now = 100; h.cue('jump'); assert.equal(calls.at(-1), 'light');
+  now = 110; h.cue('hit'); assert.equal(calls.at(-1), 'medium', 'a light tick never blocks a hit');
+  now = 150; h.cue('tap'); assert.equal(calls.length, 3, 'nor does it follow straight after one');
+  now = 600; h.cue('thud'); assert.equal(calls.at(-1), 'heavy');
+  now = 1000; h.cue('nonsense'); assert.equal(calls.length, 4);
+  const plain: string[] = [];
+  new Haptics(() => ({impactOccurred: value => plain.push(value), notificationOccurred() {}}), () => 0).cue('tap');
+  assert.deepEqual(plain, ['light'], 'older clients without selectionChanged still tick');
 });
 
 test('missing or failing Telegram SDK and background tabs never interrupt play', () => {

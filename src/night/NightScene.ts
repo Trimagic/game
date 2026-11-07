@@ -201,22 +201,33 @@ export default class NightScene extends SceneBase{
   const wet=s.y>=GROUND-2&&(puddles.some(p=>s.x>p.x&&s.x<p.x+p.w)||FLOODS.some(f=>s.x>f.x&&s.x<f.x+f.w)||(s.x>SLICK.x&&s.x<SLICK.x+SLICK.w));
   const kind=rideKind(s),wasKind=rideKind(before);
   // Landing, take-off, whatever threw you.
-  if(!before.grounded&&s.grounded&&before.vy>120){this.squash=Phaser.Math.Clamp(before.vy/1300,.14,.42);this.emit(s.x,s.y-2,wet?10:7,wet?0xa7dbe5:0xc4c9b6,70,2.6,300,.35);sound.tone(110+Math.min(60,before.vy*.1),.07,'sine',.16);}
-  if(before.grounded&&!s.grounded&&s.vy<0&&kind!=='tank'){if(s.vy<-480){this.squash=.3;this.emit(s.x,s.y,12,0xe59370,150,3);sound.tone(260,.1,'triangle',.22);sound.tone(620,.16,'triangle',.2,.06);this.once('Держись!');}else{this.squash=-.1;this.emit(s.x,s.y-2,4,0xc4c9b6,50,2.2,240,.2);sound.cue('jump');}}
+  if(!before.grounded&&s.grounded&&before.vy>120){this.squash=Phaser.Math.Clamp(before.vy/1300,.14,.42);this.emit(s.x,s.y-2,wet?10:7,wet?0xa7dbe5:0xc4c9b6,70,2.6,300,.35);sound.fx(before.vy>520?'thud':'land');}
+  if(before.grounded&&!s.grounded&&s.vy<0&&kind!=='tank'){if(s.vy<-480){this.squash=.3;this.emit(s.x,s.y,12,0xe59370,150,3);sound.fx('boing');this.once('Держись!');}else{this.squash=-.1;this.emit(s.x,s.y-2,4,0xc4c9b6,50,2.2,240,.2);sound.cue('jump');}}
   // Footsteps and wheels leave dust or splashes.
   this.dustAt+=moved;if(s.grounded&&this.dustAt>(kind?20:36)){this.dustAt=0;this.emit(s.x-s.facing*7,s.y-2,wet?4:kind?3:2,wet?0xa7dbe5:0xbcc2b0,wet?85:42,2.2,280,.4);}
   if(!this.reduced&&ventOn(s.time)&&s.x>VENT.x-10&&s.x<VENT.x+VENT.w+10&&s.y<GROUND&&Math.random()<dt*14)this.emit(s.x,s.y,1,0xeafff8,40,2.2,-120,.5);
-  if(kind==='tank'&&s.jumpHeld&&s.fuel>0&&Math.random()<dt*30){this.emit(s.x-36,s.y-14,1,0xf0a63d,70,2.6,120,.1);if(Math.random()<.2)sound.tone(90+Math.random()*30,.05,'sawtooth',.05);}
+  if(kind==='tank'&&s.jumpHeld&&s.fuel>0&&Math.random()<dt*30){this.emit(s.x-36,s.y-14,1,0xf0a63d,70,2.6,120,.1);if(Math.random()<.2)sound.tone(90+Math.random()*30,.05,'sawtooth',.05);haptics.cue('tap');}
   // Tokens: sparks and a pitch that climbs if you keep the streak going.
   if(s.collected.length>before.collected.length){const b=bonuses[s.collected[s.collected.length-1]];this.streak=s.time-this.lastToken<9?this.streak+1:0;this.lastToken=s.time;this.barPulse=1;this.emit(b.x,b.y,14,0xf3d27b,150,3,220,.15);const root=523*2**(Math.min(this.streak,10)*2/12);sound.tone(root,.09,'triangle',.24);sound.tone(root*1.5,.14,'triangle',.22,.07);haptics.cue('good');}
-  if(s.taken.length>before.taken.length||(s.card&&!before.card)){this.emit(s.x,s.y-30,12,0xffe7a8,130,3,200,.2);sound.tone(660,.1,'triangle',.22);sound.tone(990,.16,'triangle',.2,.08);haptics.cue('good');}
-  if(s.checkpoint>before.checkpoint){this.emit(CHECKPOINTS[s.checkpoint],GROUND-50,10,0x8fe3bd,110,2.6,200,.3);sound.tone(440,.1,'sine',.2);sound.tone(660,.15,'sine',.2,.09);}
+  if(s.taken.length>before.taken.length||(s.card&&!before.card)){this.emit(s.x,s.y-30,12,0xffe7a8,130,3,200,.2);sound.fx('powerup');}
+  if(s.checkpoint>before.checkpoint){this.emit(CHECKPOINTS[s.checkpoint],GROUND-50,10,0x8fe3bd,110,2.6,200,.3);sound.fx('pickup');}
   // The slipper lands with a noise that is visible as a ring.
-  if(before.flight&&!s.flight){this.rings.push({x:before.flight.x,y:GROUND-6,life:.6,color:0xfff3d6});this.emit(before.flight.x,GROUND-4,6,0xc4c9b6,70,2.4);sound.tone(170,.09,'square',.2);}
-  if(s.slippers<before.slippers)sound.tone(420,.08,'sine',.16);
-  if(kind&&!wasKind){this.emit(s.x,s.y-10,8,0xbcc2b0,90,2.6);sound.tone(196,.12,'sawtooth',.14);sound.tone(392,.2,'sawtooth',.12,.09);}
-  if(s.dark>0&&before.dark===0)sound.tone(900,.04,'square',.2);
-  if(s.chaser!==null&&before.chaser===null)sound.tone(740,.3,'sawtooth',.14);
+  if(before.flight&&!s.flight){this.rings.push({x:before.flight.x,y:GROUND-6,life:.6,color:0xfff3d6});this.emit(before.flight.x,GROUND-4,6,0xc4c9b6,70,2.4);sound.fx('thud');}
+  if(s.slippers<before.slippers)sound.fx('whoosh');
+  if(kind&&!wasKind){this.emit(s.x,s.y-10,8,0xbcc2b0,90,2.6);sound.fx('boing');}
+  if(s.dark>0&&before.dark===0)sound.fx('click');
+  if(s.chaser!==null&&before.chaser===null)sound.fx('alarm');
+  // Timed dangers on screen announce themselves, by ear as well as by eye.
+  const near=(x:number,range=240)=>Math.abs(x-s.x)<range;
+  if(s.status==='playing'){
+   if(xrayState(s.time).warn&&!xrayState(before.time).warn&&s.x>XRAY.from-60&&s.x<XRAY.to)sound.fx('alarm');
+   if(xrayState(s.time).x!==null&&xrayState(before.time).x===null&&s.x>XRAY.from-60&&s.x<XRAY.to)sound.fx('whoosh');
+   if(PRESSES.some(p=>near(p.x,170)&&pressState(p,s.time)==='down'&&pressState(p,before.time)!=='down'))sound.fx('thud');
+   if(STEAM.some(k=>near(k.x)&&steamState(k,s.time)==='on'&&steamState(k,before.time)!=='on'))sound.fx('hiss');
+   if(FALLS.some(f=>near(f.x)&&fallState(f,s.time).warn&&!fallState(f,before.time).warn))sound.fx('warn');
+   if(FALLS.some(f=>near(f.x)&&fallState(f,s.time).y===null&&fallState(f,before.time).y!==null))sound.fx('land');
+   if(windAt(s.x,s.time)!==0&&windAt(s.x,before.time)===0)sound.fx('whoosh');
+  }
   if(s.crashes>before.crashes&&wasKind){this.wrecks.push({x:s.x+20,kind:wasKind});this.emit(s.x,s.y-14,22,0xe2c79c,220,3.4);}
   // Hits: stop the world for an instant so the blow lands.
   const caught=s.caught>before.caught;
@@ -224,11 +235,11 @@ export default class NightScene extends SceneBase{
   if(caught){this.emit(before.x,before.y-24,18,0xf8e9bd,200,3.2);this.flashAlpha=.5;this.flashColor=0xffffff;this.squash=.3;this.camX=this.camTarget(s);this.wrecks=this.wrecks.filter(w=>w.x<CHECKPOINTS[s.checkpoint]);haptics.cue('error');sound.tone(150,.2,'sawtooth',.18);if(!this.reduced){this.freeze=130;this.cameras.main.shake(180,.009);}}
   // Patience: lines at thresholds and a heartbeat when it is close.
   for(const [at,line] of PATIENCE_LINES)if(s.patience<at&&before.patience>=at)this.say(line,2.6);
-  if(s.patience<25&&s.status==='playing'){this.beat-=dt;if(this.beat<=0){this.beat=.45+s.patience*.022;sound.tone(68,.1,'sine',.24);sound.tone(58,.11,'sine',.2,.13);}}
+  if(s.patience<25&&s.status==='playing'){this.beat-=dt;if(this.beat<=0){this.beat=.45+s.patience*.022;sound.tone(68,.1,'sine',.24);sound.tone(58,.11,'sine',.2,.13);haptics.cue('jump');}}
   if(s.hidden&&!before.hidden)this.once('Я ширма. Меня нет.');
   if(s.suspicion>.55&&before.suspicion<=.55&&this.bubbleLeft<=0)this.say('Я вешалка. Я просто вешалка.',1.4);
   if(Math.abs(s.x-JOKE_DOOR)<34&&s.y>=GROUND-2)this.once('«Туалет»? Табличка врёт: кладовка.');
-  if(s.news!==this.seenNews){this.seenNews=s.news;if(s.flash==='РЕНТГЕН! −14'&&!this.reduced)this.bones=.55;if(s.flash==='СКРИП!')sound.tone(1200,.06,'square',.08);this.pop(Phaser.Math.Clamp(s.x-this.camX,80,340),Math.max(110,s.y-118),s.flash,caught||s.flash==='ПРОВАЛИЛСЯ!'?'#aa4933':'#286b56',false);const line=FLASH_LINES[s.flash];if(line)this.say(line);}
+  if(s.news!==this.seenNews){this.seenNews=s.news;if(s.flash==='РЕНТГЕН! −14'&&!this.reduced)this.bones=.55;if(s.flash==='СКРИП!')sound.fx('creak');if(s.flash.startsWith('МОКРО'))sound.fx('splash');this.pop(Phaser.Math.Clamp(s.x-this.camX,80,340),Math.max(110,s.y-118),s.flash,caught||s.flash==='ПРОВАЛИЛСЯ!'?'#aa4933':'#286b56',false);const line=FLASH_LINES[s.flash];if(line)this.say(line);}
   const zone=zoneAt(s.x);if(zone>this.zone){this.zone=zone;this.pop(210,120,`${zone+1}/${ZONES.length} ${ZONES[zone].name.toUpperCase()}`,'#9b5725');if(ZONE_LINES[zone])this.say(ZONE_LINES[zone]);}
   this.sky=mix(this.sky,SKY[zoneAt(s.x)],1-Math.exp(-dt*2.5));
   this.camX+=(this.camTarget(s)-this.camX)*(1-Math.exp(-dt*(kind?6:3.6)));

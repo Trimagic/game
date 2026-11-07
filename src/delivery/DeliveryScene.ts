@@ -1,3 +1,4 @@
+import {sound} from '../audio/sound';
 import Phaser from 'phaser';
 import SceneBase from '../arcade/SceneBase';
 import type {ArcadeEvents} from '../arcade/types';
@@ -11,7 +12,7 @@ const keys:Record<string,Direction>={ArrowUp:'up',KeyW:'up',ArrowDown:'down',Key
 export default class DeliveryScene extends SceneBase{
  private spare=spareHearts(losses);private model=initial(this.spare);private stick:Direction|null=null;private pending:Direction|null=null;private pendingAge=0;private drag:{id:number;x:number;y:number}|null=null;private ink!:Phaser.GameObjects.Graphics;private hud!:Phaser.GameObjects.Text;private note!:Phaser.GameObjects.Text;
  private status!:Phaser.GameObjects.Text;private marks:Phaser.GameObjects.Text[]=[];
- private held=new Map<string,Direction>();private stamp=0;
+ private held=new Map<string,Direction>();private stamp=0;private warned=false;
  constructor(events:ArcadeEvents){super('delivery',events);}
  create(){
   this.view={status:'ready',title:'Операция «Обед»',detail:'Три комнаты до курьера. Нажимай или держи стрелки, отпусти — ждать. Жёлтые клетки видны персоналу. В кадке с фикусом тебя не видно, кнопка «Шум» на время всех останавливает, на мокром полу скользко. Врач видит дальше, охранник оглядывается, в вестибюле камера. Собирай приправы в опасных местах. Три сердца: поймали — назад к двери этой комнаты.',actions:[]};
@@ -24,7 +25,9 @@ export default class DeliveryScene extends SceneBase{
   this.paint();
  }
  /** Moves at once if it can, otherwise remembers the press briefly so a quick tap is never lost. */
- private press(dir:Direction){const before=this.model.hero;this.model=tick(this.model,.001,dir);this.react();if(this.model.hero===before){this.pending=dir;this.pendingAge=0;}else this.pending=null;this.paint();}
+ private press(dir:Direction){const before=this.model.hero;this.model=tick(this.model,.001,dir);this.moved(before);this.react();if(this.model.hero===before){this.pending=dir;this.pendingAge=0;}else this.pending=null;this.paint();}
+ /** Footsteps, and a rustle on stepping into a plant. */
+ private moved(before:{x:number;y:number}){const hero=this.model.hero;if(hero===before)return;const map=locations[this.model.level];if(hidden(map,hero)&&!hidden(map,before))sound.fx('rustle');else sound.fx('step');}
  private heading(x:number,y:number):Direction|null{if(Math.hypot(x,y)<.3)return null;return Math.abs(x)>Math.abs(y)?x>0?'right':'left':y>0?'down':'up';}
  protected key(e:KeyboardEvent){if(keys[e.code]){e.preventDefault();this.held.set(e.code,keys[e.code]);}if(e.code==='Enter')this.action('next');if(e.code==='Space'&&!(e.target instanceof HTMLButtonElement)){e.preventDefault();this.action('noise');}}
  protected pause(){this.held.clear();this.stick=null;this.drag=null;this.pending=null;super.pause();}
@@ -33,8 +36,8 @@ export default class DeliveryScene extends SceneBase{
   if(id.startsWith('stick:')){const [x,y]=id.slice(6).split(',').map(Number);const dir=this.heading(x,y);if(dir&&dir!==this.stick)this.press(dir);this.stick=dir;return;}
   if(id==='release:fire')return;
   if(id==='press:fire')id=this.model.status==='between'?'next':'noise';
-  if(id==='next'){this.model=nextLocation(this.model);this.held.clear();}
-  if(id==='noise'){const old=this.model;this.model=makeNoise(old);if(this.model!==old)this.react();}
+  if(id==='next'){this.model=nextLocation(this.model);this.held.clear();sound.fx('pickup');}
+  if(id==='noise'){const old=this.model;this.model=makeNoise(old);if(this.model!==old){sound.fx('crash');this.react();}}
   this.paint();this.sync();
  }
  protected sync(){
@@ -49,7 +52,7 @@ export default class DeliveryScene extends SceneBase{
   g.fillStyle(hero?0xe8dfcd:color===0xe9e7dd?0x644b3a:0x394d48);g.fillEllipse(x,y-12,18,8);
   if(hero){g.fillStyle(0xe8dfcd);g.fillEllipse(x,y,12,7);}else{g.fillStyle(0xeac16c);g.fillRect(x+3,y+3,4,5);}
  }
- private react(){for(const f of this.model.flashes){const x=LEFT+f.cell.x*SIZE+16,y=TOP+f.cell.y*SIZE;this.pop(Phaser.Math.Clamp(x,90,330),Math.max(100,y-8),f.text,f.good?'#286b56':'#aa4933',f.good||f.text.startsWith('«'));if(f.text.startsWith('«')){haptics.cue('error');if(!this.reduced)this.cameras.main.shake(130,.005);}}this.model={...this.model,flashes:[]};}
+ private react(){for(const f of this.model.flashes){const x=LEFT+f.cell.x*SIZE+16,y=TOP+f.cell.y*SIZE;this.pop(Phaser.Math.Clamp(x,90,330),Math.max(100,y-8),f.text,f.good?'#286b56':'#aa4933');if(f.text.startsWith('«')){haptics.cue('error');if(!this.reduced)this.cameras.main.shake(130,.005);}}this.model={...this.model,flashes:[]};}
  private paint(){
   const s=this.model,map=locations[s.level],staff=guards(map,s.staffTime),g=this.ink;g.clear();const quiet=s.noise>0;
     this.hud.setText(`ОПЕРАЦИЯ «ОБЕД» / ${s.level+1} ИЗ 3 · ОЧКИ ${s.score}\n${map.name.toUpperCase()} · ПОДОЗРЕНИЕ ${Math.round(s.suspicion*100)}%`);
@@ -75,8 +78,11 @@ export default class DeliveryScene extends SceneBase{
  }
  update(_t:number,delta:number){
   if(!this.running)return;if(delta>500){this.pause();return;}
-  const before=this.model.hero;this.pendingAge+=delta;if(this.pendingAge>220)this.pending=null;
-  this.model=tick(this.model,delta/1000,this.stick??[...this.held.values()].at(-1)??this.pending);if(this.model.hero!==before)this.pending=null;this.react();this.paint();
+  const before=this.model.hero,was=this.model;this.pendingAge+=delta;if(this.pendingAge>220)this.pending=null;
+  this.model=tick(this.model,delta/1000,this.stick??[...this.held.values()].at(-1)??this.pending);if(this.model.hero!==before)this.pending=null;this.moved(before);
+  if(this.model.suspicion>=.6&&was.suspicion<.6)sound.fx('alarm');if(this.model.status==='between'&&was.status==='playing')sound.fx('powerup');
+  const warned=this.model.status==='playing'&&this.model.noise<=0&&guards(locations[this.model.level],this.model.staffTime).some(a=>a.warn);if(warned&&!this.warned)sound.fx('warn');this.warned=warned;
+  this.react();this.paint();
   if(this.model.status==='lost'){losses++;this.held.clear();this.stick=null;this.finish(false,'Обед отменяется.',`Сердца кончились в комнате «${locations[this.model.level].name}». Дождись прохода, прячься в фикусах и береги шум для опасного участка. ${losses%2===1?'В следующий раз персонал устанет: будет лишнее сердце.':''}`);return;}
   if(this.model.status==='done'){losses=0;this.running=false;const stars=deliveryRating(this.model),total=finalScore(this.model),saved=saveBest('delivery-best',total);this.bridge.publish({status:'story',title:`${'★'.repeat(stars)}${'☆'.repeat(3-stars)} Доставка перехвачена.`,detail:`${total} очков. ${saved.record?'Новый личный рекорд!':`Рекорд: ${saved.best}.`} Медсестра уже подготовила встречное предложение.`,actions:[]});return;}
   this.stamp+=delta;if(this.stamp>120){this.stamp=0;this.sync();}

@@ -1,3 +1,4 @@
+import {sound} from '../audio/sound';
 import Phaser from 'phaser';
 import SceneBase from '../arcade/SceneBase';
 import type {ArcadeEvents} from '../arcade/types';
@@ -22,9 +23,10 @@ export default class RemoteScene extends SceneBase{
  protected key(e:KeyboardEvent){if(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code)){e.preventDefault();this.keys.add(e.code);if(e.code==='Space')this.action('fire');}}
  action(id:string){if(!this.running)return;
   if(id.startsWith('stick:')){const [x,y]=id.slice(6).split(',').map(Number);this.stick={x,y};return;}
-  if(id==='press:fire'){this.firing=true;this.action('fire');return;}
+  if(id==='press:fire'){this.firing=true;if(this.model.ammo===0)sound.fx('buzz');this.action('fire');return;}
   if(id==='release:fire'){this.firing=false;return;}
-  if(id==='fire'){this.model=fire(this.model);this.paint();this.sync();}}
+  if(id==='fire'){this.throwNut();this.paint();this.sync();}}
+ private throwNut(){const old=this.model;this.model=fire(old);if(this.model.ammo<old.ammo)sound.fx('whoosh');}
  protected sync(){const s=this.model;this.view={status:'playing',title:s.status==='playing'?`${PHASES[phaseAt(s.time)].name} · до передачи ${Math.ceil(END-s.time)} с · ${s.score} очков`:'Пульт почти твой…',detail:s.status==='playing'?this.caption.text:'За спиной кто-то есть.',actions:[{id:'fire',label:'Бросить орешек · пробел',disabled:s.status!=='playing'||s.cooldown>0||s.ammo===0}]};this.bridge.publish(this.view);}
  private paint(){const s=this.model,g=this.ink;g.clear();const phase=phaseAt(s.time);
   this.hud.setText(`${PHASES[phase].name.toUpperCase()}\nДО ПЕРЕДАЧИ ${Math.ceil(END-s.time)} С · ОЧКИ ${s.score}`);
@@ -64,9 +66,13 @@ export default class RemoteScene extends SceneBase{
   const has=(...codes:string[])=>codes.some(c=>this.keys.has(c));
   const keyed={x:Number(has('KeyD','ArrowRight'))-Number(has('KeyA','ArrowLeft')),y:Number(has('KeyS','ArrowDown'))-Number(has('KeyW','ArrowUp'))};
   const input=this.stick.x||this.stick.y?this.stick:keyed;
-  if(this.firing||has('Space'))this.model=fire(this.model);
+  if(this.firing||has('Space'))this.throwNut();
   const old=this.model;this.model=tick(old,delta/1000,input);const s=this.model;
   for(const f of s.flashes){this.pop(Phaser.Math.Clamp(f.x,70,350),Math.max(120,f.y-34),f.text,f.good?'#286b56':'#aa4933');if(!f.good){haptics.cue('error');if(!this.reduced)this.cameras.main.shake(130,.005);}}
+  if(s.hits>old.hits)sound.fx('coin');if(s.cartHits>old.cartHits)sound.fx('powerup');if(s.rugTime>0&&old.rugTime===0)sound.fx('ding');if(s.shots.length>old.shots.length)sound.fx('whoosh');
+  if(s.cart&&s.cart.warn>0&&!(old.cart&&old.cart.warn>0))sound.fx('alarm');
+  if(s.rivals.some(e=>(e.mode==='wind'||e.mode==='aim')&&!['wind','aim'].includes(old.rivals.find(o=>o.id===e.id)?.mode??'')))sound.fx('warn');
+  if(old.ending<1.4&&s.ending>=1.4)sound.fx('crash');
   if(s.hits>old.hits)this.pop(Phaser.Math.Clamp(s.hero.x,70,350),Math.max(120,s.hero.y-46),'+10 ОРЕШЕК','#9b5725',false);
   const phase=phaseAt(s.time);if(phase!==this.phase&&s.status==='playing'){this.phase=phase;this.pop(210,122,PHASES[phase].name.toUpperCase(),'#286b56');}
   this.paint();

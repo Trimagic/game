@@ -1,4 +1,3 @@
-import {haptics} from '../haptics';
 import {sound} from '../audio/sound';
 import Phaser from 'phaser';
 import SceneBase from '../arcade/SceneBase';
@@ -22,7 +21,7 @@ export default class RunScene extends SceneBase{
   const release=(p:Phaser.Input.Pointer)=>{if(this.pointerIds.delete(p.id))this.setDuck('p'+p.id,false);};this.input.on('pointerup',release);this.input.on('pointerupoutside',release);
   this.input.keyboard?.on('keyup',(e:KeyboardEvent)=>{if(['ArrowDown','KeyS'].includes(e.code))this.setDuck(e.code,false);});this.paint();
  }
- private setDuck(id:string,down:boolean){if(!this.running)return;down?this.crouching.add(id):this.crouching.delete(id);this.model=runAction(this.model,this.crouching.size?'down':'up');this.paint();}
+ private setDuck(id:string,down:boolean){if(!this.running)return;down?this.crouching.add(id):this.crouching.delete(id);const was=this.model.runner.duck;this.model=runAction(this.model,this.crouching.size?'down':'up');if(this.model.runner.duck&&!was)sound.fx('whoosh');this.paint();}
  protected pause(){this.crouching.clear();this.pointerIds.clear();this.model=runAction(this.model,'up');super.pause();}
  protected key(e:KeyboardEvent){if(['ArrowUp','KeyW','Space','ArrowDown','KeyS','KeyF'].includes(e.code)){if(e.target instanceof HTMLButtonElement&&e.code==='Space')return;e.preventDefault();if(['ArrowDown','KeyS'].includes(e.code))this.setDuck(e.code,true);else this.action(e.code==='KeyF'?'focus':'jump');}}
  action(id:string){if(!this.running)return;if(id.startsWith('down:')||id.startsWith('up:')){const [kind,...source]=id.split(':');this.setDuck(source.join(':'),kind==='down');return;}if(id==='jump'||id==='focus'){const old=this.model;this.model=runAction(old,id);if(id==='jump'&&this.model!==old)sound.cue('jump');if(id==='focus'&&old!==this.model)this.pop(210,245,'ФОКУС · ВРЕМЯ МЕДЛЕННЕЕ','#286b56');}this.paint();this.sync();}
@@ -72,7 +71,8 @@ export default class RunScene extends SceneBase{
   const zone=zoneAt(s.runner.time);if(zone!==this.zone){this.zone=zone;this.pop(210,180,ZONES[zone].name.toUpperCase(),'#286b56');}
   if(s.runner.taken.length>old.runner.taken.length)this.pop(210,190,s.runner.boots>old.runner.boots?'ДВОЙНОЙ ПРЫЖОК!':'ВОДА: ПЛЮС СЕРДЦЕ','#9b5725');
   if(s.runner.lives<old.runner.lives){this.pop(210,200,'ОЙ! МИНУС СЕРДЦЕ','#aa4933',s.runner.status==='playing');if(!this.reduced)this.cameras.main.shake(110,.004);}
-  else if(s.collected.length>old.collected.length)haptics.cue('good');
+  else if(s.collected.length>old.collected.length)sound.fx('coin');
+  if(old.runner.y>0&&s.runner.y===0)sound.fx('land');
   if(s.runner.lives===old.runner.lives&&s.combo>old.combo)this.pop(210,210,`ЧИСТО! СЕРИЯ ×${s.combo}`,'#286b56');this.paint();
   if(s.runner.status!=='playing'){const won=s.runner.status==='won';if(won){const stars=runRating(s),saved=saveBest('run-best',s.score);this.finish(true,`${'★'.repeat(stars)}${'☆'.repeat(3-stars)} Километр позади! ${s.score} очков`,`Искр ${s.collected.length} из ${s.tokens.length}, столкновений ${s.runner.hits.length}, лучшая серия ×${s.best}. ${saved.record?'Новый личный рекорд!':`Рекорд: ${saved.best}.`} Успел на автобус.`);}else this.finish(false,'Сбавим обороты?',`${Math.floor(s.runner.time/60*1000)} метров · ${s.score} очков · лучшая серия ×${s.best}. Зона: ${ZONES[zoneAt(s.runner.time)].name}. ${s.runner.message}`);return;}
   if(s.runner.time-this.lastHud>.12){this.lastHud=s.runner.time;this.sync();}

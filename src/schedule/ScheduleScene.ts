@@ -37,9 +37,10 @@ export default class ScheduleScene extends SceneBase{
   // Pad buttons act on touch; holding a move button keeps it going, like a held key.
   const [kind,name]=id.split(':');
   if(kind==='release'){if(this.repeat?.action===name)this.repeat=null;return;}
-  if(kind==='press'){sound.cue('tap');if(REPEATS.includes(name as PlanAction))this.repeat={action:name as PlanAction,next:this.time.now+REPEAT_DELAY};this.action(name);return;}
-  if(!actions.includes(id as PlanAction))return;const old=this.model;this.model=planAction(old,id as PlanAction);this.changed(old);}
+  if(kind==='press'){if(REPEATS.includes(name as PlanAction))this.repeat={action:name as PlanAction,next:this.time.now+REPEAT_DELAY};this.action(name);return;}
+  if(!actions.includes(id as PlanAction))return;const old=this.model;this.model=planAction(old,id as PlanAction);const p=this.model.piece,q=old.piece;if(p.x!==q.x||p.y!==q.y||p.rotation!==q.rotation||p.type!==q.type||this.model.placed!==old.placed)sound.fx(id==='rotate'?'click':id==='drop'?'whoosh':id==='hold'?'whoosh':id==='stamp'?'ding':'tick');this.changed(old);}
  private changed(old:PlanGame){const s=this.model;this.paint();
+  if(s.placed>old.placed)sound.fx('land');if(s.lines-old.lines>1)sound.fx('powerup');
   if(s.lines>old.lines)this.pop(145,270,`+${s.lines-old.lines} ${s.lines-old.lines>1?'ЛИНИИ':'ЛИНИЯ'}`,'#286b56');
   if(s.news>old.news){const bad=s.flash==='ДЕДЛАЙН!'||s.flash==='ГОСТИ!';this.pop(145,215,s.flash,bad?'#aa4933':'#9b5725',s.lines===old.lines);if(bad){haptics.cue('error');if(!this.reduced)this.cameras.main.shake(130,.005);}}
   if(s.status==='won'){const stars=planRating(s),saved=saveBest('plan-best',s.score);this.finish(true,`${'★'.repeat(stars)}${'☆'.repeat(3-stars)} Неделя сложилась! ${s.score} очков`,`Дел разложено: ${s.placed}. Сбалансированных линий: ${s.balanced}, линий с отдыхом: ${s.rested}. ${saved.record?'Новый личный рекорд!':`Рекорд: ${saved.best}.`} Работа, сон и жизнь наконец поместились.`);}

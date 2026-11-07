@@ -1,3 +1,4 @@
+import {sound} from '../audio/sound';
 import {haptics} from '../haptics';
 import Phaser from 'phaser';
 import SceneBase from '../arcade/SceneBase';
@@ -12,7 +13,7 @@ const names:Record<Kind,string>={tomato:'Помидоры',broccoli:'Брокк�
 const BAR=116;
 const burnerX=[72,210,348];
 export default class CookScene extends SceneBase{
- private model=precisionInitial(Date.now());private prepClock?:Phaser.GameObjects.Text;private drawn='';private lastHud=0;
+ private model=precisionInitial(Date.now());private ringIn=0;private hot=[false,false,false];private prepClock?:Phaser.GameObjects.Text;private drawn='';private lastHud=0;
  private clock?:Phaser.GameObjects.Text;private panels:Phaser.GameObjects.Rectangle[]=[];private fills:Phaser.GameObjects.Rectangle[]=[];private stepLabels:Phaser.GameObjects.Text[]=[];
  private steam:Phaser.GameObjects.Arc[]=[];private foodSprites:Phaser.GameObjects.Image[]=[];
  private phone?:Phaser.GameObjects.Rectangle;private phoneText?:Phaser.GameObjects.Text;
@@ -29,14 +30,14 @@ export default class CookScene extends SceneBase{
   this.input.on('pointermove',(p:Phaser.Input.Pointer)=>{if(!this.running||this.stroke?.id!==p.id||!p.isDown)return;const from={x:this.stroke.x,y:this.stroke.y},to={x:p.x,y:p.y};this.stroke={...to,id:p.id};this.trailPts.push({...to,t:this.time.now});this.cut(from,to);});
   const end=()=>{this.stroke=null;};this.input.on('pointerup',end);this.input.on('pointerupoutside',end);
   this.input.on('drag',(_p:Phaser.Input.Pointer,obj:Phaser.GameObjects.Image,x:number,y:number)=>{if(this.running)obj.setPosition(x,y);});
-  this.input.on('dragend',(_p:Phaser.Input.Pointer,obj:Phaser.GameObjects.Image)=>{const id=obj.getData('part') as number;const target=this.platePosition(id);if(this.running&&Phaser.Math.Distance.Between(obj.x,obj.y,target.x,target.y)<63)this.action(`plate:${id}`);else{if(this.running)haptics.cue('error');this.model.feedback='Перенеси часть блюда в подсвеченную область с её названием.';this.draw();this.sync();}});
+  this.input.on('dragend',(_p:Phaser.Input.Pointer,obj:Phaser.GameObjects.Image)=>{const id=obj.getData('part') as number;const target=this.platePosition(id);if(this.running&&Phaser.Math.Distance.Between(obj.x,obj.y,target.x,target.y)<63)this.action(`plate:${id}`);else{if(this.running)sound.fx('buzz');this.model.feedback='Перенеси часть блюда в подсвеченную область с её названием.';this.draw();this.sync();}});
  }
  protected pause(){this.stroke=null;this.trailPts=[];this.trail?.clear();super.pause();}
  private cut(from:{x:number;y:number},to:{x:number;y:number}){if(this.model.cook.stage!=='prep')return;const old=this.model;this.model=preciseAction(old,{type:'slice',from,to});if(this.model!==old)this.afterChop(old);}
  private afterChop(old:typeof this.model){this.reactChop(this.model.chop===old.chop?[]:this.model.chop.events);if(this.drawn!==this.model.cook.stage||this.drawnBoard!==this.model.chop.board)this.draw();this.syncPieces();this.refreshPrep();this.sync();}
  private reactChop(events:ChopEvent[]){
   for(const e of events){
-   if(e.type==='cut'&&e.kind)this.splitPiece(e.x,e.y,e.kind);
+   if(e.type==='cut'&&e.kind){sound.fx('cut');this.splitPiece(e.x,e.y,e.kind);}
    if(e.type==='wrong'){haptics.cue('error');this.pop(Phaser.Math.Clamp(e.x,110,310),Math.max(150,e.y-30),e.label,'#aa4933');if(!this.reduced)this.cameras.main.shake(140,.006);}
    if(e.type==='multi')this.pop(Phaser.Math.Clamp(e.x,90,330),Math.max(150,e.y-40),e.label,'#9b5725');
    if(e.type==='board')this.pop(210,280,e.label,'#286b56');
@@ -61,7 +62,8 @@ export default class CookScene extends SceneBase{
   if(type==='burner')a={type:'burner',index:Number(value)};
   if(type==='plate')a={type:'plate',part:Number(value)};
   if(!a)return;const old=this.model;this.model=preciseAction(this.model,a);if(type==='cut'){this.afterChop(old);return;}
-  if(type==='burner'&&this.model.stove.events.some(e=>e.type==='early'))haptics.cue('error');
+  if(type==='burner'&&this.model.stove.events.some(e=>e.type==='early'))sound.fx('buzz');
+  if(type==='start'&&this.model!==old)sound.fx('hiss');if(type==='plate'&&this.model!==old)sound.fx('pickup');if(type==='answer'&&this.model!==old)sound.fx('click');
   this.react(old);if(this.drawn!==this.model.cook.stage)this.draw();
   if(type!=='burner'&&this.model.quality>old.quality)this.pop(210,170,`+${this.model.quality-old.quality} ${type==='answer'?'МАМА ДОВОЛЬНА':'✓'}`);
   if(this.model.cook.stage==='won'){const m=this.model,stars=cookRating(m.quality),saved=saveBest('cook-best',m.quality),burns=m.stove.burners.reduce((n,b)=>n+b.burns,0);this.finish(true,`${'★'.repeat(stars)}${'☆'.repeat(3-stars)} Ужин готов! ${m.quality} очков`,`Нарезка за ${(m.prepMs/1000).toFixed(1)} с (+${m.prepBonus}), у плиты ${m.stove.time.toFixed(0)} с, подгорело: ${burns}, лучшая серия: ${m.best}, ${m.stove.phone==='answered'?'маме ответил':'мама обиделась'}. ${saved.record?'Новый личный рекорд!':`Рекорд: ${saved.best}.`}`);}else this.sync();
@@ -74,9 +76,11 @@ export default class CookScene extends SceneBase{
    if(e.type==='perfect'||e.type==='done'){this.pop(x,140,e.type==='perfect'?'+30 ИДЕАЛЬНО':'+20 ВОВРЕМЯ',e.type==='perfect'?'#9b5725':'#286b56');const food=this.foodSprites[e.burner];if(food&&!this.reduced)this.tweens.add({targets:food,angle:16,y:food.y-10,duration:160,yoyo:true});}
    if(e.type==='early')this.pop(x,140,'РАНО!','#aa4933',false);
    if(e.type==='burn'){haptics.cue('error');this.pop(x,140,'ГОРИТ!','#aa4933');if(!this.reduced)this.cameras.main.shake(140,.006);}
-   if(e.type==='finish')this.pop(x,190,'СНЯТО ✓','#286b56',false);
+   if(e.type==='finish'){sound.fx('ding');this.pop(x,190,'СНЯТО ✓','#286b56',false);}
   }
  }
+ /** The phone keeps ringing until answered; a dish reaching the green zone calls for attention. */
+ private stoveCues(delta:number){const st=this.model.stove;if(st.phone==='ringing'){this.ringIn-=delta;if(this.ringIn<=0){this.ringIn=1100;sound.fx('ring');}}else this.ringIn=0;DISHES.forEach((_,i)=>{const hot=ready(st,i)&&!finished(st,i);if(hot&&!this.hot[i])sound.fx('tick');this.hot[i]=hot;});}
  protected sync(){const s=this.model.cook,st=this.model.stove;const actions=[];
   if(s.stage==='prep')actions.push({id:'cut',label:'Резать нижний кусок · пробел'});
   if(s.stage==='ready')actions.push({id:'start',label:'Включить плиту →'});
@@ -133,5 +137,5 @@ export default class CookScene extends SceneBase{
   this.steam.forEach((p,n)=>{const i=Math.floor(n/3),b=st.burners[i];const phase=(st.time/1.4+n/3)%1;p.setY(this.reduced?190:212-phase*36).setAlpha(finished(st,i)||b.delay>0?0:this.reduced?.2:(1-phase)*(.3+b.progress*.5)).setFillStyle(b.progress>PERFECT[1]?0x8a8a8a:0xfff9e9);});
   const call=st.phone==='ringing';this.phone?.setFillStyle(call?0xefb085:0xd3ddd0);this.phoneText?.setText(call?'МАМА: «ТЫ ПОЕЛ?» · РУКИ ЗАНЯТЫ!\nНАЖМИ, ЧТОБЫ ОТВЕТИТЬ · M':st.phone==='answered'?'«МАМ, Я ГОТОВЛЮ! ПЕРЕЗВОНЮ!»':st.phone==='missed'?'ПРОПУЩЕННЫЙ ВЫЗОВ: МАМА (1)':'МАМА ПОЗВОНИТ. КАК ВСЕГДА ВОВРЕМЯ.');
  }
- update(_time:number,delta:number){this.drawTrail();if(!this.running)return;if(this.model.cook.stage==='prep'){const old=this.model;this.model=preciseAction(this.model,{type:'tick',delta:Math.min(50,delta)});if(this.drawnBoard!==this.model.chop.board||this.drawn!==this.model.cook.stage)this.afterChop(old);else{this.syncPieces();this.refreshPrep();}return;}if(this.model.cook.stage!=='stove')return;const before=this.model;this.model=preciseAction(this.model,{type:'tick',delta:Math.min(50,delta)});this.react(before);if(this.model.cook.stage==='lost'){this.finish(false,'Дым — не приправа.','Три раза подгорело. Следи за всеми тремя конфорками: когда полоска в зелёном — жми. Звонок мамы занимает руки — отвечай сразу.');return;}if(this.drawn!==this.model.cook.stage)this.draw();else this.refreshStove();if(this.model.stove.time*1000-this.lastHud>=100||this.model.cook.stage==='plate'){this.lastHud=this.model.stove.time*1000;this.sync();}}
+ update(_time:number,delta:number){this.drawTrail();if(!this.running)return;if(this.model.cook.stage==='prep'){const old=this.model;this.model=preciseAction(this.model,{type:'tick',delta:Math.min(50,delta)});if(this.drawnBoard!==this.model.chop.board||this.drawn!==this.model.cook.stage)this.afterChop(old);else{this.syncPieces();this.refreshPrep();}return;}if(this.model.cook.stage!=='stove')return;const before=this.model;this.model=preciseAction(this.model,{type:'tick',delta:Math.min(50,delta)});this.react(before);this.stoveCues(delta);if(this.model.cook.stage==='lost'){this.finish(false,'Дым — не приправа.','Три раза подгорело. Следи за всеми тремя конфорками: когда полоска в зелёном — жми. Звонок мамы занимает руки — отвечай сразу.');return;}if(this.drawn!==this.model.cook.stage)this.draw();else this.refreshStove();if(this.model.stove.time*1000-this.lastHud>=100||this.model.cook.stage==='plate'){this.lastHud=this.model.stove.time*1000;this.sync();}}
 }

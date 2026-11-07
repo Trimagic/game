@@ -77,7 +77,7 @@ export default function PoolGame({ onWin, onExit }: { onWin: () => void; onExit:
           this.waveText = this.add.text(180, 58, '', { fontFamily:'sans-serif',fontSize:'12px',fontStyle:'bold',color:'#ffe3ab' }).setOrigin(.5).setDepth(10);
           this.keyboard = this.input.keyboard!.createCursorKeys();
           this.space = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
-          this.input.on('pointerdown', () => { this.held = true; });
+          this.input.on('pointerdown', () => { this.held = true; sound.fx('tick'); });
           this.input.on('pointerup', () => { this.held = false; });
           this.input.on('pointerupoutside', () => { this.held = false; });
           this.input.on('gameout', () => { this.held = false; });
@@ -113,7 +113,7 @@ export default function PoolGame({ onWin, onExit }: { onWin: () => void; onExit:
           const model = this.model;
           for (const event of model.events) {
             if (event === 'soap' && model.score > this.scoreSeen) this.float(`+${model.score - this.scoreSeen}`, PLAYER_X + 30, model.y - 35, '#ffd6e3');
-            if (event === 'shield') { this.banner('Пенный щит!', '#2a8c96'); sound.cue('jump'); }
+            if (event === 'shield') { this.banner('Пенный щит!', '#2a8c96'); sound.fx('powerup'); }
             if (event === 'wall') {
               const edge = this.edges[model.y < 315 ? 0 : 1];
               this.tweens.killTweensOf(edge); edge.setAlpha(1);
