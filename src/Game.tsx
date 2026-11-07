@@ -2,11 +2,13 @@ import {SoundButton,useSound} from './audio/useSound';
 import {sound} from './audio/sound';
 import { useEffect, useRef, useState } from 'react';
 import { saveBest } from './best';
-import { CLEAN_BONUS, course, DURATION, multiplier, phaseAt, phases, rating, speedAt, STAR_POINTS, type Spawn } from './bike/model';
+import { clampLane, CLEAN_BONUS, course, DURATION, laneAt, laneX, multiplier, phaseAt, phases, rating, speedAt, STAR_POINTS, type Spawn } from './bike/model';
 
 type Result = { score: number; collected: number; total: number; stars: number; best: number; record: boolean; clean: boolean };
-const laneX = (lane: number) => 84 + lane * 96;
 const RIDER_Y = 470;
+// Forgiving on purpose: a near miss counts as a miss, and a star just beside you is still yours.
+const HIT_REACH = 36;
+const PICKUP_REACH = 48;
 
 export default function Game({ onWin, onExit }: { onWin: () => void; onExit: () => void }) {
   const host = useRef<HTMLDivElement>(null);
@@ -62,22 +64,34 @@ export default function Game({ onWin, onExit }: { onWin: () => void; onExit: () 
           }
           this.rider = this.add.image(180, RIDER_Y, 'cast', 0).setDepth(5);
           this.rider.setScale(130 / this.rider.height);
-          const move = (direction: number) => {
-            if (this.done || this.scene.isPaused()) return;
-            sound.cue('tap'); this.lane = Phaser.Math.Clamp(this.lane + direction, 0, 2);
+          // Changing lane is quick and the bike leans into it, so a press is felt at once.
+          const steer = (lane: number) => {
+            const next = clampLane(lane);
+            if (this.done || this.scene.isPaused() || next === this.lane) return false;
+            const lean = next > this.lane ? 1 : -1;
+            this.lane = next;
+            sound.fx('whoosh');
             this.tweens.killTweensOf(this.rider);
-            this.tweens.add({ targets: this.rider, x: laneX(this.lane), duration: 130, ease: 'Sine.easeOut' });
+            this.rider.setAngle(lean * 13);
+            this.tweens.add({ targets: this.rider, x: laneX(next), duration: 90, ease: 'Sine.easeOut' });
+            this.tweens.add({ targets: this.rider, angle: 0, delay: 70, duration: 130, ease: 'Sine.easeOut' });
+            return true;
+          };
+          // Pushing against the edge of the path gives a small nudge instead of doing nothing.
+          const move = (direction: number) => {
+            if (steer(this.lane + direction) || this.done || this.scene.isPaused()) return;
+            this.tweens.killTweensOf(this.rider);
+            this.rider.setX(laneX(this.lane));
+            this.tweens.add({ targets: this.rider, x: laneX(this.lane) + direction * 9, duration: 55, yoyo: true, ease: 'Sine.easeOut' });
           };
           controls.current = { move, pause: value => value ? this.scene.pause() : this.scene.resume() };
           this.input.keyboard?.on('keydown-LEFT', (event: KeyboardEvent) => { event.preventDefault(); move(-1); });
           this.input.keyboard?.on('keydown-RIGHT', (event: KeyboardEvent) => { event.preventDefault(); move(1); });
           this.input.keyboard?.on('keydown-A', () => move(-1));
           this.input.keyboard?.on('keydown-D', () => move(1));
-          // A swipe moves in its direction; a tap steers toward the tapped edge.
-          this.input.on('pointerup', (pointer: import('phaser').Input.Pointer) => {
-            const dx = pointer.x - pointer.downX;
-            move(Math.abs(dx) > 28 ? Math.sign(dx) : pointer.x < 180 ? -1 : 1);
-          });
+          // The road is the control: touch a lane to go there at once, or keep the finger down and drag.
+          this.input.on('pointerdown', (pointer: import('phaser').Input.Pointer) => { steer(laneAt(pointer.x)); });
+          this.input.on('pointermove', (pointer: import('phaser').Input.Pointer) => { if (pointer.isDown) steer(laneAt(pointer.x)); });
           this.banner(phases[0].name, '#387c73');
           if (!disposed) setState('playing');
         }
@@ -167,8 +181,8 @@ export default function Game({ onWin, onExit }: { onWin: () => void; onExit: () 
               if (item.arrow) this.tweens.add({ targets: item.arrow, alpha: 0, duration: 450 });
             }
             const pickup = spawn.kind === 'star' || spawn.kind === 'heart';
-            if (pickup && Math.abs(body.x - this.rider.x) < 40 && Math.abs(body.y - this.rider.y) < 46) { this.collect(item); continue; }
-            if (!pickup && Math.abs(body.x - this.rider.x) < 42 && Math.abs(body.y - this.rider.y) < 44 && this.invincible === 0) {
+            if (pickup && Math.abs(body.x - this.rider.x) < PICKUP_REACH && Math.abs(body.y - this.rider.y) < 50) { this.collect(item); continue; }
+            if (!pickup && Math.abs(body.x - this.rider.x) < HIT_REACH && Math.abs(body.y - this.rider.y) < 40 && this.invincible === 0) {
               this.lives--; this.invincible = 1400; this.streak = 0;
               this.cameras.main.shake(140, .007);
               const text = this.add.text(180, 320, 'Осторожнее!', { fontFamily: 'sans-serif', fontSize: '25px', color: '#fff8e7', backgroundColor: '#a4422d', padding: { x: 14, y: 8 } }).setOrigin(.5).setDepth(10);
@@ -190,6 +204,12 @@ export default function Game({ onWin, onExit }: { onWin: () => void; onExit: () 
     }).catch(() => { if (!disposed) setState('error'); });
     return () => { disposed = true; controls.current = null; game?.destroy(true); };
   }, [round]);
+  // Buttons act the moment they are touched, not when the finger lifts. A keyboard click has detail 0.
+  const steerButton = (direction: number) => ({
+    onPointerDown: (event: React.PointerEvent) => { event.preventDefault(); controls.current?.move(direction); },
+    onClick: (event: React.MouseEvent) => { if (event.detail === 0) controls.current?.move(direction); },
+    onContextMenu: (event: React.MouseEvent) => event.preventDefault(),
+  });
   function pause() {
     const paused = state === 'playing';
     controls.current?.pause(paused);
@@ -199,7 +219,7 @@ export default function Game({ onWin, onExit }: { onWin: () => void; onExit: () 
     <div className="ride-top"><div><span className="eyebrow">ЭТАП 01</span><h2>Первый заезд</h2></div><button className="small-button" disabled={!['playing', 'paused'].includes(state)} onClick={pause}>{state === 'paused' ? 'Продолжить' : 'Пауза'}</button></div>
     <div className="ride-hud"><b>{hud.distance} <span>/ 500 м</span></b><span className="ride-score" aria-label={`Очки: ${hud.score}`}>★ {hud.score}{hud.combo > 1 && <i>×{hud.combo}</i>}</span><span aria-label={`Осталось попыток: ${hud.lives}`}>{'♥'.repeat(hud.lives)}{'♡'.repeat(3 - hud.lives)}</span></div>
     <progress className="distance-bar" value={hud.distance} max={500} aria-label="Пройденная дистанция" />
-    <div className="game-wrap"><div className="game" ref={host} aria-label="Велозаезд. Управляй стрелками влево и вправо, свайпом или кнопками под игрой." />
+    <div className="game-wrap"><div className="game" ref={host} aria-label="Велозаезд. Коснись полосы или веди по дороге пальцем, управляй стрелками или кнопками под игрой." />
       {state === 'won' && result && <div className="game-overlay" role="status"><div>
         <span className="eyebrow">ФИНИШ · 500 М</span>
         <div className="ride-rating" aria-label={`Оценка: ${result.stars} из 3`}>{'★'.repeat(result.stars)}<span>{'★'.repeat(3 - result.stars)}</span></div>
@@ -217,8 +237,8 @@ export default function Game({ onWin, onExit }: { onWin: () => void; onExit: () 
         {state !== 'loading' && <button className="text-button" onClick={onExit}>К истории</button>}
       </div></div>}
     </div>
-    <div className="ride-controls"><button aria-label="Повернуть влево" disabled={state !== 'playing'} onClick={() => controls.current?.move(-1)}>← <span>Влево</span></button><button aria-label="Повернуть вправо" disabled={state !== 'playing'} onClick={() => controls.current?.move(1)}><span>Вправо</span> →</button></div>
-    <p className="control-hint">Стрелки ← → / A D · свайп или нажатие по краю дорожки · собирай звёзды подряд</p>
+    <div className="ride-controls"><button aria-label="Повернуть влево" disabled={state !== 'playing'} {...steerButton(-1)}>← <span>Влево</span></button><button aria-label="Повернуть вправо" disabled={state !== 'playing'} {...steerButton(1)}><span>Вправо</span> →</button></div>
+    <p className="control-hint">Коснись полосы или веди пальцем по дороге · кнопки или ← → / A D · собирай звёзды подряд</p>
     <button className="text-button" onClick={onExit}>Выйти из заезда</button>
   </section>;
 }

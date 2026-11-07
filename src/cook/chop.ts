@@ -4,7 +4,7 @@ export type Board='veg'|'meat'|'done';
 export const BOARD={left:20,right:400,top:130,bottom:430};
 export const NEED:Record<'veg'|'meat',Partial<Record<Kind,number>>>={veg:{tomato:4,broccoli:4},meat:{chicken:4}};
 export const RADIUS=34;
-export const GRAVITY=170;
+export const GRAVITY=70;
 export const SWITCH_MS=1300;
 export type Piece={id:number;kind:Kind;x:number;y:number;vx:number;vy:number};
 export type ChopEvent={type:'cut'|'wrong'|'multi'|'board';x:number;y:number;kind?:Kind;label:string};
@@ -19,7 +19,7 @@ function spawn(s:Chop,random:()=>number):Piece{
  const pool=random()<.28?wrong:need.length?need:wrong;
  const kind=pool[Math.floor(random()*pool.length)];
  const x=BOARD.left+50+random()*(BOARD.right-BOARD.left-100);
- return {id:s.serial,kind,x,y:BOARD.top-10,vx:(random()-.5)*60,vy:40+random()*50};
+ return {id:s.serial,kind,x,y:BOARD.top-10,vx:(random()-.5)*40,vy:25+random()*30};
 }
 export function tickChop(state:Chop,delta:number,randomArg?:()=>number):Chop{
  if(state.board==='done')return state;
@@ -28,7 +28,7 @@ export function tickChop(state:Chop,delta:number,randomArg?:()=>number):Chop{
  const ms=Math.max(0,Math.min(delta,50)),dt=ms/1000;
  let s:Chop={...state,time:state.time+ms,events:[]};
  if(s.switchMs>0){s.switchMs=Math.max(0,s.switchMs-ms);return s;}
- if(s.time>=s.nextSpawn){const piece=spawn(s,random);s={...s,pieces:[...s.pieces,piece],serial:s.serial+1,nextSpawn:s.time+520+random()*260};}
+ if(s.time>=s.nextSpawn){const piece=spawn(s,random);s={...s,pieces:[...s.pieces,piece],serial:s.serial+1,nextSpawn:s.time+720+random()*280};}
  s.rand=seed;s.pieces=s.pieces.map(p=>({...p,x:Math.max(BOARD.left+20,Math.min(BOARD.right-20,p.x+p.vx*dt)),y:p.y+p.vy*dt,vy:p.vy+GRAVITY*dt})).filter(p=>p.y<BOARD.bottom+12);
  return s;
 }

@@ -7,6 +7,10 @@ export type Phase = { from: number; name: string; speed: number; gap: number };
 export const DURATION = 40000;
 export const LAST_ROW = 36000;
 export const LANES = 3;
+export const laneX = (lane: number) => 84 + lane * 96;
+/** The lane under a finger: the road is split evenly between lanes, so touching a lane is enough. */
+export const laneAt = (x: number) => (x < 132 ? 0 : x < 228 ? 1 : 2);
+export const clampLane = (lane: number) => Math.max(0, Math.min(LANES - 1, lane));
 export const phases: Phase[] = [
   { from: 0, name: 'Разминка', speed: 180, gap: 1300 },
   { from: 12000, name: 'Парк оживает!', speed: 210, gap: 1100 },

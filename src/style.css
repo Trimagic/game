@@ -74,3 +74,6 @@
 @media(max-width:650px){.arcade-game:has(.remote-pads) .arcade-stage{width:min(100%,calc((100dvh - 326px - var(--game-safe-top) - var(--game-safe-bottom))*.75))}}
 @media(max-width:650px){.arcade-game:has(.arrow-pads) .arcade-stage{width:min(100%,calc((100dvh - 208px - min(176px,22dvh) - var(--game-safe-top) - var(--game-safe-bottom))*.75))}}
 @media(max-width:650px){.arcade-game:has(.night-pads) .arcade-stage{width:min(100%,calc((100dvh - 332px - var(--game-safe-top) - var(--game-safe-bottom))*.75))}}
+.ride-controls button{touch-action:none;transition:none}
+.ride .game canvas{touch-action:none}
+@media(max-width:650px){.ride .ride-controls{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;max-width:none;margin:8px 0 0}.ride .ride-controls button{height:clamp(72px,13dvh,108px);min-height:0;padding:0;font-size:44px;font-weight:900;line-height:1}.ride .ride-controls button span{display:none}.ride .game-wrap{max-width:min(360px,calc((100dvh - 214px - clamp(72px,13dvh,108px) + 36px - var(--game-safe-top) - var(--game-safe-bottom))*.6))}}

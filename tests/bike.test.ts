@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { blocked, course, DURATION, HEART_TIMES, LAST_ROW, multiplier, phaseAt, rating, speedAt, type Spawn } from '../src/bike/model.ts';
+import { blocked, clampLane, course, DURATION, HEART_TIMES, laneAt, laneX, LAST_ROW, multiplier, phaseAt, rating, speedAt, type Spawn } from '../src/bike/model.ts';
 
 const rows = (spawns: Spawn[]) => {
   const map = new Map<number, Spawn[]>();
@@ -50,4 +50,10 @@ test('speed rises across phases, combo caps, rating rewards clean collecting', (
   assert.equal(rating(30, 40, 3), 3);
   assert.equal(rating(30, 40, 2), 2);
   assert.equal(rating(5, 40, 3), 1);
+});
+
+test('touching the road picks the lane under the finger and every lane centre maps to itself', () => {
+  for (const lane of [0, 1, 2]) assert.equal(laneAt(laneX(lane)), lane);
+  assert.deepEqual([0, 131, 132, 227, 228, 360].map(laneAt), [0, 0, 1, 1, 2, 2]);
+  assert.deepEqual([-1, 0, 2, 3].map(clampLane), [0, 0, 2, 2]);
 });

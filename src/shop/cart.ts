@@ -8,9 +8,9 @@ export const CART_SPEED=760;
 export const BREAK_MS=1800;
 export const MEDAL_POINTS=40;
 export const LEVELS=[
- {name:'Ужин',list:['chicken','rice','broccoli'],budget:25,ms:25_000,fall:125,spawn:850,decoy:.35},
- {name:'Гости придут',list:['chicken','rice','tomato','oil'],budget:30,ms:25_000,fall:155,spawn:760,decoy:.42},
- {name:'Распродажа',list:['chicken','rice','broccoli','tomato','oil'],budget:35,ms:30_000,fall:185,spawn:680,decoy:.45},
+ {name:'Ужин',list:['chicken','rice','broccoli'],budget:25,ms:30_000,fall:90,spawn:1050,decoy:.35},
+ {name:'Гости придут',list:['chicken','rice','tomato','oil'],budget:30,ms:30_000,fall:112,spawn:950,decoy:.42},
+ {name:'Распродажа',list:['chicken','rice','broccoli','tomato','oil'],budget:35,ms:36_000,fall:135,spawn:850,decoy:.45},
 ] as const;
 const listed=[0,1,2,3,4];
 const decoys=[5,6,7,8];
@@ -24,7 +24,7 @@ export const cartCost=(s:CartState)=>s.cart.reduce((n,p)=>n+paid(p),0);
 export const level=(s:CartState)=>LEVELS[Math.min(s.level,LEVELS.length-1)];
 export const have=(s:CartState,key:string)=>s.cart.find(p=>products[p.product].key===key);
 export const missing=(s:CartState)=>level(s).list.filter(k=>!have(s,k));
-export const cartRating=(s:CartState)=>s.score>=800?3:s.score>=560?2:1;
+export const cartRating=(s:CartState)=>s.score>=870?3:s.score>=560?2:1;
 const steer=(s:CartState,x:number|null,dir:number)=>({...s,target:x===null?null:Math.max(CART_HALF,Math.min(WIDTH-CART_HALF,x)),dir});
 /** Pointer aims the cart at an x; keys hold a direction. Either clears the other. */
 export const aim=(s:CartState,x:number)=>s.status==='playing'?steer(s,x,0):s;
@@ -50,7 +50,7 @@ function settleLevel(s:CartState):CartState{
   const medals:Medal[]=[];
   if(s.slips===0)medals.push('Железная воля');
   if(s.deals>=2)medals.push('Охотник за скидками');
-  if(cleared.reduce((n,c)=>n+c.time,0)<=45_000)medals.push('Спринтер');
+  if(cleared.reduce((n,c)=>n+c.time,0)<=60_000)medals.push('Спринтер');
   if(s.best>=10)medals.push('Ловкие руки');
   return {...next,status:'won',medals,score:next.score+medals.length*MEDAL_POINTS,notice:'Все три списка собраны!'};
  }

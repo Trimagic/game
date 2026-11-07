@@ -5,6 +5,9 @@ import {BOARD,createChop,good,left,NEED,RADIUS,slice,sliceLowest,tickChop,type C
 const piece=(kind:Piece['kind'],x:number,y=250,id=100):Piece=>({id,kind,x,y,vx:0,vy:0});
 const stroke=(x:number)=>[{x,y:150},{x,y:400}] as const;
 
+test('a piece stays on the board long enough to aim at',()=>{
+ let s=createChop(9);while(!s.pieces.length)s=tickChop(s,16);const id=s.pieces[0].id;let ms=0;while(s.pieces.some(p=>p.id===id)){s=tickChop(s,16);ms+=16;}assert.ok(ms>=2000,String(ms));
+});
 test('pieces fall onto the board, speed up and leave at the bottom',()=>{
  let s=createChop(5);for(let i=0;i<20;i++)s=tickChop(s,50);
  assert.ok(s.pieces.length>0);const p=s.pieces[0];const later=tickChop(s,50).pieces.find(q=>q.id===p.id)!;

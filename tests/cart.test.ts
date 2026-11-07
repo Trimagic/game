@@ -20,6 +20,7 @@ function play(seed:number,every=1){const random=rng(seed);let s=cartInitial();fo
 
 test('levels fit their budgets and grow harder',()=>{
  for(const lv of LEVELS){const cost=lv.list.reduce((n,k)=>n+products.find(p=>p.key===k)!.price,0);assert.ok(cost<=lv.budget,lv.name);}
+ assert.ok(LEVELS.every(l=>(CART_Y-100)/(l.fall*1.15)>=2.4),'every item stays in the air for a few seconds');
  for(let i=1;i<LEVELS.length;i++){assert.ok(LEVELS[i].fall>LEVELS[i-1].fall);assert.ok(LEVELS[i].list.length>=LEVELS[i-1].list.length);}
 });
 test('the cart follows the aim and keys, staying on screen',()=>{
