@@ -9,12 +9,12 @@ let losses=0;
 const SIZE=32,LEFT=34,TOP=83;
 const keys:Record<string,Direction>={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};
 export default class DeliveryScene extends SceneBase{
- private spare=spareHearts(losses);private model=initial(this.spare);private stick:Direction|null=null;private drag:{id:number;x:number;y:number}|null=null;private ink!:Phaser.GameObjects.Graphics;private hud!:Phaser.GameObjects.Text;private note!:Phaser.GameObjects.Text;
+ private spare=spareHearts(losses);private model=initial(this.spare);private stick:Direction|null=null;private pending:Direction|null=null;private pendingAge=0;private drag:{id:number;x:number;y:number}|null=null;private ink!:Phaser.GameObjects.Graphics;private hud!:Phaser.GameObjects.Text;private note!:Phaser.GameObjects.Text;
  private status!:Phaser.GameObjects.Text;private marks:Phaser.GameObjects.Text[]=[];
  private held=new Map<string,Direction>();private stamp=0;
  constructor(events:ArcadeEvents){super('delivery',events);}
  create(){
-  this.view={status:'ready',title:'Операция «Обед»',detail:'Три комнаты до курьера. Веди джойстик, отпусти — ждать. Жёлтые клетки видны персоналу. В кадке с фикусом тебя не видно, кнопка «Шум» на время всех останавливает, на мокром полу скользко. Врач видит дальше, охранник оглядывается, в вестибюле камера. Собирай приправы в опасных местах. Три сердца: поймали — назад к двери этой комнаты.',actions:[]};
+  this.view={status:'ready',title:'Операция «Обед»',detail:'Три комнаты до курьера. Нажимай или держи стрелки, отпусти — ждать. Жёлтые клетки видны персоналу. В кадке с фикусом тебя не видно, кнопка «Шум» на время всех останавливает, на мокром полу скользко. Врач видит дальше, охранник оглядывается, в вестибюле камера. Собирай приправы в опасных местах. Три сердца: поймали — назад к двери этой комнаты.',actions:[]};
   if(this.spare)this.view.detail=`Персонал притомился: +${this.spare} к сердцам. `+this.view.detail;this.setup();this.box(210,34,420,68,0x294e49);this.hud=this.text(16,12,'',14,'#fff3d6');this.ink=this.add.graphics();this.note=this.text(210,451,'',12,'#294e49',true);this.note.setWordWrapWidth(390);this.status=this.text(210,500,'',16,'#294e49',true);for(let i=0;i<4;i++)this.marks.push(this.add.text(0,0,'!',{fontFamily:'sans-serif',fontSize:'20px',fontStyle:'bold',color:'#c4302b',stroke:'#fff3d6',strokeThickness:4}).setOrigin(.5).setDepth(5).setVisible(false));
   // The floor itself also works as a stick for one-handed play.
   this.input.on('pointerdown',(p:Phaser.Input.Pointer)=>{if(this.running&&p.y>=TOP&&p.y<=TOP+SIZE*11)this.drag={id:p.id,x:p.x,y:p.y};});
@@ -23,12 +23,14 @@ export default class DeliveryScene extends SceneBase{
   this.input.keyboard?.on('keyup',(e:KeyboardEvent)=>this.held.delete(e.code));
   this.paint();
  }
+ /** Moves at once if it can, otherwise remembers the press briefly so a quick tap is never lost. */
+ private press(dir:Direction){const before=this.model.hero;this.model=tick(this.model,.001,dir);this.react();if(this.model.hero===before){this.pending=dir;this.pendingAge=0;}else this.pending=null;this.paint();}
  private heading(x:number,y:number):Direction|null{if(Math.hypot(x,y)<.3)return null;return Math.abs(x)>Math.abs(y)?x>0?'right':'left':y>0?'down':'up';}
  protected key(e:KeyboardEvent){if(keys[e.code]){e.preventDefault();this.held.set(e.code,keys[e.code]);}if(e.code==='Enter')this.action('next');if(e.code==='Space'&&!(e.target instanceof HTMLButtonElement)){e.preventDefault();this.action('noise');}}
- protected pause(){this.held.clear();this.stick=null;this.drag=null;super.pause();}
+ protected pause(){this.held.clear();this.stick=null;this.drag=null;this.pending=null;super.pause();}
  action(id:string){
   if(!this.running)return;
-  if(id.startsWith('stick:')){const [x,y]=id.slice(6).split(',').map(Number);this.stick=this.heading(x,y);return;}
+  if(id.startsWith('stick:')){const [x,y]=id.slice(6).split(',').map(Number);const dir=this.heading(x,y);if(dir&&dir!==this.stick)this.press(dir);this.stick=dir;return;}
   if(id==='release:fire')return;
   if(id==='press:fire')id=this.model.status==='between'?'next':'noise';
   if(id==='next'){this.model=nextLocation(this.model);this.held.clear();}
@@ -73,7 +75,8 @@ export default class DeliveryScene extends SceneBase{
  }
  update(_t:number,delta:number){
   if(!this.running)return;if(delta>500){this.pause();return;}
-  this.model=tick(this.model,delta/1000,this.stick??[...this.held.values()].at(-1)??null);this.react();this.paint();
+  const before=this.model.hero;this.pendingAge+=delta;if(this.pendingAge>220)this.pending=null;
+  this.model=tick(this.model,delta/1000,this.stick??[...this.held.values()].at(-1)??this.pending);if(this.model.hero!==before)this.pending=null;this.react();this.paint();
   if(this.model.status==='lost'){losses++;this.held.clear();this.stick=null;this.finish(false,'Обед отменяется.',`Сердца кончились в комнате «${locations[this.model.level].name}». Дождись прохода, прячься в фикусах и береги шум для опасного участка. ${losses%2===1?'В следующий раз персонал устанет: будет лишнее сердце.':''}`);return;}
   if(this.model.status==='done'){losses=0;this.running=false;const stars=deliveryRating(this.model),total=finalScore(this.model),saved=saveBest('delivery-best',total);this.bridge.publish({status:'story',title:`${'★'.repeat(stars)}${'☆'.repeat(3-stars)} Доставка перехвачена.`,detail:`${total} очков. ${saved.record?'Новый личный рекорд!':`Рекорд: ${saved.best}.`} Медсестра уже подготовила встречное предложение.`,actions:[]});return;}
   this.stamp+=delta;if(this.stamp>120){this.stamp=0;this.sync();}

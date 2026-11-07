@@ -72,3 +72,4 @@
 @media(max-width:650px) and (min-height:740px){.sleep-game .sleep-dpad{grid-template-columns:repeat(3,92px);grid-template-rows:repeat(2,66px);gap:8px}.sleep-game .sleep-dpad button{font-size:32px}}
 @media(max-width:650px){.arcade-game:has(.arcade-plan-pads) .arcade-stage{width:min(100%,calc((100dvh - 326px - var(--game-safe-top) - var(--game-safe-bottom))*.75))}}
 @media(max-width:650px){.arcade-game:has(.remote-pads) .arcade-stage{width:min(100%,calc((100dvh - 326px - var(--game-safe-top) - var(--game-safe-bottom))*.75))}}
+@media(max-width:650px){.arcade-game:has(.arrow-pads) .arcade-stage{width:min(100%,calc((100dvh - 196px - min(174px,22dvh) - var(--game-safe-top) - var(--game-safe-bottom))*.75))}}
