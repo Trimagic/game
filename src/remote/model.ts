@@ -1,32 +1,41 @@
 export type Point={x:number;y:number};
 export const END=40;
 export const NUT_RANGE=200;
+export const IMMUNE=3;
+export const SHOT_SPEED=320;
+export const RUG_RADIUS=46;
+const RUG_SPOTS=[{x:90,y:135},{x:330,y:135},{x:90,y:255},{x:330,y:255},{x:210,y:240},{x:90,y:395},{x:330,y:395},{x:210,y:385}];
 export const MAX_NUTS=9;
 export const furniture=[{x:38,y:170,w:104,h:36},{x:275,y:170,w:104,h:36},{x:155,y:285,w:110,h:38}];
 // The evening gets busier: more neighbours, then lunch carts, then everyone hurries.
 export const PHASES=[
  {from:0,name:'Тихий вечер',news:'Двое ещё дремлют. Пока можно собирать орешки.'},
  {from:10,name:'Все проснулись',news:'Все проснулись! Шустрая делает рывки: увидел «!» — уходи вбок.'},
- {from:20,name:'Развозят обед',news:'Развозят обед! Тележка сбивает всех на своей полосе, и соседей тоже.'},
- {from:30,name:'Вот-вот начнётся',news:'Вот-вот начнётся передача! Все заметно ускорились.'},
+ {from:20,name:'Развозят обед',news:'Развозят обед! Тележка сбивает всех и оставляет скользкий компот, а Ходок целится тапком.'},
+ {from:30,name:'Вот-вот начнётся',news:'Вот-вот начнётся передача! Пришла Сестра-хозяйка, все ускорились.'},
 ];
 export const phaseAt=(time:number)=>time>=30?3:time>=20?2:time>=10?1:0;
 const CART_LANES=[135,240,355,412];
-const WAKE=[0,0,10,10];
+const WAKE=[0,0,10,10,30];
 const CART_WARN=1,CART_SPEED=300;
-export type Rival=Point&{id:number;stun:number;cooldown:number;wake?:number;mode?:'walk'|'wind'|'dash';modeTime?:number;dash?:Point};
+export type Rival=Point&{id:number;stun:number;cooldown:number;wake?:number;mode?:'walk'|'wind'|'dash'|'aim'|'throw';modeTime?:number;dash?:Point;immune?:number};
+export type Shot=Point&{vx:number;vy:number;life:number};
+export type Spill=Point&{life:number};
+export type Rug=Point&{life:number};
 export type Nut=Point&{vx:number;vy:number;life:number};
 export type ItemKind='bowl'|'slippers'|'pillow';
 export type Item=Point&{id:number;kind:ItemKind;life:number};
 export type Cart={y:number;x:number;dir:number;warn:number};
 export type Flash={text:string;x:number;y:number;good:boolean};
-export type RemoteState={time:number;hero:Point;facing:Point;rivals:Rival[];nuts:Nut[];cooldown:number;stun:number;hits:number;bumps:number;status:'playing'|'ending'|'done'|'lost';ending:number;lives:number;safe:number;ammo:number;score:number;boost:number;pillow:boolean;items:Item[];nextItem:number;serial:number;cart:Cart|null;nextCart:number;cartHits:number;rand:number;flashes:Flash[]};
-export const initial=(seed=1):RemoteState=>({time:0,hero:{x:210,y:385},facing:{x:0,y:-1},rivals:[{x:50,y:115},{x:370,y:115},{x:45,y:400},{x:375,y:400}].map((p,id)=>({...p,id,stun:0,cooldown:id===1?4:1,wake:WAKE[id],mode:'walk' as const,modeTime:0})),nuts:[],cooldown:0,stun:0,hits:0,bumps:0,status:'playing',ending:0,lives:3,safe:0,ammo:5,score:0,boost:0,pillow:false,items:[],nextItem:4,serial:0,cart:null,nextCart:20,cartHits:0,rand:seed>>>0,flashes:[]});
+export type RemoteState={time:number;hero:Point;facing:Point;rivals:Rival[];nuts:Nut[];cooldown:number;stun:number;hits:number;bumps:number;status:'playing'|'ending'|'done'|'lost';ending:number;lives:number;safe:number;ammo:number;score:number;boost:number;pillow:boolean;items:Item[];nextItem:number;serial:number;cart:Cart|null;nextCart:number;cartHits:number;rand:number;flashes:Flash[];shots:Shot[];spills:Spill[];rug:Rug|null;nextRug:number;rugTime:number;rugBank:number};
+/** Each pair of recent losses buys one spare heart, so the story can never get stuck. */
+export const spareHearts=(losses:number)=>Math.min(2,Math.floor(losses/2));
+export const initial=(seed=1,spare=0):RemoteState=>({time:0,hero:{x:210,y:385},facing:{x:0,y:-1},rivals:[{x:50,y:115},{x:370,y:115},{x:45,y:400},{x:375,y:400},{x:210,y:125}].map((p,id)=>({...p,id,stun:0,cooldown:id===1?4:1,wake:WAKE[id],mode:'walk' as const,modeTime:0})),nuts:[],cooldown:0,stun:0,hits:0,bumps:0,status:'playing',ending:0,lives:3+spare,safe:0,ammo:5,score:0,boost:0,pillow:false,items:[],nextItem:4,serial:0,cart:null,nextCart:20,cartHits:0,rand:seed>>>0,flashes:[],shots:[],spills:[],rug:null,nextRug:3,rugTime:0,rugBank:0});
 export function free(p:Point,r=13){return p.x>=20+r&&p.x<=400-r&&p.y>=98+r&&p.y<=433-r&&!furniture.some(b=>p.x+r>b.x&&p.x-r<b.x+b.w&&p.y+r>b.y&&p.y-r<b.y+b.h);}
 function move(p:Point,dx:number,dy:number,r=13){let n=p;if(free({x:p.x+dx,y:p.y},r))n={x:p.x+dx,y:p.y};if(free({x:n.x,y:n.y+dy},r))n={x:n.x,y:n.y+dy};return n;}
 export const awake=(s:Pick<RemoteState,'time'>,e:Rival)=>s.time>=(e.wake??0);
 /** Nearest neighbour the nut can reach, so holding the button never wastes the supply. */
-export function nutTarget(s:RemoteState){return s.rivals.filter(e=>e.stun===0&&awake(s,e)&&Math.hypot(e.x-s.hero.x,e.y-s.hero.y)<=NUT_RANGE).sort((a,b)=>Math.hypot(a.x-s.hero.x,a.y-s.hero.y)-Math.hypot(b.x-s.hero.x,b.y-s.hero.y))[0];}
+export function nutTarget(s:RemoteState){return s.rivals.filter(e=>e.stun===0&&!e.immune&&awake(s,e)&&Math.hypot(e.x-s.hero.x,e.y-s.hero.y)<=NUT_RANGE).sort((a,b)=>Math.hypot(a.x-s.hero.x,a.y-s.hero.y)-Math.hypot(b.x-s.hero.x,b.y-s.hero.y))[0];}
 export function fire(s:RemoteState):RemoteState{
  if(s.status!=='playing'||s.cooldown>0||s.stun>0||s.ammo<=0)return s;
  const target=nutTarget(s);if(!target)return s;
@@ -41,24 +50,33 @@ function spawnItem(s:RemoteState):RemoteState{
  return {...n,items:[...n.items,{...p,id:n.serial,kind,life:8}],serial:n.serial+1,nextItem:s.time+4.2-phaseAt(s.time)*.4};
 }
 function speedOf(e:Rival,time:number){
- const base=44+time*1.05;
- return e.id===0?base*.9:e.id===3?base*1.05:base;
+ const base=48+time*1.15;
+ return e.id===0?base*.9:e.id===3||e.id===4?base*1.05:base;
 }
-function stepRival(s:RemoteState,e:Rival,hero:Point,dir:Point,h:number):Rival{
+const slowedAt=(s:RemoteState,p:Point)=>s.spills.some(k=>Math.hypot(k.x-p.x,k.y-p.y)<30)?.55:1;
+function stepRival(state:RemoteState,raw:Rival,hero:Point,dir:Point,h:number):Rival{
+ const s=state,e={...raw,immune:Math.max(0,(raw.immune??0)-h)};
  const cooldown=Math.max(0,e.cooldown-h),stun=Math.max(0,e.stun-h);
  if(stun>0||!awake(s,e))return {...e,stun,cooldown,mode:'walk',modeTime:0};
+ // The thrower stops to aim at where the hero is, so a sidestep dodges it.
+ if(e.id===3&&s.time>=20){
+  const modeTime=Math.max(0,(e.modeTime??0)-h);
+  if(e.mode==='aim')return modeTime>0?{...e,stun,cooldown,modeTime}:{...e,stun,cooldown,modeTime:0,mode:'throw'};
+  const dx=hero.x-e.x,dy=hero.y-e.y,len=Math.hypot(dx,dy)||1;
+  if(cooldown===0&&len<280)return {...e,stun,cooldown,mode:'aim',modeTime:.7,dash:{x:dx/len,y:dy/len}};
+ }
  // The sprinter stops, shows "!" and then dashes along a fixed line.
  if(e.id===1&&s.time>=10){
   const modeTime=Math.max(0,(e.modeTime??0)-h);
   if(e.mode==='wind'){if(modeTime>0)return {...e,stun,cooldown,modeTime};return {...e,stun,cooldown,mode:'dash',modeTime:.65};}
-  if(e.mode==='dash'){const d=e.dash??{x:0,y:0};const speed=185+s.time;const moved=move(e,d.x*speed*h,d.y*speed*h);return {...moved,id:e.id,stun,cooldown:modeTime>0?cooldown:4.2-phaseAt(s.time)*.4,wake:e.wake,mode:modeTime>0?'dash':'walk',modeTime,dash:e.dash};}
+  if(e.mode==='dash'){const d=e.dash??{x:0,y:0};const speed=(190+s.time)*slowedAt(s,e);const moved=move(e,d.x*speed*h,d.y*speed*h);return {...e,...moved,stun,cooldown:modeTime>0?cooldown:3.8-phaseAt(s.time)*.4,mode:modeTime>0?'dash':'walk',modeTime};}
   if(cooldown===0){const dx=hero.x-e.x,dy=hero.y-e.y,len=Math.hypot(dx,dy)||1;return {...e,stun,cooldown,mode:'wind',modeTime:.6,dash:{x:dx/len,y:dy/len}};}
  }
  // The interceptor aims ahead of the hero instead of at them.
  const goal=e.id===2?{x:hero.x+dir.x*70,y:hero.y+dir.y*70}:hero;
- const d=Math.hypot(goal.x-e.x,goal.y-e.y)||1;const speed=speedOf(e,s.time);
+ const d=Math.hypot(goal.x-e.x,goal.y-e.y)||1;const speed=speedOf(e,s.time)*slowedAt(s,e);
  const moved=move(e,(goal.x-e.x)/d*speed*h,(goal.y-e.y)/d*speed*h);
- return {...moved,id:e.id,stun,cooldown,wake:e.wake,mode:'walk',modeTime:0};
+ return {...e,...moved,stun,cooldown,mode:'walk',modeTime:0};
 }
 export function tick(state:RemoteState,dt:number,input:Point):RemoteState{
  if(state.status==='done'||state.status==='lost')return state;let s:RemoteState={...state,flashes:[]},remaining=Math.min(.1,Math.max(0,dt));
@@ -66,11 +84,20 @@ export function tick(state:RemoteState,dt:number,input:Point):RemoteState{
   if(s.status==='ending'){const ending=s.ending+h;s={...s,ending,status:ending>=4?'done':'ending'};continue;}
   if(s.status==='done'||s.status==='lost')break;
   const len=Math.hypot(input.x,input.y);const dir=len?{x:input.x/len,y:input.y/len}:s.facing;const power=Math.min(1,len);
-  const pace=148*(s.boost>0?1.35:1)*power;
+  const pace=148*(s.boost>0?1.35:slowedAt(s,s.hero))*power;
   const hero=s.stun>0||!len?s.hero:move(s.hero,dir.x*pace*h,dir.y*pace*h);
   let hits=s.hits,score=s.score,stun=Math.max(0,s.stun-h),lives=s.lives,safe=Math.max(0,s.safe-h),pillow=s.pillow,ammo=s.ammo,boost=Math.max(0,s.boost-h),cartHits=s.cartHits;const flashes=[...s.flashes];
   let rivals=s.rivals.map(e=>stepRival(s,e,hero,dir,h));
-  const nuts:Nut[]=[];for(const n of s.nuts){const p={...n,x:n.x+n.vx*h,y:n.y+n.vy*h,life:n.life-h};if(p.life<=0||!free(p,3))continue;const index=rivals.findIndex(e=>e.stun===0&&awake(s,e)&&Math.hypot(e.x-p.x,e.y-p.y)<17);if(index>=0){hits++;score+=10;rivals=rivals.map((e,i)=>i===index?{...e,stun:1.8,mode:'walk',modeTime:0}:e);}else nuts.push(p);}
+  const nuts:Nut[]=[];for(const n of s.nuts){const p={...n,x:n.x+n.vx*h,y:n.y+n.vy*h,life:n.life-h};if(p.life<=0||!free(p,3))continue;const index=rivals.findIndex(e=>e.stun===0&&!e.immune&&awake(s,e)&&Math.hypot(e.x-p.x,e.y-p.y)<17);if(index>=0){hits++;score+=10;rivals=rivals.map((e,i)=>i===index?{...e,stun:1.8,immune:IMMUNE,mode:'walk',modeTime:0}:e);}else nuts.push(p);}
+  // Thrown slippers: a hit does not cost a heart, but it leaves you standing.
+  const shots:Shot[]=[];for(const k of s.shots){const p={...k,x:k.x+k.vx*h,y:k.y+k.vy*h,life:k.life-h};if(p.life<=0||!free(p,3))continue;if(safe===0&&stun===0&&Math.hypot(p.x-hero.x,p.y-hero.y)<18){stun=.7;safe=.9;flashes.push({text:'ТАПКОМ!',x:hero.x,y:hero.y,good:false});continue;}shots.push(p);}
+  rivals=rivals.map(e=>{if(e.mode!=='throw')return e;const d=e.dash??{x:0,y:1};shots.push({x:e.x,y:e.y,vx:d.x*SHOT_SPEED,vy:d.y*SHOT_SPEED,life:1.5});return {...e,mode:'walk',cooldown:4.6-phaseAt(s.time)*.4};});
+  // Standing on the glowing rug by the TV builds points, faster the longer you dare to stay.
+  let rug=s.rug,rugTime=s.rugTime,rugBank=s.rugBank;
+  if(rug){rug={...rug,life:rug.life-h};if(rug.life<=0){rug=null;rugTime=0;}}
+  if(rug&&Math.hypot(rug.x-hero.x,rug.y-hero.y)<RUG_RADIUS){const before=rugMultiplier(rugTime);rugTime+=h;const now=rugMultiplier(rugTime);if(now>before)flashes.push({text:`КОВЁР ×${now}`,x:hero.x,y:hero.y,good:true});rugBank+=h*15*now;}else rugTime=0;
+  if(rugBank>=1){score+=Math.floor(rugBank);rugBank-=Math.floor(rugBank);}
+  let spills=s.spills.map(k=>({...k,life:k.life-h})).filter(k=>k.life>0);
   // Items on the floor.
   let items:Item[]=[];for(const it of s.items){const life=it.life-h;if(life<=0)continue;if(Math.hypot(it.x-hero.x,it.y-hero.y)<26){score+=20;if(it.kind==='bowl'){ammo=Math.min(MAX_NUTS,ammo+3);flashes.push({text:'+3 ОРЕШКА',x:it.x,y:it.y,good:true});}else if(it.kind==='slippers'){boost=6;flashes.push({text:'ТАПОЧКИ: БЫСТРЕЕ!',x:it.x,y:it.y,good:true});}else{pillow=true;flashes.push({text:'ПОДУШКА: ЗАЩИТА',x:it.x,y:it.y,good:true});}continue;}items.push({...it,life});}
   // The lunch cart crosses one lane after a warning and flattens whoever is in it.
@@ -81,7 +108,7 @@ export function tick(state:RemoteState,dt:number,input:Point):RemoteState{
     cart={...cart,x:cart.x+cart.dir*CART_SPEED*h};const c=cart;
     if(stun===0&&safe===0&&!pillow&&Math.abs(c.x-hero.x)<34&&Math.abs(c.y-hero.y)<28){stun=1;safe=1.2;flashes.push({text:'ТЕЛЕЖКА!',x:hero.x,y:hero.y,good:false});}
     rivals=rivals.map(e=>{if(e.stun>0||!awake(s,e)||Math.abs(c.x-e.x)>=34||Math.abs(c.y-e.y)>=28)return e;cartHits++;score+=30;flashes.push({text:'+30 ТЕЛЕЖКОЙ!',x:e.x,y:e.y,good:true});return {...e,stun:2.2,mode:'walk',modeTime:0};});
-    if(c.x<-40||c.x>460)cart=null;
+    if(c.x<-40||c.x>460){const n={...s};const first={x:70+nextRandom(n)*280,y:c.y,life:7};spills=[...spills,first];s={...s,rand:n.rand};cart=null;}
    }
   }
   const time=Math.min(END,s.time+h);
@@ -92,11 +119,13 @@ export function tick(state:RemoteState,dt:number,input:Point):RemoteState{
    if(pillow){pillow=false;flashes.push({text:'ПОДУШКА СПАСЛА!',x:hero.x,y:hero.y,good:true});}
    else{lives--;flashes.push({text:'ЧУТЬ НЕ ОТОБРАЛИ!',x:hero.x,y:hero.y,good:false});}
   }
-  s={...s,hero,facing:dir,rivals,nuts,time,hits,score,stun,lives,safe,pillow,ammo,boost,items,cart,cartHits,flashes,cooldown:Math.max(0,s.cooldown-h),status:lives<=0?'lost':time>=END?'ending':'playing'};
+  s={...s,shots,spills,rug,rugTime,rugBank,hero,facing:dir,rivals,nuts,time,hits,score,stun,lives,safe,pillow,ammo,boost,items,cart,cartHits,flashes,cooldown:Math.max(0,s.cooldown-h),status:lives<=0?'lost':time>=END?'ending':'playing'};
+  if(s.status==='playing'&&!s.rug&&time>=s.nextRug){const n={...s};const spots=RUG_SPOTS.filter(p=>Math.hypot(p.x-s.hero.x,p.y-s.hero.y)>120);const p=spots[Math.floor(nextRandom(n)*spots.length)];s={...n,rug:{...p,life:6.5},nextRug:time+8};}
   if(s.status==='playing'&&time>=s.nextItem&&s.items.length<4)s=spawnItem(s);
   if(s.status==='playing'&&time>=s.nextCart&&!s.cart){const dirSign=nextRandom(s)<.5?1:-1;const lane=CART_LANES[Math.floor(nextRandom(s)*CART_LANES.length)];s={...s,cart:{y:lane,x:dirSign>0?-30:450,dir:dirSign,warn:CART_WARN},nextCart:time+(phaseAt(time)===3?3.6:5)};}
  }
  return s;
 }
+export const rugMultiplier=(time:number)=>time>=4?3:time>=2?2:1;
 export const totalScore=(s:RemoteState)=>s.score+s.lives*50;
 export const remoteRating=(s:RemoteState)=>s.status==='lost'?0:s.lives>=2&&totalScore(s)>=450?3:s.lives>=2||totalScore(s)>=300?2:1;
