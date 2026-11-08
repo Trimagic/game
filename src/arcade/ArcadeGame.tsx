@@ -16,7 +16,7 @@ export default function ArcadeGame({kind,onWin,onExit}:{kind:'shop'|'cook'|'gym'
   void Promise.all([import('phaser'),kind==='shop'?import('../shop/ShopScene'):kind==='gym'?import('../gym/GymScene'):kind==='run'?import('../run/RunScene'):kind==='schedule'?import('../schedule/ScheduleScene'):kind==='night'?import('../night/NightScene'):kind==='delivery'?import('../delivery/DeliveryScene'):kind==='remote'?import('../remote/RemoteScene'):import('../cook/CookScene')]).then(([{default:Phaser},{default:Scene}])=>{
    if(disposed)return;
    const scene=new Scene({publish:v=>{if(!disposed)setView(v);},ready:c=>{if(!disposed)controls.current=c;},error:()=>{if(!disposed)setView({...blank,status:'error',title:'Не удалось загрузить игру',detail:'Проверь подключение и попробуй ещё раз.'});}});
-   game=new Phaser.Game({type:Phaser.AUTO,parent:host.current!,width:420,height:560,backgroundColor:'#f6ecd4',scene,scale:{mode:Phaser.Scale.FIT,autoCenter:Phaser.Scale.CENTER_BOTH},input:{activePointers:2,keyboard:{capture:[]}},render:{antialias:true}});
+   game=new Phaser.Game({type:Phaser.AUTO,parent:host.current!,width:420,height:560,backgroundColor:'#f6ecd4',scene,scale:{mode:Phaser.Scale.FIT,autoCenter:Phaser.Scale.CENTER_BOTH},input:{activePointers:4,keyboard:{capture:[]}},render:{antialias:true}});
   }).catch(()=>{if(!disposed)setView({...blank,status:'error',title:'Не удалось загрузить игру',detail:'Попробуй загрузить сцену ещё раз.'});});
   return()=>{disposed=true;controls.current=null;game?.destroy(true);window.removeEventListener('blur',pause);document.removeEventListener('visibilitychange',hidden);};
  },[attempt,kind]);

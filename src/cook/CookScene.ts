@@ -4,7 +4,7 @@ import Phaser from 'phaser';
 import SceneBase from '../arcade/SceneBase';
 import type {ArcadeEvents} from '../arcade/types';
 import {precisionInitial,preciseAction,cookRating,PREP_PAR,type PreciseAction} from './precision';
-import {DISHES,PERFECT,READY,finished,ready} from './stove';
+import {DISHES,PERFECT,READY,finished,ready,spiceAt} from './stove';
 import {saveBest} from '../best';
 import {BOARD,NEED,type ChopEvent,type Kind} from './chop';
 const frameOf:Record<Kind,number>={tomato:1,broccoli:2,chicken:0,cat:-1,pepper:-1};
@@ -13,7 +13,7 @@ const names:Record<Kind,string>={tomato:'Помидоры',broccoli:'Брокк�
 const BAR=116;
 const burnerX=[72,210,348];
 export default class CookScene extends SceneBase{
- private model=precisionInitial(Date.now());private ringIn=0;private hot=[false,false,false];private prepClock?:Phaser.GameObjects.Text;private drawn='';private lastHud=0;
+ private model=precisionInitial(Date.now());private fires:Phaser.GameObjects.Arc[]=[];private shaker?:Phaser.GameObjects.Container;private ringIn=0;private hot=[false,false,false];private prepClock?:Phaser.GameObjects.Text;private drawn='';private lastHud=0;
  private clock?:Phaser.GameObjects.Text;private panels:Phaser.GameObjects.Rectangle[]=[];private fills:Phaser.GameObjects.Rectangle[]=[];private stepLabels:Phaser.GameObjects.Text[]=[];
  private steam:Phaser.GameObjects.Arc[]=[];private foodSprites:Phaser.GameObjects.Image[]=[];
  private phone?:Phaser.GameObjects.Rectangle;private phoneText?:Phaser.GameObjects.Text;
@@ -23,7 +23,7 @@ export default class CookScene extends SceneBase{
  preload(){this.load.image('food','/art/chapter-04-food.png');this.load.on('loaderror',this.bridge.error);}
  create(){
   if(!this.textures.exists('food'))return;for(let i=0;i<6;i++)this.textures.get('food').add(i,0,i%3*512,Math.floor(i/3)*512,512,512);this.makeChopArt();
-  this.view={title:'Сегодня ты — шеф.',detail:'Овощи падают на доску и подлетают снизу — режь их свайпом, по 20 каждого, несколько за раз дают бонус. Сырую курицу на овощной доске не трогай, гнилые овощи с мухами тоже. Кот запрыгивает на доску — его не режь! Золотой перец замедляет время. Потом три конфорки сразу: еда сама доходит до зелёной зоны — жми на неё вовремя. Мама позвонит в самый разгар. Три подгорания — повтор.',status:'ready',actions:[]};this.setup();this.draw();
+  this.view={title:'Сегодня ты — шеф.',detail:'Овощи падают на доску и подлетают снизу — режь их свайпом, по 20 каждого, несколько за раз дают бонус. Сырую курицу на овощной доске не трогай, гнилые овощи с мухами тоже. Кот запрыгивает на доску — его не режь! Золотой перец замедляет время. Потом три конфорки сразу: еда сама доходит до зелёной зоны — жми на неё вовремя. Мама позвонит в самый разгар: пока звонит, любое нажатие отвечает ей. На сковороде бывают вспышки — нажми на конфорку, чтобы потушить, иначе подгорит. Солонку, что пролетает над плитой, лови нажатием. Три подгорания — повтор.',status:'ready',actions:[]};this.setup();this.draw();
   this.trail=this.add.graphics().setDepth(40);
   // Every pointer move inside the board is a blade stroke from the previous point.
   this.input.on('pointerdown',(p:Phaser.Input.Pointer)=>{if(this.running&&this.model.cook.stage==='prep'&&p.y>=BOARD.top-20&&p.y<=BOARD.bottom+20){this.stroke={x:p.x,y:p.y,id:p.id};this.trailPts=[{x:p.x,y:p.y,t:this.time.now}];}});
@@ -66,7 +66,7 @@ export default class CookScene extends SceneBase{
  protected key(e:KeyboardEvent){if(['Space','Digit1','Digit2','Digit3','KeyM'].includes(e.code))e.preventDefault();if(e.code==='Space'&&this.model.cook.stage==='prep')this.action('cut');const n=['Digit1','Digit2','Digit3'].indexOf(e.code);if(n>=0)this.action(`burner:${n}`);if(e.code==='KeyM')this.action('answer');}
  action(id:string){
   if(!this.running)return;const [type,value]=id.split(':');let a:PreciseAction|undefined;
-  if(type==='start'||type==='serve'||type==='answer'||type==='cut')a={type};
+  if(type==='start'||type==='serve'||type==='answer'||type==='cut'||type==='spice')a={type};
   if(type==='burner')a={type:'burner',index:Number(value)};
   if(type==='plate')a={type:'plate',part:Number(value)};
   if(!a)return;const old=this.model;this.model=preciseAction(this.model,a);if(type==='cut'){this.afterChop(old);return;}
@@ -80,10 +80,14 @@ export default class CookScene extends SceneBase{
  private react(old:typeof this.model){
   if(this.model.stove===old.stove)return;
   for(const e of this.model.stove.events){
-   const x=burnerX[e.burner];
+   const x=burnerX[e.burner]??210;
    if(e.type==='perfect'||e.type==='done'){this.pop(x,140,e.type==='perfect'?'+30 ИДЕАЛЬНО':'+20 ВОВРЕМЯ',e.type==='perfect'?'#9b5725':'#286b56');const food=this.foodSprites[e.burner];if(food&&!this.reduced)this.tweens.add({targets:food,angle:16,y:food.y-10,duration:160,yoyo:true});}
    if(e.type==='early')this.pop(x,140,'РАНО!','#aa4933',false);
    if(e.type==='burn'){haptics.cue('error');this.pop(x,140,'ГОРИТ!','#aa4933');if(!this.reduced)this.cameras.main.shake(140,.006);}
+   if(e.type==='flare'){sound.fx('alarm');this.pop(Phaser.Math.Clamp(x,110,310),140,'ВСПЫШКА! ТУШИ!','#aa4933',false);if(!this.reduced)this.cameras.main.shake(140,.006);}
+   if(e.type==='putout'){sound.fx('splash');this.pop(Phaser.Math.Clamp(x,110,310),140,'+15 ПОТУШИЛ','#286b56',false);}
+   if(e.type==='spice')sound.fx('warn');
+   if(e.type==='seasoned'){sound.fx('coin');this.pop(210,170,'+15 ПРИПРАВА','#9b5725',false);}
    if(e.type==='finish'){sound.fx('ding');this.pop(x,190,'СНЯТО ✓','#286b56',false);}
   }
  }
@@ -92,13 +96,13 @@ export default class CookScene extends SceneBase{
  protected sync(){const s=this.model.cook,st=this.model.stove;const actions=[];
   if(s.stage==='prep')actions.push({id:'cut',label:'Резать нижний кусок · пробел'});
   if(s.stage==='ready')actions.push({id:'start',label:'Включить плиту →'});
-  if(s.stage==='stove'){DISHES.forEach((d,i)=>actions.push({id:`burner:${i}`,label:`${d.key}. ${d.name}: ${finished(st,i)?'готово ✓':d.steps[st.burners[i].step]}${ready(st,i)?' · ЖМИ!':''}`,disabled:finished(st,i)||st.burners[i].delay>0||st.phone==='ringing'}));if(st.phone==='ringing')actions.push({id:'answer',label:'Ответить маме · M'});}
+  if(s.stage==='stove'){DISHES.forEach((d,i)=>actions.push({id:`burner:${i}`,label:`${d.key}. ${d.name}: ${finished(st,i)?'готово ✓':d.steps[st.burners[i].step]}${ready(st,i)?' · ЖМИ!':''}`,disabled:finished(st,i)||st.burners[i].delay>0}));if(st.phone==='ringing')actions.push({id:'answer',label:'Ответить маме · M'});}
   if(s.stage==='plate'){['Курица','Рис','Овощи'].forEach((name,i)=>actions.push({id:`plate:${i}`,label:`На тарелку: ${name}`,disabled:s.plated.includes(i)}));actions.push({id:'serve',label:'Подать ужин →',disabled:s.plated.length!==3});}
   this.view={status:'playing',title:`${s.stage==='prep'?'Нарезка':s.stage==='ready'?'Всё подготовлено':s.stage==='stove'?'Три конфорки': 'Подача'} · ${this.model.quality} очков${s.stage==='stove'?` · серия ${this.model.combo}`:''}`,detail:this.model.feedback,actions};this.bridge.publish(this.view);
  }
  private platePosition(id:number){return [{x:145,y:264},{x:275,y:264},{x:210,y:365}][id]??{x:210,y:300};}
  private draw(){
-  if(!this.root)return;this.clear();this.panels=[];this.fills=[];this.stepLabels=[];this.steam=[];this.foodSprites=[];this.clock=undefined;this.phone=undefined;this.phoneText=undefined;
+  if(!this.root)return;this.clear();this.fires=[];this.shaker=undefined;this.panels=[];this.fills=[];this.stepLabels=[];this.steam=[];this.foodSprites=[];this.clock=undefined;this.phone=undefined;this.phoneText=undefined;
   const s=this.model.cook;this.drawn=s.stage;this.drawnBoard=this.model.chop.board;this.chopHud=undefined;this.syncPieces();
   this.box(210,30,420,60,0x274e49);this.text(15,13,'КУХНЯ / РЕЦЕПТ БЫЛ ОПТИМИСТОМ',12,'#fff5da');this.text(15,36,`МАСТЕРСТВО ${this.model.quality} · СЕРИЯ ${this.model.combo}`,11,'#f5ca77');
   ['НАРЕЗКА','ПЛИТА','ПОДАЧА'].forEach((name,i)=>{const active=i===0?s.stage==='prep':i===1?['ready','stove'].includes(s.stage):s.stage==='plate';this.box(70+i*140,82,136,35,active?0xf1bb64:0xe5decc);this.text(70+i*140,82,`${i+1}. ${name}`,12,'#293a34',true);});
@@ -118,6 +122,7 @@ export default class CookScene extends SceneBase{
     const panel=this.box(x,283,132,284,0xe4dbc5).setInteractive({useHandCursor:true});panel.on('pointerdown',()=>this.action(`burner:${i}`));this.panels.push(panel);
     this.text(x,153,dish.name.toUpperCase(),13,'#293a34',true);this.text(x,170,dish.station,10,'#715f45',true);
     const ring=this.add.circle(x,232,46,0x34423c).setStrokeStyle(5,0xe8a34f);this.root.add(ring);
+    const fire=this.add.circle(x,232,58,0xff7a2f,0).setDepth(2);this.root.add(fire);this.fires.push(fire);
     this.foodSprites.push(this.image(x,228,'food',[0,4,2][i],80,78));
     for(let n=0;n<3;n++){const puff=this.add.circle(x-18+n*18,196,4+n,0xfff9e9,.35);this.root.add(puff);this.steam.push(puff);}
     // Ready window and the perfect band sit on a fill bar that creeps right.
@@ -127,6 +132,9 @@ export default class CookScene extends SceneBase{
     this.stepLabels.push(this.text(x,334,'',12,'#293a34',true).setWordWrapWidth(124));
     this.text(x,404,`${dish.key} · ЖМИ`,12,'#715f45',true);
    });
+   // The salt shaker flies over the pans; tapping it is a bonus.
+   const sg=this.add.graphics();sg.fillStyle(0xf4f1e6);sg.fillRoundedRect(-13,-18,26,34,6);sg.fillStyle(0x9aa8ad);sg.fillRoundedRect(-13,-24,26,9,4);sg.fillStyle(0x293a34);for(const dx of [-6,0,6])sg.fillCircle(dx,-20,1.6);sg.lineStyle(2,0x293a34);sg.strokeRoundedRect(-13,-18,26,34,6);
+   const glow=this.add.circle(0,0,28,0xfff3b0,.35);this.shaker=this.add.container(-40,196,[glow,sg]).setDepth(30).setSize(64,64).setVisible(false);this.shaker.setInteractive({useHandCursor:true});this.shaker.on('pointerdown',()=>this.action('spice'));this.root.add(this.shaker);
    this.phone=this.button(210,468,390,52,'',()=>this.action('answer'),0xd3ddd0);this.phoneText=this.text(210,468,'',12,'#293a34',true);this.text(210,520,'ЗЕЛЁНОЕ — ЖМИ · ТЁМНО-ЗЕЛЁНОЕ — ИДЕАЛЬНО · 1 2 3',10,'#715f45',true);this.refreshStove();
   }else if(s.stage==='plate'){
    this.text(210,124,'РАЗЛОЖИ УЖИН ПО МЕСТАМ',16,'#293a34',true);const plate=this.add.circle(210,300,153,0xfffcf0).setStrokeStyle(10,0xc9d7c9);this.root.add(plate);
@@ -137,13 +145,16 @@ export default class CookScene extends SceneBase{
  private refreshStove(){const st=this.model.stove;
   this.clock?.setText(`${st.time.toFixed(0)} с у плиты · ${'♥'.repeat(Math.max(0,3-st.mistakes))}${'♡'.repeat(Math.min(3,st.mistakes))}`);
   DISHES.forEach((dish,i)=>{const b=st.burners[i],done=finished(st,i),hot=ready(st,i),burning=hot&&b.progress>PERFECT[1];
-   this.panels[i]?.setFillStyle(done?0xcfd8cc:burning?0xf3c3a8:hot?0xd9efcf:0xe4dbc5);
+   const flaring=st.flare?.burner===i;
+   this.panels[i]?.setFillStyle(flaring?0xf6b48a:done?0xcfd8cc:burning?0xf3c3a8:hot?0xd9efcf:0xe4dbc5);
+   this.fires[i]?.setAlpha(flaring?(this.reduced?.45:.3+.25*Math.abs(Math.sin(st.time*14))):0).setScale(flaring&&!this.reduced?1+.08*Math.sin(st.time*20):1);
    this.fills[i]?.setSize(done?BAR:b.progress*BAR,8).setFillStyle(burning?0xc4302b:0x293a34);
    if(i===0&&this.foodSprites[0]&&b.step>=1)this.foodSprites[0].setFrame(3);
-   this.stepLabels[i]?.setText(done?'Снято с огня ✓':b.delay>0?`Греется… ${Math.ceil(b.delay)} с`:`${dish.steps[b.step]}\n${b.step+1} / ${dish.steps.length}${hot?' · ЖМИ!':''}`);
+   this.stepLabels[i]?.setText(flaring?`ВСПЫШКА!\nЖМИ — ТУШИ · ${Math.max(0,st.flare!.left).toFixed(1)} с`:done?'Снято с огня ✓':b.delay>0?`Греется… ${Math.ceil(b.delay)} с`:`${dish.steps[b.step]}\n${b.step+1} / ${dish.steps.length}${hot?' · ЖМИ!':''}`);
   });
   this.steam.forEach((p,n)=>{const i=Math.floor(n/3),b=st.burners[i];const phase=(st.time/1.4+n/3)%1;p.setY(this.reduced?190:212-phase*36).setAlpha(finished(st,i)||b.delay>0?0:this.reduced?.2:(1-phase)*(.3+b.progress*.5)).setFillStyle(b.progress>PERFECT[1]?0x8a8a8a:0xfff9e9);});
-  const call=st.phone==='ringing';this.phone?.setFillStyle(call?0xefb085:st.phone==='answered'?0xbfe3c4:0xd3ddd0).setScale(call&&!this.reduced?1+.025*Math.abs(Math.sin(st.time*9)):1);this.phoneText?.setText(call?'МАМА: «ТЫ ПОЕЛ?» · РУКИ ЗАНЯТЫ!\nНАЖМИ, ЧТОБЫ ОТВЕТИТЬ · M':st.phone==='answered'?'«МАМ, Я ГОТОВЛЮ! ПЕРЕЗВОНЮ!»':st.phone==='missed'?'ПРОПУЩЕННЫЙ ВЫЗОВ: МАМА (1)':'МАМА ПОЗВОНИТ. КАК ВСЕГДА ВОВРЕМЯ.');
+  const fly=spiceAt(st);if(this.shaker){this.shaker.setVisible(fly!==null);if(fly!==null)this.shaker.setPosition(-30+fly*480,196+(this.reduced?0:Math.sin(fly*Math.PI*3)*14)).setAngle(this.reduced?0:Math.sin(st.time*8)*18);}
+  const call=st.phone==='ringing';this.phone?.setFillStyle(call?0xefb085:st.phone==='answered'?0xbfe3c4:0xd3ddd0).setScale(call&&!this.reduced?1+.025*Math.abs(Math.sin(st.time*9)):1);this.phoneText?.setText(call?'МАМА: «ТЫ ПОЕЛ?» · РУКИ ЗАНЯТЫ!\nНАЖМИ СЮДА ИЛИ НА ЛЮБУЮ КОНФОРКУ · M':st.phone==='answered'?'«МАМ, Я ГОТОВЛЮ! ПЕРЕЗВОНЮ!»':st.phone==='missed'?'ПРОПУЩЕННЫЙ ВЫЗОВ: МАМА (1)':'МАМА ПОЗВОНИТ. КАК ВСЕГДА ВОВРЕМЯ.');
  }
  update(_time:number,delta:number){this.drawTrail();if(!this.running)return;if(this.model.cook.stage==='prep'){const old=this.model;this.model=preciseAction(this.model,{type:'tick',delta:Math.min(50,delta)});if(this.drawnBoard!==this.model.chop.board||this.drawn!==this.model.cook.stage)this.afterChop(old);else{this.syncPieces();this.refreshPrep();}return;}if(this.model.cook.stage!=='stove')return;const before=this.model;this.model=preciseAction(this.model,{type:'tick',delta:Math.min(50,delta)});this.react(before);this.stoveCues(delta);if(this.model.cook.stage==='lost'){this.finish(false,'Дым — не приправа.','Три раза подгорело. Следи за всеми тремя конфорками: когда полоска в зелёном — жми. Звонок мамы занимает руки — отвечай сразу.');return;}if(this.drawn!==this.model.cook.stage)this.draw();else this.refreshStove();if(this.model.stove.time*1000-this.lastHud>=100||this.model.cook.stage==='plate'){this.lastHud=this.model.stove.time*1000;this.sync();}}
 }

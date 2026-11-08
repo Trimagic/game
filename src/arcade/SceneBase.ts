@@ -6,7 +6,13 @@ export default abstract class SceneBase extends Phaser.Scene{
  protected root!:Phaser.GameObjects.Container;
  protected view:ArcadeView={title:'',detail:'',status:'ready',actions:[]};
  protected reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
- constructor(key:string,protected bridge:ArcadeEvents){super(key);}
+ constructor(key:string,protected bridge:ArcadeEvents){super(key);
+  // An error in one frame or one press is logged and play goes on, instead of the loop stopping and the screen freezing.
+  const self=this as unknown as {update?:(t:number,d:number)=>void;action:(id:string)=>void};
+  const update=self.update?.bind(this),act=self.action.bind(this);
+  if(update)self.update=(t,d)=>{try{update(t,d);}catch(error){console.error(error);}};
+  self.action=id=>{try{act(id);}catch(error){console.error(error);}};
+ }
  protected setup(){
   this.root=this.add.container(0,0);this.input.dragDistanceThreshold=8;this.input.on('pointerdown',()=>{if(this.running&&this.sys.settings.key!=='gym')sound.cue('tap');});
   this.bridge.ready({start:()=>{this.running=true;this.scene.resume();this.view.status='playing';this.sync();},pause:()=>this.pause(),action:id=>{if(this.running)this.action(id);}});

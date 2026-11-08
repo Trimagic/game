@@ -1,9 +1,9 @@
 import {cookReducer,createCookState,type CookState,type CookAction} from './model.ts';
-import {actStove,answerPhone,createStove,tickStove,type Stove} from './stove.ts';
+import {actStove,answerPhone,catchSpice,createStove,tickStove,type Stove} from './stove.ts';
 import {createChop,slice,sliceLowest,tickChop,type Chop} from './chop.ts';
 export type PrecisionCook={cook:CookState;quality:number;combo:number;best:number;feedback:string;prepMs:number;prepBonus:number;chop:Chop;stove:Stove};
 type Point={x:number;y:number};
-export type PreciseAction=CookAction|{type:'burner';index:number}|{type:'answer'}|{type:'slice';from:Point;to:Point};
+export type PreciseAction=CookAction|{type:'burner';index:number}|{type:'answer'}|{type:'spice'}|{type:'slice';from:Point;to:Point};
 export const PREP_PAR=95_000;
 export const precisionInitial=(seed?:number):PrecisionCook=>({cook:createCookState(),quality:0,combo:0,best:0,feedback:'Режь падающие овощи свайпом. Курицу — только на своей доске!',prepMs:0,prepBonus:0,chop:createChop(seed??1),stove:createStove(seed)});
 export const cookRating=(quality:number)=>quality>=700?3:quality>=450?2:1;
@@ -36,9 +36,10 @@ export function preciseAction(s:PrecisionCook,a:PreciseAction):PrecisionCook{
   if(a.type==='tick')return withStove(s,tickStove(s.stove,a.delta/1000));
   if(a.type==='burner')return withStove(s,actStove(s.stove,a.index));
   if(a.type==='answer')return withStove(s,answerPhone(s.stove));
+  if(a.type==='spice')return withStove(s,catchSpice(s.stove));
   return s;
  }
- if(a.type==='burner'||a.type==='answer'||a.type==='slice'||a.type==='cut')return s;
+ if(a.type==='burner'||a.type==='answer'||a.type==='spice'||a.type==='slice'||a.type==='cut')return s;
  const cook=cookReducer(s.cook,a);if(cook===s.cook)return s;
  if(a.type==='start')return {...s,cook,feedback:s.stove.feedback};
  return {...s,cook,quality:s.quality+(a.type==='plate'?10:0),feedback:cook.notice};
