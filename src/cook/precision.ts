@@ -4,9 +4,9 @@ import {createChop,slice,sliceLowest,tickChop,type Chop} from './chop.ts';
 export type PrecisionCook={cook:CookState;quality:number;combo:number;best:number;feedback:string;prepMs:number;prepBonus:number;chop:Chop;stove:Stove};
 type Point={x:number;y:number};
 export type PreciseAction=CookAction|{type:'burner';index:number}|{type:'answer'}|{type:'slice';from:Point;to:Point};
-export const PREP_PAR=26_000;
+export const PREP_PAR=95_000;
 export const precisionInitial=(seed?:number):PrecisionCook=>({cook:createCookState(),quality:0,combo:0,best:0,feedback:'Режь падающие овощи свайпом. Курицу — только на своей доске!',prepMs:0,prepBonus:0,chop:createChop(seed??1),stove:createStove(seed)});
-export const cookRating=(quality:number)=>quality>=400?3:quality>=300?2:1;
+export const cookRating=(quality:number)=>quality>=700?3:quality>=450?2:1;
 /** Folds a new chopping board into the round; a finished board hands over to the stove. */
 function withChop(s:PrecisionCook,chop:Chop):PrecisionCook{
  if(chop===s.chop)return s;

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { advancePool, BOSS_DARTS, createPoolState, DART_WARN, GAP_Y, PLAYER_X, poolRating, TOP, BOTTOM, WALL_BOUNCE, ROUND_MS, SOAP_FOR_SHIELD, type PoolState } from '../src/pool/model.ts';
+import { advancePool, BOSS_DARTS, createPoolState, dashPool, DASH_CD, RING_REACH, DART_WARN, GAP_Y, PLAYER_X, poolRating, TOP, BOTTOM, WALL_BOUNCE, ROUND_MS, SOAP_FOR_SHIELD, type PoolState } from '../src/pool/model.ts';
 
 function rng(seed: number) {
   let a = seed >>> 0;
@@ -90,4 +90,25 @@ test('full round with every hazard type is survivable across seeds', () => {
     assert.ok(state.collected >= state.spawned / 2 && state.spawned >= state.collected);
     assert.ok(poolRating(state) >= 2);
   }
+});
+
+test('a dash smashes a toy for points, needs to recharge, and does not stop a torpedo', () => {
+  const s = createPoolState(); s.elapsed = 5000;
+  s.hazards.push({ id: 900, x: PLAYER_X + 40, y: s.y, boss: false, kind: 'float' });
+  assert.equal(dashPool(s), true); assert.equal(dashPool(s), false, 'recharging');
+  advancePool(s, 20, false, () => .99); assert.equal(s.lives, 3); assert.equal(s.smashed, 1); assert.ok(s.score >= 15);
+  for (let t = 0; t < DASH_CD; t += 50) advancePool(s, 50, t % 200 < 100, () => .99);
+  assert.equal(dashPool(s), true, 'ready again');
+  const d = createPoolState(); d.elapsed = 5000; d.hazards.push({ id: 901, x: PLAYER_X + 10, y: d.y, boss: false, kind: 'dart' });
+  dashPool(d); advancePool(d, 20, false, () => .99); assert.equal(d.lives, 2, 'torpedoes still hurt');
+});
+test('jellyfish drift towards the swimmer; a ring pays only through its middle', () => {
+  const s = createPoolState(); s.elapsed = 12000; s.y = 400;
+  s.hazards.push({ id: 902, x: 380, y: 200, boss: false, kind: 'jelly' });
+  for (let i = 0; i < 20; i++) { advancePool(s, 50, s.y > 400, () => .99); }
+  assert.ok(s.hazards.find(h => h.id === 902)!.y > 220, 'turned towards the swimmer');
+  const r = createPoolState(); r.elapsed = 6000; r.rings.push({ id: 903, x: PLAYER_X + 3, y: r.y, done: false }, { id: 904, x: PLAYER_X + 3, y: r.y + RING_REACH + 30, done: false });
+  advancePool(r, 50, false, () => .99); assert.equal(r.ringsPassed, 1); assert.equal(r.score, 20);
+  const fresh = createPoolState(); for (let i = 0; i < 400 && fresh.status === 'playing'; i++) advancePool(fresh, 50, i % 6 < 3, () => .4);
+  assert.ok(fresh.rings.length > 0 || fresh.ringsPassed > 0 || fresh.elapsed > 9000);
 });

@@ -80,3 +80,5 @@
 @media(max-width:650px){.ride.pool-game .ride-controls{grid-template-columns:1fr}.ride.pool-game .ride-controls button{font-size:18px;font-weight:800;line-height:1.2;padding:8px 14px;white-space:normal;overflow-wrap:anywhere}}
 .ride-controls .ride-bell{flex:0 0 auto;font-size:26px}.ride-controls .ride-bell span{display:block;font-size:14px;font-weight:800}
 @media(max-width:650px){.ride:not(.pool-game) .ride-controls{grid-template-columns:1fr 78px 1fr}.ride .ride-controls .ride-bell{font-size:30px;background:#f5cc5c}.ride .ride-controls .ride-bell span{display:block;font-size:16px}}
+.swim-dash{font-size:22px}.swim-dash span{display:block;font-size:12px;font-weight:800}
+@media(max-width:650px){.ride.pool-game .ride-controls{grid-template-columns:1fr 112px}.ride.pool-game .ride-controls .swim-dash{font-size:30px;background:#f5cc5c;line-height:1.1}.ride.pool-game .ride-controls .swim-dash span{display:block;font-size:14px}}

@@ -1,14 +1,14 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {precisionInitial,preciseAction,cookRating,PREP_PAR,type PrecisionCook} from '../src/cook/precision.ts';
-import {good} from '../src/cook/chop.ts';
+import {edible} from '../src/cook/chop.ts';
 import {actStove,answerPhone,createStove,DISHES,finished,heat,PERFECT,PHONE_MS,READY,ready,tickStove,BURN_RESET,type Stove} from '../src/cook/stove.ts';
 
 function prepared(seed?:number,skill:'sharp'|'sloppy'='sharp'){
  let s=precisionInitial(seed);
- for(let i=0;i<2000&&s.cook.stage==='prep';i++){
+ for(let i=0;i<6000&&s.cook.stage==='prep';i++){
   s=preciseAction(s,{type:'tick',delta:50});
-  if(skill==='sharp'){for(const p of s.chop.pieces)if(good(s.chop.board,p.kind)&&p.y>200)s=preciseAction(s,{type:'slice',from:{x:p.x,y:p.y-30},to:{x:p.x,y:p.y+30}});}
+  if(skill==='sharp'){for(const p of s.chop.pieces)if((edible(s.chop.board,p)||p.kind==='pepper')&&p.y>200)s=preciseAction(s,{type:'slice',from:{x:p.x,y:p.y-30},to:{x:p.x,y:p.y+30}});}
   else if(i%14===0)s=preciseAction(s,{type:'cut'});
  }
  return preciseAction(s,{type:'start'});

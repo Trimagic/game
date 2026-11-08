@@ -7,9 +7,9 @@ import {precisionInitial,preciseAction,cookRating,PREP_PAR,type PreciseAction} f
 import {DISHES,PERFECT,READY,finished,ready} from './stove';
 import {saveBest} from '../best';
 import {BOARD,NEED,type ChopEvent,type Kind} from './chop';
-const frameOf:Record<Kind,number>={tomato:1,broccoli:2,chicken:0};
-const juice:Record<Kind,number>={tomato:0xd9473a,broccoli:0x5c9e4a,chicken:0xf2b8a8};
-const names:Record<Kind,string>={tomato:'Помидоры',broccoli:'Брокколи',chicken:'Курица'};
+const frameOf:Record<Kind,number>={tomato:1,broccoli:2,chicken:0,cat:-1,pepper:-1};
+const juice:Record<Kind,number>={tomato:0xd9473a,broccoli:0x5c9e4a,chicken:0xf2b8a8,cat:0xd9a05b,pepper:0xf3d27b};
+const names:Record<Kind,string>={tomato:'Помидоры',broccoli:'Брокколи',chicken:'Курица',cat:'Кот',pepper:'Перец'};
 const BAR=116;
 const burnerX=[72,210,348];
 export default class CookScene extends SceneBase{
@@ -22,8 +22,8 @@ export default class CookScene extends SceneBase{
  constructor(events:ArcadeEvents){super('kitchen',events);}
  preload(){this.load.image('food','/art/chapter-04-food.png');this.load.on('loaderror',this.bridge.error);}
  create(){
-  if(!this.textures.exists('food'))return;for(let i=0;i<6;i++)this.textures.get('food').add(i,0,i%3*512,Math.floor(i/3)*512,512,512);
-  this.view={title:'Сегодня ты — шеф.',detail:'Овощи падают на доску — режь их свайпом, несколько за раз дают бонус. Сырую курицу на овощной доске не трогай: для неё будет своя доска. Потом три конфорки сразу: еда сама доходит до зелёной зоны — жми на неё вовремя, иначе подгорит. Мама позвонит в самый разгар. Три подгорания — повтор.',status:'ready',actions:[]};this.setup();this.draw();
+  if(!this.textures.exists('food'))return;for(let i=0;i<6;i++)this.textures.get('food').add(i,0,i%3*512,Math.floor(i/3)*512,512,512);this.makeChopArt();
+  this.view={title:'Сегодня ты — шеф.',detail:'Овощи падают на доску и подлетают снизу — режь их свайпом, по 20 каждого, несколько за раз дают бонус. Сырую курицу на овощной доске не трогай, гнилые овощи с мухами тоже. Кот запрыгивает на доску — его не режь! Золотой перец замедляет время. Потом три конфорки сразу: еда сама доходит до зелёной зоны — жми на неё вовремя. Мама позвонит в самый разгар. Три подгорания — повтор.',status:'ready',actions:[]};this.setup();this.draw();
   this.trail=this.add.graphics().setDepth(40);
   // Every pointer move inside the board is a blade stroke from the previous point.
   this.input.on('pointerdown',(p:Phaser.Input.Pointer)=>{if(this.running&&this.model.cook.stage==='prep'&&p.y>=BOARD.top-20&&p.y<=BOARD.bottom+20){this.stroke={x:p.x,y:p.y,id:p.id};this.trailPts=[{x:p.x,y:p.y,t:this.time.now}];}});
@@ -39,12 +39,20 @@ export default class CookScene extends SceneBase{
   for(const e of events){
    if(e.type==='cut'&&e.kind){sound.fx('cut');this.splitPiece(e.x,e.y,e.kind);}
    if(e.type==='wrong'){haptics.cue('error');this.pop(Phaser.Math.Clamp(e.x,110,310),Math.max(150,e.y-30),e.label,'#aa4933');if(!this.reduced)this.cameras.main.shake(140,.006);}
+   if(e.type==='cat'){sound.fx('buzz');this.pop(Phaser.Math.Clamp(e.x,110,310),Math.max(150,e.y-30),e.label,'#aa4933',false);if(!this.reduced)this.cameras.main.shake(180,.008);}
+   if(e.type==='gold'){sound.fx('powerup');this.pop(Phaser.Math.Clamp(e.x,110,310),Math.max(150,e.y-30),e.label,'#9b5725',false);if(!this.reduced)this.cameras.main.flash(160,255,226,140);}
    if(e.type==='multi')this.pop(Phaser.Math.Clamp(e.x,90,330),Math.max(150,e.y-40),e.label,'#9b5725');
    if(e.type==='board')this.pop(210,280,e.label,'#286b56');
   }
  }
+ /** The cat and the golden pepper have no picture in the food sheet; they are drawn here once. */
+ private makeChopArt(){
+  const make=(key:string,draw:(g:Phaser.GameObjects.Graphics)=>void)=>{if(this.textures.exists(key))return;const g=this.make.graphics({x:0,y:0},false);draw(g);g.generateTexture(key,80,80);g.destroy();};
+  make('chop-cat',g=>{g.fillStyle(0x5f6b78);g.fillEllipse(40,52,56,34);g.fillCircle(40,28,19);g.fillTriangle(24,18,28,1,37,13);g.fillTriangle(56,18,52,1,43,13);g.lineStyle(6,0x5f6b78);g.lineBetween(66,54,77,34);g.fillStyle(0xfff3d6);g.fillEllipse(40,34,20,13);g.fillEllipse(40,58,26,14);g.fillStyle(0xf28fb8);g.fillTriangle(27,15,29,6,34,13);g.fillTriangle(53,15,51,6,46,13);g.lineStyle(3,0x1c2630);g.strokeEllipse(40,52,56,34);g.strokeCircle(40,28,19);g.fillStyle(0x1c2630);g.fillCircle(33,25,3);g.fillCircle(47,25,3);g.fillStyle(0xd9473a);g.fillTriangle(37,31,43,31,40,34);g.lineStyle(2,0x3d4652);for(const x of [26,36,46])g.lineBetween(x,44,x+4,52);g.lineStyle(1.5,0x1c2630);g.lineBetween(22,33,32,34);g.lineBetween(48,34,58,33);});
+  make('chop-pepper',g=>{g.fillStyle(0xf3c43a);g.fillEllipse(40,46,40,52);g.fillStyle(0xffe58a);g.fillEllipse(32,40,10,22);g.fillStyle(0x4c8a3c);g.fillRoundedRect(35,12,10,14,3);g.lineStyle(3,0x9b5725);g.strokeEllipse(40,46,40,52);g.lineStyle(2,0xfff3d6);for(const [x,y] of [[16,18],[64,22],[66,62]]){g.lineBetween(x-5,y,x+5,y);g.lineBetween(x,y-5,x,y+5);}});
+ }
  private splitPiece(x:number,y:number,kind:Kind){
-  if(this.reduced)return;
+  if(this.reduced||frameOf[kind]<0)return;
   for(const side of [0,1]){const half=this.add.image(x+(side?8:-8),y,'food',frameOf[kind]).setDepth(30);half.setScale(62/half.width).setCrop(side*256,0,256,512);this.tweens.add({targets:half,x:half.x+(side?36:-36),y:y+50,angle:side?28:-28,alpha:0,duration:450,onComplete:()=>half.destroy()});}
   for(let i=0;i<5;i++){const drop=this.add.circle(x,y,3+Math.random()*3,juice[kind]).setDepth(29);this.tweens.add({targets:drop,x:x+(Math.random()-.5)*80,y:y+(Math.random()-.2)*60,alpha:0,duration:380,onComplete:()=>drop.destroy()});}
  }
@@ -52,7 +60,7 @@ export default class CookScene extends SceneBase{
   const prep=this.model.cook.stage==='prep';const live=new Set(prep?this.model.chop.pieces.map(p=>p.id):[]);
   for(const [id,img] of this.pieces)if(!live.has(id)){img.destroy();this.pieces.delete(id);}
   if(!prep)return;
-  for(const p of this.model.chop.pieces){let img=this.pieces.get(p.id);if(!img){img=this.add.image(p.x,p.y,'food',frameOf[p.kind]).setDepth(20);img.setScale(62/img.width);this.pieces.set(p.id,img);}img.setPosition(p.x,p.y).setAngle(this.reduced?0:(p.y*.6+p.id*37)%360);}
+  for(const p of this.model.chop.pieces){let img=this.pieces.get(p.id);if(!img){img=p.kind==='cat'?this.add.image(p.x,p.y,'chop-cat'):p.kind==='pepper'?this.add.image(p.x,p.y,'chop-pepper'):this.add.image(p.x,p.y,'food',frameOf[p.kind]);img.setDepth(20).setScale((p.kind==='cat'?78:62)/img.width);if(p.rotten)img.setTint(0x7d8a4a);this.pieces.set(p.id,img);}img.setPosition(p.x,p.y).setAngle(this.reduced||p.kind==='cat'?0:(p.y*.6+p.id*37)%360).setFlipX(p.kind==='cat'&&p.vx<0);}
  }
  private drawTrail(){const now=this.time.now;this.trailPts=this.trailPts.filter(p=>now-p.t<160);this.trail?.clear();for(let i=1;i<this.trailPts.length;i++){const a=this.trailPts[i-1],b=this.trailPts[i];this.trail?.lineStyle(6*(1-(now-b.t)/160)+1,0xfffbe8,.9).lineBetween(a.x,a.y,b.x,b.y);}}
  protected key(e:KeyboardEvent){if(['Space','Digit1','Digit2','Digit3','KeyM'].includes(e.code))e.preventDefault();if(e.code==='Space'&&this.model.cook.stage==='prep')this.action('cut');const n=['Digit1','Digit2','Digit3'].indexOf(e.code);if(n>=0)this.action(`burner:${n}`);if(e.code==='KeyM')this.action('answer');}
@@ -125,7 +133,7 @@ export default class CookScene extends SceneBase{
    ['Курица','Рис','Овощи'].forEach((name,i)=>{const target=this.platePosition(i);const zone=this.add.circle(target.x,target.y,53,0xe4e8d6).setStrokeStyle(2,0x99ad92);this.root.add(zone);if(s.plated.includes(i))this.image(target.x,target.y,'food',[3,4,5][i],105,100);else{this.text(target.x,target.y,name,12,'#6f8065',true);const image=this.image(80+i*130,477,'food',[3,4,5][i],90,70).setInteractive({useHandCursor:true});image.setData('part',i);this.input.setDraggable(image);}});this.button(210,536,390,34,s.plated.length===3?'ПОДАТЬ УЖИН →':'ПЕРЕТАЩИ ЕДУ В ОБЛАСТИ НА ТАРЕЛКЕ',()=>this.action('serve'),s.plated.length===3?0xadd7b4:0xe3cba2);
   }
  }
- private refreshPrep(){const c=this.model.chop;if(c.board!=='done')this.chopHud?.setText((Object.entries(NEED[c.board]) as [Kind,number][]).map(([k,n])=>`${c.counts[k]>=n?'✓':'○'} ${names[k]} ${Math.min(c.counts[k],n)}/${n}`).join('   ')+(c.switchMs>0?'   · меняем доску…':''));const ms=this.model.prepMs;this.prepClock?.setText(`⏱ ${(ms/1000).toFixed(1)} с${ms<PREP_PAR?' · бонус +'+Math.min(40,Math.round((PREP_PAR-ms)/250)):''}`);}
+ private refreshPrep(){const c=this.model.chop;if(c.board!=='done')this.chopHud?.setText((Object.entries(NEED[c.board]) as [Kind,number][]).map(([k,n])=>`${c.counts[k]>=n?'✓':'○'} ${names[k]} ${Math.min(c.counts[k],n)}/${n}`).join('   ')+(c.switchMs>0?'   · меняем доску…':'')+(c.slow>0?'   · ЗАМЕДЛЕНИЕ':''));const ms=this.model.prepMs;this.prepClock?.setText(`⏱ ${(ms/1000).toFixed(1)} с${ms<PREP_PAR?' · бонус +'+Math.min(40,Math.round((PREP_PAR-ms)/250)):''}`);}
  private refreshStove(){const st=this.model.stove;
   this.clock?.setText(`${st.time.toFixed(0)} с у плиты · ${'♥'.repeat(Math.max(0,3-st.mistakes))}${'♡'.repeat(Math.min(3,st.mistakes))}`);
   DISHES.forEach((dish,i)=>{const b=st.burners[i],done=finished(st,i),hot=ready(st,i),burning=hot&&b.progress>PERFECT[1];

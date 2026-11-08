@@ -2,22 +2,22 @@ import {SoundButton,useSound} from '../audio/useSound';
 import {sound} from '../audio/sound';
 import { useEffect, useRef, useState } from 'react';
 import { saveBest } from '../best';
-import { advancePool, BOTTOM, TOP, BOSS_MS, createPoolState, phaseAt, phases, PLAYER_X, poolRating, PRE_BOSS_MS, ROUND_MS, SOAP_FOR_SHIELD } from './model';
+import { advancePool, BOTTOM, TOP, BOSS_MS, createPoolState, dashPool, phaseAt, phases, PLAYER_X, poolRating, PRE_BOSS_MS, ROUND_MS, SOAP_FOR_SHIELD } from './model';
 
 type Status = 'loading' | 'playing' | 'paused' | 'lost' | 'won' | 'error';
 type Result = { score: number; collected: number; spawned: number; lives: number; stars: number; best: number; record: boolean };
 export default function PoolGame({ onWin, onExit }: { onWin: () => void; onExit: () => void }) {
   const host = useRef<HTMLDivElement>(null);
-  const controls = useRef<{ hold: (value: boolean) => void; pause: (value: boolean) => void } | null>(null);
+  const controls = useRef<{ hold: (value: boolean) => void; dash: () => void; pause: (value: boolean) => void } | null>(null);
   const [attempt, setAttempt] = useState(0);
   const [status, setStatus] = useState<Status>('loading');
-  const [hud, setHud] = useState({ seconds: 0, lives: 3, boss: false, score: 0, charge: 0, shield: false });
+  const [hud, setHud] = useState({ seconds: 0, lives: 3, boss: false, score: 0, charge: 0, shield: false, dash: true });
   const [result, setResult] = useState<Result | null>(null);
   useSound('pool',status,hud.score,hud.lives);
   useEffect(() => {
     let disposed = false;
     let game: import('phaser').Game | undefined;
-    setStatus('loading'); setHud({ seconds: 0, lives: 3, boss: false, score: 0, charge: 0, shield: false }); setResult(null);
+    setStatus('loading'); setHud({ seconds: 0, lives: 3, boss: false, score: 0, charge: 0, shield: false, dash: true }); setResult(null);
     const clearHold = () => controls.current?.hold(false);
     const hide = () => {
       clearHold();
@@ -38,6 +38,7 @@ export default function PoolGame({ onWin, onExit }: { onWin: () => void; onExit:
         private images = new Map<number, import('phaser').GameObjects.Image>();
         private alerts = new Map<number, import('phaser').GameObjects.Text>();
         private soaps = new Map<number, import('phaser').GameObjects.Container>();
+        private rings = new Map<number, import('phaser').GameObjects.Image>();
         private model = createPoolState();
         private held = false;
         private keyboard!: import('phaser').Types.Input.Keyboard.CursorKeys;
@@ -68,6 +69,7 @@ export default function PoolGame({ onWin, onExit }: { onWin: () => void; onExit:
           // Both pool edges are dangerous now; a faint red strip marks them.
           this.edges = [TOP - 14, BOTTOM + 14].map(y => this.add.rectangle(180, y, 360, 12, 0xd9473a, .55).setDepth(2));
           this.add.text(14, 44, 'ДОРОЖКА № 2', { fontFamily:'sans-serif',fontSize:'10px',color:'#dcfff8' });
+          this.makeArt();
           this.swimmer = this.add.image(PLAYER_X, this.model.y, 'pool-cast', 0).setDepth(5);
           this.swimmer.setScale(116 / this.swimmer.width);
           this.bubble = this.add.circle(PLAYER_X, this.model.y, 50, 0xe1ffff, .28).setStrokeStyle(3, 0xffffff, .9).setDepth(6).setVisible(false);
@@ -77,12 +79,14 @@ export default function PoolGame({ onWin, onExit }: { onWin: () => void; onExit:
           this.waveText = this.add.text(180, 58, '', { fontFamily:'sans-serif',fontSize:'12px',fontStyle:'bold',color:'#ffe3ab' }).setOrigin(.5).setDepth(10);
           this.keyboard = this.input.keyboard!.createCursorKeys();
           this.space = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+          for (const key of ['X', 'SHIFT', 'RIGHT']) this.input.keyboard?.on(`keydown-${key}`, () => dashPool(this.model));
           this.input.on('pointerdown', () => { this.held = true; sound.fx('tick'); });
           this.input.on('pointerup', () => { this.held = false; });
           this.input.on('pointerupoutside', () => { this.held = false; });
           this.input.on('gameout', () => { this.held = false; });
           controls.current = {
             hold: value => { this.held = value; },
+            dash: () => { if (!this.scene.isPaused()) dashPool(this.model); },
             pause: value => {
               this.held = false; this.input.keyboard?.resetKeys();
               if (value) this.scene.pause(); else this.scene.resume();
@@ -90,6 +94,12 @@ export default function PoolGame({ onWin, onExit }: { onWin: () => void; onExit:
           };
           this.banner(phases[0].name, '#1d6f73');
           if (!disposed) setStatus('playing');
+        }
+        /** A jellyfish and a lifebuoy, drawn once into textures. */
+        private makeArt() {
+          const make = (key: string, size: number, draw: (g: import('phaser').GameObjects.Graphics) => void) => { if (this.textures.exists(key)) return; const g = this.make.graphics({ x: 0, y: 0 }, false); draw(g); g.generateTexture(key, size, size); g.destroy(); };
+          make('pool-jelly', 64, g => { g.fillStyle(0xf28fb8, .9); g.fillEllipse(32, 24, 48, 34); g.fillStyle(0xffd0e3); g.fillEllipse(24, 18, 12, 8); g.lineStyle(3, 0xc7558a); g.strokeEllipse(32, 24, 48, 34); g.lineStyle(3, 0xf28fb8); for (const x of [16, 26, 38, 48]) { g.lineBetween(x, 36, x - 3, 48); g.lineBetween(x - 3, 48, x + 2, 60); } g.fillStyle(0x6b2a48); g.fillCircle(25, 26, 2.5); g.fillCircle(39, 26, 2.5); });
+          make('pool-ring', 72, g => { g.lineStyle(13, 0xfff8e7); g.strokeCircle(36, 36, 27); g.lineStyle(13, 0xde7552); for (let a = 0; a < 4; a++) { g.beginPath(); g.arc(36, 36, 27, a * Math.PI / 2, a * Math.PI / 2 + Math.PI / 4); g.strokePath(); } g.lineStyle(2, 0x273e36); g.strokeCircle(36, 36, 34); g.strokeCircle(36, 36, 20); });
         }
         private float(text: string, x: number, y: number, color: string, size = 18) {
           const label = this.add.text(x, y, text, { fontFamily:'sans-serif',fontSize:`${size}px`,fontStyle:'bold',color,stroke:'#16393b',strokeThickness:4 }).setOrigin(.5).setDepth(11);
@@ -114,6 +124,9 @@ export default function PoolGame({ onWin, onExit }: { onWin: () => void; onExit:
           for (const event of model.events) {
             if (event === 'soap' && model.score > this.scoreSeen) this.float(`+${model.score - this.scoreSeen}`, PLAYER_X + 30, model.y - 35, '#ffd6e3');
             if (event === 'shield') { this.banner('Пенный щит!', '#2a8c96'); sound.fx('powerup'); }
+            if (event === 'dash') sound.fx('whoosh');
+            if (event === 'smash') { sound.fx('crash'); this.float('+15 БАХ!', PLAYER_X + 70, model.y - 30, '#fff3cc', 20); }
+            if (event === 'ring') { sound.fx('coin'); this.float('+20 КРУГ!', PLAYER_X + 40, model.y - 40, '#ffe3ab', 20); }
             if (event === 'wall') {
               const edge = this.edges[model.y < 315 ? 0 : 1];
               this.tweens.killTweensOf(edge); edge.setAlpha(1);
@@ -142,6 +155,7 @@ export default function PoolGame({ onWin, onExit }: { onWin: () => void; onExit:
           const model = this.model;
           this.react();
           this.swimmer.y = model.y;
+          this.swimmer.x = PLAYER_X + (model.dash > 0 ? 22 : 0);
           this.swimmer.setAngle(up ? -9 : 7);
           this.swimmer.setAlpha(model.invincible > 0 ? .5 : 1);
           this.bubble.setPosition(PLAYER_X, model.y).setVisible(model.shield).setScale(1 + Math.sin(model.elapsed / 180) * .04);
@@ -166,8 +180,8 @@ export default function PoolGame({ onWin, onExit }: { onWin: () => void; onExit:
           for (const hazard of model.hazards) {
             let sprite = this.images.get(hazard.id);
             if (!sprite) {
-              sprite = this.add.image(hazard.x, hazard.y, 'pool-cast', 1).setDepth(4);
-              sprite.setScale((hazard.kind === 'wave' ? 52 : hazard.kind === 'dart' ? 34 : 39) / sprite.width);
+              sprite = hazard.kind === 'jelly' ? this.add.image(hazard.x, hazard.y, 'pool-jelly').setDepth(4) : this.add.image(hazard.x, hazard.y, 'pool-cast', 1).setDepth(4);
+              sprite.setScale((hazard.kind === 'jelly' ? 54 : hazard.kind === 'wave' ? 52 : hazard.kind === 'dart' ? 34 : 39) / sprite.width);
               this.images.set(hazard.id, sprite);
               // Torpedoes flash a warning at the edge where they will launch.
               if (hazard.warn) {
@@ -178,6 +192,14 @@ export default function PoolGame({ onWin, onExit }: { onWin: () => void; onExit:
             }
             sprite.setPosition(hazard.x, hazard.y);
             if (hazard.kind === 'dart' && !hazard.warn) sprite.setAngle(sprite.angle - Math.min(delta, 50) * .6);
+            if (hazard.kind === 'jelly' && !this.reducedMotion) sprite.setScale(54 / sprite.width * (1 + Math.sin(model.elapsed / 160 + hazard.id) * .06), 54 / sprite.width * (1 - Math.sin(model.elapsed / 160 + hazard.id) * .06));
+          }
+          const ringIds = new Set(model.rings.map(r => r.id));
+          for (const [id, ring] of this.rings) if (!ringIds.has(id)) { ring.destroy(); this.rings.delete(id); }
+          for (const r of model.rings) {
+            let ring = this.rings.get(r.id);
+            if (!ring) { ring = this.add.image(r.x, r.y, 'pool-ring').setDepth(3); ring.setScale(62 / ring.width); this.rings.set(r.id, ring); }
+            ring.setPosition(r.x, r.y).setAlpha(r.done ? .35 : 1);
           }
           const soapIds = new Set(model.soaps.map(s => s.id));
           for (const [id, soap] of this.soaps) if (!soapIds.has(id)) { soap.destroy(); this.soaps.delete(id); }
@@ -189,7 +211,7 @@ export default function PoolGame({ onWin, onExit }: { onWin: () => void; onExit:
           if (model.lives < previousLives && !this.reducedMotion) this.cameras.main.shake(120, .006);
           if (model.elapsed - this.lastHud > 100 || model.status !== 'playing') {
             this.lastHud = model.elapsed;
-            setHud({ seconds: Math.min(45, Math.floor(model.elapsed / 1000)), lives: model.lives, boss: model.elapsed >= BOSS_MS, score: model.score, charge: model.charge, shield: model.shield });
+            setHud({ seconds: Math.min(45, Math.floor(model.elapsed / 1000)), lives: model.lives, boss: model.elapsed >= BOSS_MS, score: model.score, charge: model.charge, shield: model.shield, dash: model.dashCd === 0 });
           }
           if (model.status === 'lost') setStatus('lost');
           if (model.status === 'won') this.finish();
@@ -218,13 +240,13 @@ export default function PoolGame({ onWin, onExit }: { onWin: () => void; onExit:
         <button onClick={onWin}>Дальше →</button>
         <button className="text-button" onClick={() => setAttempt(n => n + 1)}>Ещё заплыв за рекорд</button>
       </div></div>}
-      {status !== 'playing' && status !== 'won' && <div className="game-overlay" role="status"><div><span className="eyebrow">{hud.boss ? 'КАКУН НЕ ДРЕМЛЕТ' : 'АБОНЕМЕНТ БЕЗ ВОЗВРАТА'}</span><h2>{status === 'loading' ? 'Наполняем бассейн…' : status === 'paused' ? 'Перерыв на бортике' : status === 'lost' ? 'Заплыв не задался.' : 'Не удалось загрузить бассейн'}</h2><p>{status === 'lost' ? `Продержался ${hud.seconds} с. Собирай мыло: четыре куска дают пенный щит. Красный «!» у края — сейчас прилетит торпеда. Бортики тоже опасны: не касайся верха и дна.` : status === 'paused' ? 'Всё замерло. Даже Какун.' : status === 'error' ? 'Проверь подключение и попробуй снова.' : 'Готовим пловца и его неприятности.'}</p>
+      {status !== 'playing' && status !== 'won' && <div className="game-overlay" role="status"><div><span className="eyebrow">{hud.boss ? 'КАКУН НЕ ДРЕМЛЕТ' : 'АБОНЕМЕНТ БЕЗ ВОЗВРАТА'}</span><h2>{status === 'loading' ? 'Наполняем бассейн…' : status === 'paused' ? 'Перерыв на бортике' : status === 'lost' ? 'Заплыв не задался.' : 'Не удалось загрузить бассейн'}</h2><p>{status === 'lost' ? `Продержался ${hud.seconds} с. Собирай мыло: четыре куска дают пенный щит. Красный «!» у края — сейчас прилетит торпеда. Бортики тоже опасны: не касайся верха и дна. Рывок разбивает игрушки и медуз, а через центр круга — бонус.` : status === 'paused' ? 'Всё замерло. Даже Какун.' : status === 'error' ? 'Проверь подключение и попробуй снова.' : 'Готовим пловца и его неприятности.'}</p>
       {status === 'paused' && <button onClick={pause}>Продолжить →</button>}
       {(status === 'lost' || status === 'error') && <button onClick={() => setAttempt(n => n + 1)}>Попробовать снова →</button>}
       <button className="text-button" onClick={onExit}>К истории</button></div></div>}
     </div>
-    <div className="ride-controls"><button className="swim-hold" disabled={status !== 'playing'} onPointerDown={e => { e.currentTarget.setPointerCapture(e.pointerId); controls.current?.hold(true); }} onPointerUp={() => controls.current?.hold(false)} onPointerCancel={() => controls.current?.hold(false)} onLostPointerCapture={() => controls.current?.hold(false)} onContextMenu={e => e.preventDefault()}>↑ Удерживай — плыви вверх</button></div>
-    <p className="control-hint">Отпусти — вниз · Не касайся бортиков · Пробел / ↑ · 4 мыла = щит</p>
+    <div className="ride-controls"><button className="swim-hold" disabled={status !== 'playing'} onPointerDown={e => { e.currentTarget.setPointerCapture(e.pointerId); controls.current?.hold(true); }} onPointerUp={() => controls.current?.hold(false)} onPointerCancel={() => controls.current?.hold(false)} onLostPointerCapture={() => controls.current?.hold(false)} onContextMenu={e => e.preventDefault()}>↑ Удерживай — плыви вверх</button><button className="swim-dash" aria-label="Рывок" disabled={status !== 'playing' || !hud.dash} onPointerDown={event => { event.preventDefault(); controls.current?.dash(); }} onClick={event => { if (event.detail === 0) controls.current?.dash(); }} onContextMenu={event => event.preventDefault()}>⚡<span>РЫВОК</span></button></div>
+    <p className="control-hint">Отпусти — вниз · Не касайся бортиков · Пробел / ↑ · Рывок — X · 4 мыла = щит</p>
     <button className="text-button" onClick={onExit}>Выйти из заплыва</button>
   </section>;
 }
