@@ -77,3 +77,4 @@
 .ride-controls button{touch-action:none;transition:none}
 .ride .game canvas{touch-action:none}
 @media(max-width:650px){.ride .ride-controls{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;max-width:none;margin:8px 0 0}.ride .ride-controls button{height:clamp(72px,13dvh,108px);min-height:0;padding:0;font-size:44px;font-weight:900;line-height:1}.ride .ride-controls button span{display:none}.ride .game-wrap{max-width:min(360px,calc((100dvh - 214px - clamp(72px,13dvh,108px) + 36px - var(--game-safe-top) - var(--game-safe-bottom))*.6))}}
+@media(max-width:650px){.ride.pool-game .ride-controls{grid-template-columns:1fr}.ride.pool-game .ride-controls button{font-size:18px;font-weight:800;line-height:1.2;padding:8px 14px;white-space:normal;overflow-wrap:anywhere}}

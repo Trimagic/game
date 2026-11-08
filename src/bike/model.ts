@@ -1,6 +1,6 @@
 // Pure course model for chapter 01: deterministic waves, pickups and scoring.
-export type Hazard = 'granny' | 'kid' | 'banana';
-export type Kind = Hazard | 'star' | 'heart';
+export type Hazard = 'granny' | 'kid' | 'banana' | 'hurdle';
+export type Kind = Hazard | 'star' | 'heart' | 'ramp' | 'puddle' | 'boost';
 export type Spawn = { at: number; lane: number; kind: Kind; shift?: -1 | 1 };
 export type Phase = { from: number; name: string; speed: number; gap: number };
 
@@ -14,9 +14,15 @@ export const clampLane = (lane: number) => Math.max(0, Math.min(LANES - 1, lane)
 export const phases: Phase[] = [
   { from: 0, name: 'Разминка', speed: 180, gap: 1300 },
   { from: 12000, name: 'Парк оживает!', speed: 210, gap: 1100 },
-  { from: 26000, name: 'Финишная прямая!', speed: 245, gap: 950 },
+  { from: 24000, name: 'Финишная прямая!', speed: 245, gap: 950 },
+  { from: 31500, name: 'Под горку!', speed: 280, gap: 860 },
 ];
 export const HEART_TIMES = [16000, 29000];
+// Things on the path that are not obstacles: a ramp throws you over a hurdle, a puddle locks the wheel, turbo doubles stars.
+export const AIR_MS = 800;
+export const SLIP_MS = 380;
+export const BOOST_MS = 4000;
+const passable: Kind[] = ['star', 'heart', 'ramp', 'puddle', 'boost', 'hurdle'];
 
 export function phaseAt(time: number) {
   let index = 0;
@@ -43,7 +49,7 @@ const hazards: Hazard[] = ['granny', 'kid', 'banana'];
 /** Lanes a row occupies by the time it reaches the rider, kid dashes included. */
 export function blocked(row: Spawn[]) {
   const lanes = new Set<number>();
-  for (const s of row) if (s.kind !== 'star' && s.kind !== 'heart') { lanes.add(s.lane); if (s.shift) lanes.add(s.lane + s.shift); }
+  for (const s of row) if (!passable.includes(s.kind)) { lanes.add(s.lane); if (s.shift) lanes.add(s.lane + s.shift); }
   return lanes;
 }
 
@@ -54,11 +60,20 @@ export function course(seed = Date.now()) {
   const spawns: Spawn[] = [];
   let at = 1200;
   let lastFree = 1;
+  let rampRow = false;
+  let nextBoost = 9000;
   while (at <= LAST_ROW) {
     const phase = phaseAt(at);
     const row: Spawn[] = [];
     const roll = random();
-    if (phase >= 1 && roll < .3) {
+    // A ramp row: two lanes are blocked, the third has a hurdle that only a jump from the ramp clears.
+    const ramp: boolean = phase >= 1 && !rampRow && random() < .18;
+    rampRow = ramp;
+    if (ramp) {
+      const free = pick([0, 1, 2].filter(lane => lane !== lastFree));
+      for (const lane of [0, 1, 2]) if (lane !== free) row.push({ at, lane, kind: pick(hazards) });
+      row.push({ at, lane: free, kind: 'hurdle' }, { at: at - 260, lane: free, kind: 'ramp' });
+    } else if (phase >= 1 && roll < .3) {
       // Kid dash: starts in one lane and swerves into its neighbour.
       const lane = pick([0, 1, 2]);
       const shift: -1 | 1 = lane === 0 ? 1 : lane === 2 ? -1 : pick([-1, 1] as const);
@@ -75,6 +90,10 @@ export function course(seed = Date.now()) {
     lastFree = free;
     // A short star trail rewards whoever threads the free lane.
     for (const offset of [-220, 0, 220]) row.push({ at: at + offset, lane: free, kind: 'star' });
+    // A puddle just past a row: whoever rides through it cannot steer for a moment.
+    if (phase >= 1 && !ramp && random() < .3) row.push({ at: at + 140, lane: pick([0, 1, 2]), kind: 'puddle' });
+    // Turbo sits off the safe route between rows: a risk worth taking.
+    if (at >= nextBoost) { const lane = pick([0, 1, 2].filter(l => l !== free)); row.push({ at: at + Math.floor(phases[phase].gap / 2), lane, kind: 'boost' }); nextBoost = at + 7000; }
     spawns.push(...row);
     at += phases[phase].gap + Math.floor(random() * 250);
   }

@@ -2,7 +2,7 @@ import {SoundButton,useSound} from './audio/useSound';
 import {sound} from './audio/sound';
 import { useEffect, useRef, useState } from 'react';
 import { saveBest } from './best';
-import { clampLane, CLEAN_BONUS, course, DURATION, laneAt, laneX, multiplier, phaseAt, phases, rating, speedAt, STAR_POINTS, type Spawn } from './bike/model';
+import { AIR_MS, BOOST_MS, clampLane, CLEAN_BONUS, course, DURATION, laneAt, laneX, multiplier, phaseAt, phases, rating, SLIP_MS, speedAt, STAR_POINTS, type Spawn } from './bike/model';
 
 type Result = { score: number; collected: number; total: number; stars: number; best: number; record: boolean; clean: boolean };
 const RIDER_Y = 470;
@@ -24,7 +24,7 @@ export default function Game({ onWin, onExit }: { onWin: () => void; onExit: () 
     setState('loading'); setHud({ distance: 0, lives: 3, score: 0, combo: 1 }); setResult(null);
     void import('phaser').then(({ default: Phaser }) => {
       if (disposed) return;
-      type Item = { spawn: Spawn; body: import('phaser').GameObjects.Image | import('phaser').GameObjects.Star | import('phaser').GameObjects.Text; arrow?: import('phaser').GameObjects.Text; dashed?: boolean };
+      type Item = { spawn: Spawn; body: import('phaser').GameObjects.Image | import('phaser').GameObjects.Star | import('phaser').GameObjects.Text | import('phaser').GameObjects.Container; arrow?: import('phaser').GameObjects.Text; dashed?: boolean; used?: boolean };
       class BikeScene extends Phaser.Scene {
         private rider!: import('phaser').GameObjects.Image;
         private items: Item[] = [];
@@ -34,6 +34,10 @@ export default function Game({ onWin, onExit }: { onWin: () => void; onExit: () 
         private lane = 1;
         private elapsed = 0;
         private invincible = 0;
+        private air = 0;
+        private slip = 0;
+        private boost = 0;
+        private shadow!: import('phaser').GameObjects.Ellipse;
         private lives = 3;
         private score = 0;
         private streak = 0;
@@ -62,12 +66,13 @@ export default function Game({ onWin, onExit }: { onWin: () => void; onExit: () 
             this.add.circle(x, y, 21, 0x527b59).setStrokeStyle(2, 0x34533b);
             this.add.circle(x - 5, y - 7, 9, 0x7d9c67);
           }
+          this.shadow = this.add.ellipse(180, RIDER_Y + 50, 60, 16, 0x272c28, .25).setDepth(4).setVisible(false);
           this.rider = this.add.image(180, RIDER_Y, 'cast', 0).setDepth(5);
           this.rider.setScale(130 / this.rider.height);
           // Changing lane is quick and the bike leans into it, so a press is felt at once.
           const steer = (lane: number) => {
             const next = clampLane(lane);
-            if (this.done || this.scene.isPaused() || next === this.lane) return false;
+            if (this.done || this.scene.isPaused() || next === this.lane || this.slip > 0) return false;
             const lean = next > this.lane ? 1 : -1;
             this.lane = next;
             sound.fx('whoosh');
@@ -109,6 +114,8 @@ export default function Game({ onWin, onExit }: { onWin: () => void; onExit: () 
           if (s.kind === 'star') {
             const body = this.add.star(x, -40, 5, 7, 16, 0xf5cc5c).setStrokeStyle(2.5, 0x272c28).setDepth(4);
             this.items.push({ spawn: s, body });
+          } else if (s.kind === 'ramp' || s.kind === 'puddle' || s.kind === 'boost' || s.kind === 'hurdle') {
+            this.items.push({ spawn: s, body: this.road(s.kind, x) });
           } else if (s.kind === 'heart') {
             const body = this.add.text(x, -40, '♥', { fontFamily: 'sans-serif', fontSize: '40px', color: '#d9473a', stroke: '#272c28', strokeThickness: 4 }).setOrigin(.5).setDepth(4);
             this.tweens.add({ targets: body, scale: 1.18, yoyo: true, repeat: -1, duration: 300 });
@@ -122,6 +129,15 @@ export default function Game({ onWin, onExit }: { onWin: () => void; onExit: () 
             this.items.push({ spawn: s, body, arrow });
           }
         }
+        /** Road furniture drawn from shapes: a ramp, a striped hurdle, a puddle and turbo chevrons. */
+        private road(kind: Spawn['kind'], x: number) {
+          const g = this.add.graphics();
+          if (kind === 'ramp') { g.fillStyle(0xb98a52); g.fillTriangle(-34, 22, 34, 22, 0, -26); g.fillStyle(0xd9a866); g.fillRect(-34, 16, 68, 8); g.lineStyle(3, 0x272c28); g.strokeTriangle(-34, 22, 34, 22, 0, -26); g.lineStyle(4, 0xfff8e7); g.lineBetween(-10, 6, 0, -8); g.lineBetween(0, -8, 10, 6); }
+          else if (kind === 'hurdle') { g.fillStyle(0xfff8e7); g.fillRect(-38, -10, 76, 18); g.fillStyle(0xc4552d); for (let i = -38; i < 38; i += 19) g.fillRect(i, -10, 10, 18); g.lineStyle(3, 0x272c28); g.strokeRect(-38, -10, 76, 18); g.lineBetween(-30, 8, -30, 24); g.lineBetween(30, 8, 30, 24); }
+          else if (kind === 'puddle') { g.fillStyle(0x6fb6c9, .85); g.fillEllipse(0, 0, 70, 30); g.fillStyle(0xd8f0f5, .9); g.fillEllipse(-12, -5, 22, 7); g.lineStyle(2, 0x3f7f92); g.strokeEllipse(0, 0, 70, 30); }
+          else { g.fillStyle(0xf5cc5c, .35); g.fillRoundedRect(-34, -40, 68, 80, 10); g.lineStyle(6, 0xf0a63d); for (const y of [-22, 0, 22]) { g.lineBetween(-18, y + 12, 0, y - 6); g.lineBetween(0, y - 6, 18, y + 12); } }
+          return this.add.container(x, -40, [g]).setDepth(kind === 'hurdle' ? 3 : 2);
+        }
         private remove(item: Item) {
           item.body.destroy(); item.arrow?.destroy();
           this.items = this.items.filter(other => other !== item);
@@ -133,9 +149,9 @@ export default function Game({ onWin, onExit }: { onWin: () => void; onExit: () 
             this.cameras.main.flash(120, 255, 240, 220);
           } else {
             this.streak++; this.collected++;
-            const combo = multiplier(this.streak);
+            const combo = multiplier(this.streak) * (this.boost > 0 ? 2 : 1);
             this.score += STAR_POINTS * combo;
-            this.float(combo > 1 ? `+${STAR_POINTS * combo} ×${combo}` : `+${STAR_POINTS}`, item.body.x, item.body.y, '#f5cc5c', combo > 1 ? 22 : 18);
+            this.float(combo > 1 ? `+${STAR_POINTS * combo} ×${combo}` : `+${STAR_POINTS}`, item.body.x, item.body.y, this.boost > 0 ? '#ffb347' : '#f5cc5c', combo > 1 ? 22 : 18);
             if (this.streak % 4 === 0) {
               const ring = this.add.circle(this.rider.x, this.rider.y, 30).setStrokeStyle(4, 0xf5cc5c).setDepth(6);
               this.tweens.add({ targets: ring, scale: 2.2, alpha: 0, duration: 380, onComplete: () => ring.destroy() });
@@ -157,6 +173,13 @@ export default function Game({ onWin, onExit }: { onWin: () => void; onExit: () 
           const dt = Math.min(delta, 50);
           this.elapsed += dt;
           this.invincible = Math.max(0, this.invincible - dt);
+          const wasAir = this.air > 0;
+          this.air = Math.max(0, this.air - dt); this.slip = Math.max(0, this.slip - dt); this.boost = Math.max(0, this.boost - dt);
+          // In the air the bike is bigger and casts a shadow; it lands with a thud.
+          const lift = this.air > 0 ? Math.sin(Math.PI * (1 - this.air / AIR_MS)) : 0;
+          this.rider.setScale(130 / this.rider.height * (1 + lift * .28)); this.shadow.setVisible(this.air > 0).setPosition(this.rider.x, RIDER_Y + 52).setScale(1 - lift * .3);
+          if (wasAir && this.air === 0) { sound.fx('land'); this.cameras.main.shake(70, .004); }
+          if (this.slip > 0) this.rider.setX(laneX(this.lane) + Math.sin(this.elapsed / 30) * 4);
           this.rider.setAlpha(this.invincible > 0 ? (Math.floor(this.invincible / 120) % 2 ? .45 : 1) : 1);
           const speed = speedAt(this.elapsed);
           const step = speed * dt / 1000;
@@ -180,9 +203,20 @@ export default function Game({ onWin, onExit }: { onWin: () => void; onExit: () 
               this.tweens.add({ targets: body, x: laneX(spawn.lane + spawn.shift), duration: 550, ease: 'Sine.easeInOut' });
               if (item.arrow) this.tweens.add({ targets: item.arrow, alpha: 0, duration: 450 });
             }
+            const near = Math.abs(body.x - this.rider.x) < 40 && Math.abs(body.y - this.rider.y) < 40;
+            if (spawn.kind === 'ramp' || spawn.kind === 'puddle' || spawn.kind === 'boost') {
+              if (near && !item.used && this.air === 0) {
+                item.used = true;
+                if (spawn.kind === 'ramp') { this.air = AIR_MS; sound.fx('boing'); this.float('ПРЫЖОК!', this.rider.x, RIDER_Y - 80, '#fff8e7', 18); }
+                else if (spawn.kind === 'puddle') { this.slip = SLIP_MS; sound.fx('splash'); this.float('СКОЛЬЗКО!', this.rider.x, RIDER_Y - 80, '#cfeaf2', 16); }
+                else { this.boost = BOOST_MS; sound.fx('powerup'); this.float('ТУРБО ×2', this.rider.x, RIDER_Y - 80, '#ffb347', 22); this.remove(item); continue; }
+              }
+              if (body.y > 690) this.remove(item);
+              continue;
+            }
             const pickup = spawn.kind === 'star' || spawn.kind === 'heart';
             if (pickup && Math.abs(body.x - this.rider.x) < PICKUP_REACH && Math.abs(body.y - this.rider.y) < 50) { this.collect(item); continue; }
-            if (!pickup && Math.abs(body.x - this.rider.x) < HIT_REACH && Math.abs(body.y - this.rider.y) < 40 && this.invincible === 0) {
+            if (!pickup && this.air === 0 && Math.abs(body.x - this.rider.x) < HIT_REACH && Math.abs(body.y - this.rider.y) < 40 && this.invincible === 0) {
               this.lives--; this.invincible = 1400; this.streak = 0;
               this.cameras.main.shake(140, .007);
               const text = this.add.text(180, 320, 'Осторожнее!', { fontFamily: 'sans-serif', fontSize: '25px', color: '#fff8e7', backgroundColor: '#a4422d', padding: { x: 14, y: 8 } }).setOrigin(.5).setDepth(10);
@@ -231,7 +265,7 @@ export default function Game({ onWin, onExit }: { onWin: () => void; onExit: () 
       {state !== 'playing' && state !== 'won' && <div className="game-overlay" role="status"><div>
         <span className="eyebrow">ПЕРВЫЙ ШАГ — УЖЕ ПОБЕДА</span>
         <h2>{state === 'loading' ? 'Готовим велосипед…' : state === 'paused' ? 'Передохнём?' : state === 'lost' ? 'Ещё один круг?' : 'Не удалось загрузить заезд'}</h2>
-        <p>{state === 'lost' ? `Проехано ${hud.distance} м. На дорожке тесно: следи за стрелками над детьми — они сейчас свернут.` : state === 'paused' ? 'Заезд приостановлен. Продолжай, когда будешь готов.' : state === 'error' ? 'Проверь подключение и попробуй снова.' : 'Загружаем героя и парк.'}</p>
+        <p>{state === 'lost' ? `Проехано ${hud.distance} м. Следи за стрелками над детьми — они сейчас свернут. Полосатый барьер перепрыгивают только с трамплина, в луже руль не слушается, а турбо удваивает звёзды.` : state === 'paused' ? 'Заезд приостановлен. Продолжай, когда будешь готов.' : state === 'error' ? 'Проверь подключение и попробуй снова.' : 'Загружаем героя и парк.'}</p>
         {state === 'paused' && <button onClick={pause}>Продолжить →</button>}
         {(state === 'lost' || state === 'error') && <button onClick={() => setRound(value => value + 1)}>Попробовать снова →</button>}
         {state !== 'loading' && <button className="text-button" onClick={onExit}>К истории</button>}
