@@ -31,7 +31,7 @@ test('every hazard row leaves a free lane and stars only mark free lanes', () =>
 test('rows leave enough time to cross two lanes and stop before the finish', () => {
   for (let seed = 1; seed <= 200; seed++) {
     const times = rows(course(seed)).map(([at]) => at);
-    for (let i = 1; i < times.length; i++) assert.ok(times[i] - times[i - 1] >= 850);
+    for (let i = 1; i < times.length; i++) assert.ok(times[i] - times[i - 1] >= 780);
     assert.ok(times.at(-1)! <= LAST_ROW && LAST_ROW < DURATION);
   }
 });
@@ -62,7 +62,8 @@ test('every hurdle has a ramp before it in its lane, and the ramp lane is otherw
     }
   }
   const all = Array.from({ length: 30 }, (_, i) => course(i + 1)).flat();
-  for (const kind of ['ramp', 'puddle', 'boost'] as const) assert.ok(all.some(s => s.kind === kind), kind);
+  for (const kind of ['ramp', 'puddle', 'boost', 'cyclist'] as const) assert.ok(all.some(s => s.kind === kind), kind);
+  assert.ok(all.filter(s => s.kind === 'cyclist').every(s => phaseAt(s.at) >= 2), 'cyclists come late');
   assert.ok(all.filter(s => s.kind === 'ramp').every(s => phaseAt(s.at + 260) >= 1), 'the warm-up stays simple');
   assert.equal(phases.length, 4);
 });

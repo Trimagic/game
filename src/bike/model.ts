@@ -1,5 +1,5 @@
 // Pure course model for chapter 01: deterministic waves, pickups and scoring.
-export type Hazard = 'granny' | 'kid' | 'banana' | 'hurdle';
+export type Hazard = 'granny' | 'kid' | 'banana' | 'hurdle' | 'cyclist';
 export type Kind = Hazard | 'star' | 'heart' | 'ramp' | 'puddle' | 'boost';
 export type Spawn = { at: number; lane: number; kind: Kind; shift?: -1 | 1 };
 export type Phase = { from: number; name: string; speed: number; gap: number };
@@ -12,14 +12,20 @@ export const laneX = (lane: number) => 84 + lane * 96;
 export const laneAt = (x: number) => (x < 132 ? 0 : x < 228 ? 1 : 2);
 export const clampLane = (lane: number) => Math.max(0, Math.min(LANES - 1, lane));
 export const phases: Phase[] = [
-  { from: 0, name: 'Разминка', speed: 180, gap: 1300 },
-  { from: 12000, name: 'Парк оживает!', speed: 210, gap: 1100 },
-  { from: 24000, name: 'Финишная прямая!', speed: 245, gap: 950 },
-  { from: 31500, name: 'Под горку!', speed: 280, gap: 860 },
+  { from: 0, name: 'Разминка', speed: 205, gap: 1150 },
+  { from: 11000, name: 'Парк оживает!', speed: 240, gap: 1000 },
+  { from: 22000, name: 'Финишная прямая!', speed: 280, gap: 880 },
+  { from: 30500, name: 'Под горку!', speed: 320, gap: 800 },
 ];
 export const HEART_TIMES = [16000, 29000];
 // Things on the path that are not obstacles: a ramp throws you over a hurdle, a puddle locks the wheel, turbo doubles stars.
 export const AIR_MS = 800;
+// An oncoming cyclist rides at twice the road's speed; a warning shows in his lane first.
+export const FAST = 2;
+// The bell clears pedestrians from your lane; stars refill it.
+export const BELLS = 3;
+export const STARS_PER_BELL = 6;
+export const PEDESTRIANS: Kind[] = ['granny', 'kid'];
 export const SLIP_MS = 380;
 export const BOOST_MS = 4000;
 const passable: Kind[] = ['star', 'heart', 'ramp', 'puddle', 'boost', 'hurdle'];
@@ -73,12 +79,15 @@ export function course(seed = Date.now()) {
       const free = pick([0, 1, 2].filter(lane => lane !== lastFree));
       for (const lane of [0, 1, 2]) if (lane !== free) row.push({ at, lane, kind: pick(hazards) });
       row.push({ at, lane: free, kind: 'hurdle' }, { at: at - 260, lane: free, kind: 'ramp' });
+    } else if (phase >= 2 && roll < .14) {
+      // Oncoming cyclist: one lane, but he comes fast.
+      row.push({ at, lane: pick([0, 1, 2]), kind: 'cyclist' });
     } else if (phase >= 1 && roll < .3) {
       // Kid dash: starts in one lane and swerves into its neighbour.
       const lane = pick([0, 1, 2]);
       const shift: -1 | 1 = lane === 0 ? 1 : lane === 2 ? -1 : pick([-1, 1] as const);
       row.push({ at, lane, kind: 'kid', shift });
-    } else if (phase >= 1 && roll < (phase === 2 ? .85 : .65)) {
+    } else if (phase >= 1 && roll < (phase >= 2 ? .88 : .72)) {
       // Wall: two hazards, the free lane differs from the previous one to force a move.
       const free = pick([0, 1, 2].filter(lane => lane !== lastFree));
       for (const lane of [0, 1, 2]) if (lane !== free) row.push({ at, lane, kind: pick(hazards) });

@@ -16,14 +16,16 @@ export const CART_HALF=52;
 export const CART_SPEED=760;
 // Anything touching the cart counts, not just items whose middle lands in it.
 export const CATCH_REACH=CART_HALF+18;
+export const BAD_REACH=CART_HALF-4;
 // The thief: shows a warning, walks after the cart, and is chased off by a cart rammed into him at speed.
-export const THIEF={warn:1.1,walk:115,flee:280,ram:300,reach:CART_HALF+14,first:[9000,6000,5000],every:[14000,10000,8000]};
+export const THIEF={warn:1.1,walk:115,flee:280,ram:300,reach:CART_HALF+14,first:[8000,5500,4500,4000],every:[12000,9000,7000,6000]};
 export const BREAK_MS=1800;
 export const MEDAL_POINTS=40;
 export const LEVELS=[
- {name:'Ужин',list:['chicken','rice','broccoli'],budget:25,ms:30_000,fall:90,spawn:1050,decoy:.38,drift:0},
- {name:'Гости придут',list:['chicken','rice','tomato','oil'],budget:30,ms:30_000,fall:112,spawn:950,decoy:.46,drift:55},
- {name:'Распродажа',list:['chicken','rice','broccoli','tomato','oil'],budget:35,ms:36_000,fall:135,spawn:850,decoy:.5,drift:90},
+ {name:'Ужин',list:['chicken','rice','broccoli'],budget:25,ms:34_000,fall:95,spawn:1000,decoy:.46,drift:0},
+ {name:'Гости придут',list:['chicken','rice','tomato','oil'],budget:30,ms:36_000,fall:115,spawn:920,decoy:.52,drift:60},
+ {name:'Распродажа',list:['chicken','rice','broccoli','tomato','oil'],budget:35,ms:40_000,fall:135,spawn:840,decoy:.57,drift:90},
+ {name:'Праздник',list:['chicken','rice','broccoli','tomato','oil'],budget:32,ms:42_000,fall:138,spawn:780,decoy:.6,drift:115},
 ] as const;
 const listed=[0,1,2,3,4];
 const decoys=[5,6,7,8,9,10,11,12,13];
@@ -38,7 +40,7 @@ export const cartCost=(s:CartState)=>s.cart.reduce((n,p)=>n+paid(p),0);
 export const level=(s:CartState)=>LEVELS[Math.min(s.level,LEVELS.length-1)];
 export const have=(s:CartState,key:string)=>s.cart.find(p=>goods[p.product].key===key);
 export const missing=(s:CartState)=>level(s).list.filter(k=>!have(s,k));
-export const cartRating=(s:CartState)=>s.score>=720?3:s.score>=520?2:1;
+export const cartRating=(s:CartState)=>s.score>=1150?3:s.score>=800?2:1;
 const steer=(s:CartState,x:number|null,dir:number)=>({...s,target:x===null?null:Math.max(CART_HALF,Math.min(WIDTH-CART_HALF,x)),dir});
 /** Pointer aims the cart at an x; keys hold a direction. Either clears the other. */
 export const aim=(s:CartState,x:number)=>s.status==='playing'?steer(s,x,0):s;
@@ -50,7 +52,7 @@ function spawn(s:CartState,random:()=>number):Item{
  else{
   // Prefer what is still missing so a level never starves.
   const need=missing(s).map(k=>listed.find(p=>goods[p].key===k)!);
-  const pool=need.length&&random()<.7?need:lv.list.map(k=>listed.find(p=>goods[p].key===k)!);
+  const pool=need.length&&random()<.5?need:lv.list.map(k=>listed.find(p=>goods[p].key===k)!);
   product=pool[Math.floor(random()*pool.length)];
   const roll=random();if(late&&roll<.18)expired=true;else if(late&&roll<.4)sale=true;
  }
@@ -66,11 +68,12 @@ function settleLevel(s:CartState):CartState{
   const medals:Medal[]=[];
   if(s.slips===0)medals.push('Железная воля');
   if(s.deals>=2)medals.push('Охотник за скидками');
-  if(cleared.reduce((n,c)=>n+c.time,0)<=60_000)medals.push('Спринтер');
+  if(cleared.reduce((n,c)=>n+c.time,0)<=110_000)medals.push('Спринтер');
   if(s.best>=10)medals.push('Ловкие руки');
-  return {...next,status:'won',medals,score:next.score+medals.length*MEDAL_POINTS,notice:'Все три списка собраны!'};
+  return {...next,status:'won',medals,score:next.score+medals.length*MEDAL_POINTS,notice:'Все списки собраны!'};
  }
- return {...next,level:s.level+1,levelTime:0,cart:[],items:[],thief:null,nextThief:THIEF.first[s.level+1],nextSpawn:BREAK_MS+500,breakMs:BREAK_MS,notice:`Следующий список: «${LEVELS[s.level+1].name}».`};
+ // A finished list gives back one heart, so a long shop is not lost to early slips.
+ return {...next,lives:Math.min(3,s.lives+1),level:s.level+1,levelTime:0,cart:[],items:[],thief:null,nextThief:THIEF.first[s.level+1],nextSpawn:BREAK_MS+500,breakMs:BREAK_MS,notice:`Следующий список: «${LEVELS[s.level+1].name}».${s.lives<3?' +1 жизнь.':''}`};
 }
 function catchItem(s:CartState,item:Item):CartState{
  const p=goods[item.product];const lv=level(s);const price=item.sale?Math.ceil(p.price/2):p.price;
@@ -132,7 +135,9 @@ export function tickCart(state:CartState,delta:number,random=Math.random):CartSt
  const items:Item[]=[];
  for(const item of s.items){
   const y=item.y+item.speed*dt;let ix=item.x,vx=item.vx??0;ix+=vx*dt;if(ix<30||ix>WIDTH-30){vx=-vx;ix=Math.max(30,Math.min(WIDTH-30,ix));}
-  if(s.status==='playing'&&item.y<CART_Y-12&&y>=CART_Y-12&&Math.abs(ix-s.cartX)<CATCH_REACH){
+  // Wanted goods are caught by the edge of the cart; anything bad only counts if it lands in it.
+  const wanted=!item.expired&&(level(s).list as readonly string[]).includes(goods[item.product].key);
+  if(s.status==='playing'&&item.y<CART_Y-12&&y>=CART_Y-12&&Math.abs(ix-s.cartX)<(wanted?CATCH_REACH:BAD_REACH)){
    const before=s.level;s=catchItem(s,{...item,x:ix,y});
    if(s.level!==before)return s;
    continue;

@@ -2,7 +2,7 @@ import {SoundButton,useSound} from './audio/useSound';
 import {sound} from './audio/sound';
 import { useEffect, useRef, useState } from 'react';
 import { saveBest } from './best';
-import { AIR_MS, BOOST_MS, clampLane, CLEAN_BONUS, course, DURATION, laneAt, laneX, multiplier, phaseAt, phases, rating, SLIP_MS, speedAt, STAR_POINTS, type Spawn } from './bike/model';
+import { AIR_MS, BELLS, BOOST_MS, FAST, PEDESTRIANS, STARS_PER_BELL, clampLane, CLEAN_BONUS, course, DURATION, laneAt, laneX, multiplier, phaseAt, phases, rating, SLIP_MS, speedAt, STAR_POINTS, type Spawn } from './bike/model';
 
 type Result = { score: number; collected: number; total: number; stars: number; best: number; record: boolean; clean: boolean };
 const RIDER_Y = 470;
@@ -12,19 +12,19 @@ const PICKUP_REACH = 48;
 
 export default function Game({ onWin, onExit }: { onWin: () => void; onExit: () => void }) {
   const host = useRef<HTMLDivElement>(null);
-  const controls = useRef<{ move: (direction: number) => void; pause: (value: boolean) => void } | null>(null);
+  const controls = useRef<{ move: (direction: number) => void; ring: () => void; pause: (value: boolean) => void } | null>(null);
   const [round, setRound] = useState(0);
   const [state, setState] = useState<'loading' | 'playing' | 'paused' | 'lost' | 'won' | 'error'>('loading');
-  const [hud, setHud] = useState({ distance: 0, lives: 3, score: 0, combo: 1 });
+  const [hud, setHud] = useState({ distance: 0, lives: 3, score: 0, combo: 1, bell: BELLS });
   const [result, setResult] = useState<Result | null>(null);
   useSound('bike',state,hud.score,hud.lives);
   useEffect(() => {
     let disposed = false;
     let game: import('phaser').Game | undefined;
-    setState('loading'); setHud({ distance: 0, lives: 3, score: 0, combo: 1 }); setResult(null);
+    setState('loading'); setHud({ distance: 0, lives: 3, score: 0, combo: 1, bell: BELLS }); setResult(null);
     void import('phaser').then(({ default: Phaser }) => {
       if (disposed) return;
-      type Item = { spawn: Spawn; body: import('phaser').GameObjects.Image | import('phaser').GameObjects.Star | import('phaser').GameObjects.Text | import('phaser').GameObjects.Container; arrow?: import('phaser').GameObjects.Text; dashed?: boolean; used?: boolean };
+      type Item = { spawn: Spawn; body: import('phaser').GameObjects.Image | import('phaser').GameObjects.Star | import('phaser').GameObjects.Text | import('phaser').GameObjects.Container; arrow?: import('phaser').GameObjects.Text; dashed?: boolean; used?: boolean; fast?: number; cleared?: boolean };
       class BikeScene extends Phaser.Scene {
         private rider!: import('phaser').GameObjects.Image;
         private items: Item[] = [];
@@ -37,6 +37,9 @@ export default function Game({ onWin, onExit }: { onWin: () => void; onExit: () 
         private air = 0;
         private slip = 0;
         private boost = 0;
+        private bell = BELLS;
+        private bellStars = 0;
+        private later: { spawn: Spawn; at: number; warn: import('phaser').GameObjects.Text }[] = [];
         private shadow!: import('phaser').GameObjects.Ellipse;
         private lives = 3;
         private score = 0;
@@ -89,7 +92,8 @@ export default function Game({ onWin, onExit }: { onWin: () => void; onExit: () 
             this.rider.setX(laneX(this.lane));
             this.tweens.add({ targets: this.rider, x: laneX(this.lane) + direction * 9, duration: 55, yoyo: true, ease: 'Sine.easeOut' });
           };
-          controls.current = { move, pause: value => value ? this.scene.pause() : this.scene.resume() };
+          controls.current = { move, ring: () => this.ring(), pause: value => value ? this.scene.pause() : this.scene.resume() };
+          for (const key of ['SPACE', 'UP', 'W']) this.input.keyboard?.on(`keydown-${key}`, (event: KeyboardEvent) => { event.preventDefault(); this.ring(); });
           this.input.keyboard?.on('keydown-LEFT', (event: KeyboardEvent) => { event.preventDefault(); move(-1); });
           this.input.keyboard?.on('keydown-RIGHT', (event: KeyboardEvent) => { event.preventDefault(); move(1); });
           this.input.keyboard?.on('keydown-A', () => move(-1));
@@ -109,8 +113,28 @@ export default function Game({ onWin, onExit }: { onWin: () => void; onExit: () 
           this.tweens.add({ targets: label, scale: 1, duration: 220, ease: 'Back.easeOut' });
           this.tweens.add({ targets: label, alpha: 0, y: 200, delay: 1300, duration: 500, onComplete: () => label.destroy() });
         }
+        /** The bell: pedestrians ahead in your lane step off the path. */
+        private ring() {
+          if (this.done || this.scene.isPaused() || this.bell <= 0) return;
+          this.bell--; sound.fx('ring');
+          const ahead = this.items.filter(i => PEDESTRIANS.includes(i.spawn.kind) && !i.cleared && Math.abs(i.body.x - this.rider.x) < 50 && i.body.y > RIDER_Y - 340 && i.body.y < RIDER_Y - 30);
+          for (const item of ahead) {
+            item.cleared = true; item.dashed = true; item.arrow?.destroy(); item.arrow = undefined;
+            this.tweens.killTweensOf(item.body);
+            this.tweens.add({ targets: item.body, x: item.body.x < 180 ? 18 : 342, alpha: .45, duration: 260, ease: 'Sine.easeOut' });
+            this.score += 5;
+          }
+          this.float(ahead.length ? 'ПОСТОРОНИСЬ!' : 'ДЗЫНЬ!', this.rider.x, RIDER_Y - 90, '#fff8e7', ahead.length ? 20 : 16);
+        }
         private spawn(s: Spawn) {
           const x = laneX(s.lane);
+          // An oncoming cyclist waits a moment so that, at double speed, he still arrives on time; his lane flashes a warning.
+          if (s.kind === 'cyclist') {
+            const travel = (RIDER_Y + 70) / speedAt(this.elapsed) * 1000;
+            const warn = this.add.text(x, 70, '!', { fontFamily: 'sans-serif', fontSize: '40px', fontStyle: 'bold', color: '#c4552d', stroke: '#fff8e7', strokeThickness: 6 }).setOrigin(.5).setDepth(8);
+            this.later.push({ spawn: s, at: this.elapsed + travel * (1 - 1 / FAST), warn }); sound.fx('warn');
+            return;
+          }
           if (s.kind === 'star') {
             const body = this.add.star(x, -40, 5, 7, 16, 0xf5cc5c).setStrokeStyle(2.5, 0x272c28).setDepth(4);
             this.items.push({ spawn: s, body });
@@ -149,6 +173,7 @@ export default function Game({ onWin, onExit }: { onWin: () => void; onExit: () 
             this.cameras.main.flash(120, 255, 240, 220);
           } else {
             this.streak++; this.collected++;
+            if (++this.bellStars >= STARS_PER_BELL) { this.bellStars = 0; if (this.bell < BELLS) { this.bell++; this.float('+ЗВОНОК', this.rider.x, RIDER_Y - 110, '#fff8e7', 15); } }
             const combo = multiplier(this.streak) * (this.boost > 0 ? 2 : 1);
             this.score += STAR_POINTS * combo;
             this.float(combo > 1 ? `+${STAR_POINTS * combo} ×${combo}` : `+${STAR_POINTS}`, item.body.x, item.body.y, this.boost > 0 ? '#ffb347' : '#f5cc5c', combo > 1 ? 22 : 18);
@@ -164,7 +189,7 @@ export default function Game({ onWin, onExit }: { onWin: () => void; onExit: () 
           const clean = this.lives === 3;
           if (clean) this.score += CLEAN_BONUS;
           const saved = saveBest('bike-best', this.score);
-          setHud({ distance: 500, lives: this.lives, score: this.score, combo: multiplier(this.streak) });
+          setHud({ distance: 500, lives: this.lives, score: this.score, combo: multiplier(this.streak), bell: this.bell });
           setResult({ score: this.score, collected: this.collected, total: this.total, stars: rating(this.collected, this.total, this.lives), clean, ...saved });
           setState('won');
         }
@@ -187,6 +212,14 @@ export default function Game({ onWin, onExit }: { onWin: () => void; onExit: () 
           const phase = phaseAt(this.elapsed);
           if (phase !== this.phase) { this.phase = phase; sound.fx('ding'); this.banner(phases[phase].name, phase === 2 ? '#c4552d' : '#387c73'); }
           while (this.next < this.plan.length && this.plan[this.next].at <= this.elapsed) this.spawn(this.plan[this.next++]);
+          for (const wait of [...this.later]) {
+            wait.warn.setAlpha(Math.floor(this.elapsed / 120) % 2 ? .35 : 1);
+            if (this.elapsed < wait.at) continue;
+            wait.warn.destroy(); this.later = this.later.filter(w => w !== wait);
+            const body = this.add.image(laneX(wait.spawn.lane), -70, 'cast', 0).setDepth(3).setAngle(180).setTint(0x9fc8ff);
+            body.setScale(110 / body.height);
+            this.items.push({ spawn: wait.spawn, body, fast: FAST });
+          }
           // The finish banner is timed to cross the rider exactly at 500 m.
           if (!this.finish && this.elapsed >= DURATION - (RIDER_Y + 30) / speed * 1000) {
             const cells = Array.from({ length: 24 }, (_, i) => this.add.rectangle(-138 + (i % 12) * 23 + 11.5, (Math.floor(i / 12) - .5) * 14, 23, 14, (i + Math.floor(i / 12)) % 2 ? 0x272c28 : 0xfff6dc));
@@ -195,7 +228,7 @@ export default function Game({ onWin, onExit }: { onWin: () => void; onExit: () 
           if (this.finish) this.finish.y += step;
           for (const item of [...this.items]) {
             const { body, spawn } = item;
-            body.y += step;
+            body.y += step * (item.fast ?? 1);
             if (spawn.kind === 'star') body.angle += dt * .12;
             if (item.arrow) item.arrow.setPosition(body.x, body.y - 70);
             if (spawn.shift && !item.dashed && body.y > 110) {
@@ -216,7 +249,7 @@ export default function Game({ onWin, onExit }: { onWin: () => void; onExit: () 
             }
             const pickup = spawn.kind === 'star' || spawn.kind === 'heart';
             if (pickup && Math.abs(body.x - this.rider.x) < PICKUP_REACH && Math.abs(body.y - this.rider.y) < 50) { this.collect(item); continue; }
-            if (!pickup && this.air === 0 && Math.abs(body.x - this.rider.x) < HIT_REACH && Math.abs(body.y - this.rider.y) < 40 && this.invincible === 0) {
+            if (!pickup && !item.cleared && this.air === 0 && Math.abs(body.x - this.rider.x) < HIT_REACH && Math.abs(body.y - this.rider.y) < 40 && this.invincible === 0) {
               this.lives--; this.invincible = 1400; this.streak = 0;
               this.cameras.main.shake(140, .007);
               const text = this.add.text(180, 320, 'Осторожнее!', { fontFamily: 'sans-serif', fontSize: '25px', color: '#fff8e7', backgroundColor: '#a4422d', padding: { x: 14, y: 8 } }).setOrigin(.5).setDepth(10);
@@ -230,7 +263,7 @@ export default function Game({ onWin, onExit }: { onWin: () => void; onExit: () 
             else if (body.y > 690) this.remove(item);
           }
           this.hudTimer += dt;
-          if (this.hudTimer > 100) { this.hudTimer = 0; setHud({ distance: Math.min(500, Math.floor(this.elapsed / 80)), lives: this.lives, score: this.score, combo: multiplier(this.streak) }); }
+          if (this.hudTimer > 100) { this.hudTimer = 0; setHud({ distance: Math.min(500, Math.floor(this.elapsed / 80)), lives: this.lives, score: this.score, combo: multiplier(this.streak), bell: this.bell }); }
           if (this.elapsed >= DURATION) this.win();
         }
       }
@@ -265,14 +298,14 @@ export default function Game({ onWin, onExit }: { onWin: () => void; onExit: () 
       {state !== 'playing' && state !== 'won' && <div className="game-overlay" role="status"><div>
         <span className="eyebrow">ПЕРВЫЙ ШАГ — УЖЕ ПОБЕДА</span>
         <h2>{state === 'loading' ? 'Готовим велосипед…' : state === 'paused' ? 'Передохнём?' : state === 'lost' ? 'Ещё один круг?' : 'Не удалось загрузить заезд'}</h2>
-        <p>{state === 'lost' ? `Проехано ${hud.distance} м. Следи за стрелками над детьми — они сейчас свернут. Полосатый барьер перепрыгивают только с трамплина, в луже руль не слушается, а турбо удваивает звёзды.` : state === 'paused' ? 'Заезд приостановлен. Продолжай, когда будешь готов.' : state === 'error' ? 'Проверь подключение и попробуй снова.' : 'Загружаем героя и парк.'}</p>
+        <p>{state === 'lost' ? `Проехано ${hud.distance} м. Следи за стрелками над детьми — они сейчас свернут. Полосатый барьер перепрыгивают только с трамплина, в луже руль не слушается, а турбо удваивает звёзды. «!» вверху — сейчас примчится встречный велосипедист. Звонок убирает пешеходов с твоей полосы.` : state === 'paused' ? 'Заезд приостановлен. Продолжай, когда будешь готов.' : state === 'error' ? 'Проверь подключение и попробуй снова.' : 'Загружаем героя и парк.'}</p>
         {state === 'paused' && <button onClick={pause}>Продолжить →</button>}
         {(state === 'lost' || state === 'error') && <button onClick={() => setRound(value => value + 1)}>Попробовать снова →</button>}
         {state !== 'loading' && <button className="text-button" onClick={onExit}>К истории</button>}
       </div></div>}
     </div>
-    <div className="ride-controls"><button aria-label="Повернуть влево" disabled={state !== 'playing'} {...steerButton(-1)}>← <span>Влево</span></button><button aria-label="Повернуть вправо" disabled={state !== 'playing'} {...steerButton(1)}><span>Вправо</span> →</button></div>
-    <p className="control-hint">Коснись полосы или веди пальцем по дороге · кнопки или ← → / A D · собирай звёзды подряд</p>
+    <div className="ride-controls"><button aria-label="Повернуть влево" disabled={state !== 'playing'} {...steerButton(-1)}>← <span>Влево</span></button><button className="ride-bell" aria-label={`Звонок, осталось ${hud.bell}`} disabled={state !== 'playing' || hud.bell === 0} onPointerDown={event => { event.preventDefault(); controls.current?.ring(); }} onClick={event => { if (event.detail === 0) controls.current?.ring(); }} onContextMenu={event => event.preventDefault()}>🔔<span>{hud.bell}</span></button><button aria-label="Повернуть вправо" disabled={state !== 'playing'} {...steerButton(1)}><span>Вправо</span> →</button></div>
+    <p className="control-hint">Коснись полосы или веди пальцем по дороге · кнопки или ← → / A D · звонок — пробел · собирай звёзды подряд</p>
     <button className="text-button" onClick={onExit}>Выйти из заезда</button>
   </section>;
 }

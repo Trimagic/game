@@ -17,7 +17,7 @@ export default class ShopScene extends SceneBase{
  constructor(events:ArcadeEvents){super('belt',events);}
  preload(){this.load.image('products','/art/chapter-03-products.png');this.load.on('loaderror',this.bridge.error);}
  create(){if(!this.textures.exists('products'))return;frames.forEach(([x,y,w,h],i)=>this.textures.get('products').add(i,0,x,y,w,h));this.makeExtras();
-  this.view={title:'Лови будущий ужин!',detail:'Три списка подряд: «Ужин», «Гости придут» и «Распродажа». Продукты падают с полок — веди тележку пальцем или стрелками и лови только то, что в списке. Лишнее, просрочка и перерасход бюджета отнимают жизнь, арбуз ещё и заклинит тележку. В поздних списках приманки качаются из стороны в сторону. Вор крадётся к тележке и уносит последнее: толкни его тележкой на скорости, чтобы прогнать.',status:'ready',actions:[]};
+  this.view={title:'Лови будущий ужин!',detail:'Четыре списка подряд: «Ужин», «Гости придут», «Распродажа» и «Праздник». Продукты падают с полок — веди тележку пальцем или стрелками и лови только то, что в списке. Лишнее, просрочка и перерасход бюджета отнимают жизнь, арбуз ещё и заклинит тележку. В поздних списках приманки качаются из стороны в сторону. Вор крадётся к тележке и уносит последнее: толкни его тележкой на скорости, чтобы прогнать.',status:'ready',actions:[]};
   this.setup();this.drawStatic();
   // Drag works like a touchpad anywhere on the board, so the finger never hides the cart.
   this.input.on('pointerdown',(p:Phaser.Input.Pointer)=>{if(!this.running)return;this.held.clear();this.drag={id:p.id,x:p.x,cart:this.model.cartX};});
@@ -108,7 +108,7 @@ export default class ShopScene extends SceneBase{
  private flash(label:string){this.banner.setText(label).setVisible(true).setAlpha(1);this.tweens.killTweensOf(this.banner);this.tweens.add({targets:this.banner,alpha:0,delay:1200,duration:400,onComplete:()=>this.banner.setVisible(false)});}
  private result(){const s=this.model;if(s.status==='lost'){this.finish(false,'Магазин закрылся. Ужин — не весь.',`Дошёл до списка «${level(s).name}». Лови только то, что в списке, следи за бюджетом и не хватай просрочку. Дешёвая копия по акции спасает от перерасхода.`);return;}
   const saved=saveBest('shop-best',s.score),stars=cartRating(s);
-  this.finish(true,`${'★'.repeat(stars)}${'☆'.repeat(3-stars)} Всё куплено! ${s.score} очков`,`Три списка за ${(s.cleared.reduce((n,c)=>n+c.time,0)/1000).toFixed(0)} с, жизней осталось ${s.lives}, лучшая серия ${s.best}. ${s.medals.length?'Медали: '+s.medals.join(', ')+' (+'+s.medals.length*MEDAL_POINTS+'). ':'Медали: без промахов, две акции, все списки за 60 с, серия из 10. '}${saved.record?'Новый личный рекорд!':'Рекорд: '+saved.best+'.'}`);}
+  this.finish(true,`${'★'.repeat(stars)}${'☆'.repeat(3-stars)} Всё куплено! ${s.score} очков`,`Все списки за ${(s.cleared.reduce((n,c)=>n+c.time,0)/1000).toFixed(0)} с, жизней осталось ${s.lives}, лучшая серия ${s.best}. ${s.medals.length?'Медали: '+s.medals.join(', ')+' (+'+s.medals.length*MEDAL_POINTS+'). ':'Медали: без промахов, две акции, все списки за 110 с, серия из 10. '}${saved.record?'Новый личный рекорд!':'Рекорд: '+saved.best+'.'}`);}
  protected sync(){const s=this.model,lv=level(s);this.view={status:'playing',title:`Список ${s.level+1}/${LEVELS.length} «${lv.name}» · ${cartCost(s)} / ${lv.budget} монет · ★ ${s.score}`,detail:s.notice,actions:[]};this.bridge.publish(this.view);}
  update(_time:number,delta:number){
   if(!this.running)return;
