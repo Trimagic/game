@@ -11,7 +11,8 @@ import Game from './Game';
 import PoolGame from './pool/PoolGame';
 import ShopGame from './shop/ShopGame';
 import RunGame from './run/RunGame';
-import { RunBrief, runPanels, runComicStyle } from './run/RunIntro';
+import { RunBrief, RunFacts, runPanels } from './run/RunIntro';
+import RunComic from './run/RunComic';
 import SleepGame from './sleep/SleepGame';
 import { SleepBrief, SleepFacts } from './sleep/SleepIntro';
 import SleepComic from './sleep/SleepComic';
@@ -76,19 +77,21 @@ export default function App({initialChapter}:{initialChapter?:1|2|3|4|5|6|7|8|9|
     {screen === 'comic' && chapter === 4 && <CookComic onContinue={() => setScreen('brief')} onExit={exit}/>}
     {screen === 'comic' && chapter === 5 && <GymComic onContinue={() => setScreen('brief')} onExit={exit}/>}
     {screen === 'comic' && chapter === 6 && <SleepComic onContinue={() => setScreen('brief')} onExit={exit}/>}
-    {screen === 'comic' && chapter !== 1 && chapter !== 2 && chapter !== 3 && chapter !== 4 && chapter !== 5 && chapter !== 6 && <section ref={comicRef} className="comic-reader">
+    {screen === 'comic' && chapter === 7 && <RunComic onContinue={() => setScreen('brief')} onExit={exit}/>}
+    {screen === 'comic' && chapter !== 7 && chapter !== 1 && chapter !== 2 && chapter !== 3 && chapter !== 4 && chapter !== 5 && chapter !== 6 && <section ref={comicRef} className="comic-reader">
       <div className="section-heading"><button className="text-button" onClick={exit}>← К главам</button><span className="eyebrow">ПРОЛОГ / {panel + 1} ИЗ 4</span></div>
-      <div className="comic-panel" style={chapter === 8 ? scheduleComicStyle(panel) : chapter === 7 ? runComicStyle(panel) : { backgroundPosition: panels[panel].position, backgroundImage: `url(/art/chapter-0${chapter}-comic.png)` }} role="group" aria-label={panels[panel].title}><span className="narration">{panels[panel].title}</span></div><div className="speech comic-dialogue">{panels[panel].words}</div>
-      <div className="comic-navigation"><button className="small-button" disabled={panel === 0} onClick={() => setPanel(value => value - 1)}>← Назад</button><div className="dots" aria-label={`Кадр ${panel + 1} из 4`}>{panels.map((_, index) => <span key={index} className={index === panel ? 'active' : ''}/>)}</div><button onClick={() => panel < 3 ? setPanel(value => value + 1) : setScreen('brief')}>{panel < 3 ? 'Дальше →' : chapter === 8 ? 'К ежедневнику →' : chapter === 7 ? 'На пробежку →' : 'Поехали →'}</button></div>
+      <div className="comic-panel" style={chapter === 8 ? scheduleComicStyle(panel) : { backgroundPosition: panels[panel].position, backgroundImage: `url(/art/chapter-0${chapter}-comic.png)` }} role="group" aria-label={panels[panel].title}><span className="narration">{panels[panel].title}</span></div><div className="speech comic-dialogue">{panels[panel].words}</div>
+      <div className="comic-navigation"><button className="small-button" disabled={panel === 0} onClick={() => setPanel(value => value - 1)}>← Назад</button><div className="dots" aria-label={`Кадр ${panel + 1} из 4`}>{panels.map((_, index) => <span key={index} className={index === panel ? 'active' : ''}/>)}</div><button onClick={() => panel < 3 ? setPanel(value => value + 1) : setScreen('brief')}>{panel < 3 ? 'Дальше →' : chapter === 8 ? 'К ежедневнику →' : 'Поехали →'}</button></div>
     </section>}
     {screen === 'brief' && chapter === 8 && <ScheduleBrief onContinue={() => setScreen('game')} onComic={() => { setPanel(0); setScreen('comic'); }}/> }
-    {screen === 'brief' && chapter === 7 && <RunBrief onContinue={() => setScreen('game')} onComic={() => { setPanel(0); setScreen('comic'); }}/> }
+    {screen === 'brief' && chapter === 7 && <RunBrief onContinue={() => setScreen('facts')} onComic={() => { setPanel(0); setScreen('comic'); }}/> }
     {screen === 'brief' && chapter === 6 && <SleepBrief onContinue={() => setScreen('facts')} onComic={() => { setPanel(0); setScreen('comic'); }}/> }
     {screen === 'brief' && chapter === 5 && <GymBrief onContinue={() => setScreen('facts')} onComic={() => { setPanel(0); setScreen('comic'); }}/> }
     {screen === 'brief' && chapter === 4 && <CookBrief onContinue={() => setScreen('facts')} onComic={() => { setPanel(0); setScreen('comic'); }}/>}
     {screen === 'brief' && chapter === 3 && <ShopBrief onContinue={() => setScreen('facts')} onComic={() => { setPanel(0); setScreen('comic'); }}/>}
     {screen === 'brief' && chapter === 2 && <PoolBrief onContinue={() => setScreen('facts')} onComic={() => { setPanel(0); setScreen('comic'); }}/>}
     {screen === 'brief' && chapter === 1 && <BikeBrief onContinue={() => setScreen('facts')} onComic={() => { setPanel(0); setScreen('comic'); }}/>}
+    {screen === 'facts' && chapter === 7 && <RunFacts onContinue={() => setScreen('game')} onBack={() => setScreen('brief')}/>}
     {screen === 'facts' && chapter === 6 && <SleepFacts onContinue={() => setScreen('game')} onBack={() => setScreen('brief')}/>}
     {screen === 'facts' && chapter === 5 && <GymFacts onContinue={() => setScreen('game')} onBack={() => setScreen('brief')}/>}
     {screen === 'facts' && chapter === 4 && <CookFacts onContinue={() => setScreen('game')} onBack={() => setScreen('brief')}/>}

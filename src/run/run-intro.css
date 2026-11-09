@@ -1,0 +1,22 @@
+.run-comic .bike-comic-caption>span{color:#8b5130}
+.run-comic .bike-comic-narrator{background:#f4d9ad}
+.run-comic .run-comic-splash{top:7%;left:6%;font-size:clamp(18px,7cqw,30px);transform:rotate(-10deg);color:#fff1be;-webkit-text-stroke:1px #4d3726;paint-order:stroke fill;text-shadow:2px 2px #4d3726}
+.paper-panel.runner-brief h1{font-size:33px}
+.paper-panel.runner-brief h1 em{color:#965132}
+.runner-brief .bike-rule-icon{background:#f3ddbc;color:#8b5130}
+.runner-brief .bike-ride-stats dt{font-size:9px}
+.runner-brief .bike-ride-stats dd{font-size:27px}
+.runner-brief .bike-pickup-tip{background:#f3ddbc}
+.runner-risk-card{display:flex;align-items:center;gap:16px;padding:16px 14px;background:#f3ddbc;border:1px solid #c9ab83;border-radius:5px;margin-bottom:14px}
+.runner-risk-card>strong{font-size:44px;letter-spacing:-2px;line-height:1;color:#82442c}
+.runner-risk-card b{display:block;font-size:12px;line-height:1.4}
+.runner-risk-card span{display:block;font-size:9px;line-height:1.5;color:#715f4d;margin-top:5px}
+.runner-info-tabs{display:grid;grid-template-columns:1fr 1.1fr 1.35fr;gap:5px}
+.runner-info-tabs button{min-height:44px;padding:7px 4px;font-size:10px;background:#fff9eb;border:1px solid #c9ab83;box-shadow:none;transform:none}
+.runner-info-tabs button[aria-pressed='true']{background:#f3ddbc;border-color:#965132;box-shadow:inset 0 -3px #965132}
+.runner-info-field{min-height:230px;padding-top:14px}
+.runner-info-field>strong{font-size:13px;line-height:1.4;display:block}
+.runner-brief .runner-info-field p{font-size:12px;line-height:1.5;margin:7px 0 0}
+.runner-brief .runner-info-field .runner-consequence{margin-top:12px;padding-left:10px;border-left:3px solid #965132;font-weight:600;font-size:11px}
+.runner-facts .bike-intro-actions{margin-top:12px}
+@media(max-width:650px){.paper-panel.runner-brief h1{font-size:27px}.runner-brief .bike-intro-heading .eyebrow{font-size:7px}.runner-brief .bike-intro-step{font-size:8px}.runner-brief .bike-quick-rules strong{font-size:12px}.runner-brief .bike-quick-rules p{font-size:11.5px}.runner-risk-card{gap:12px}.runner-risk-card>strong{font-size:39px}.runner-info-tabs button{font-size:9px}}
