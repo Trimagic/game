@@ -3,6 +3,7 @@ import ShareBirthday from './ShareBirthday';
 import {BIRTHDAY_WISH} from './share-card';
 import NightComic from './NightComic';
 import ChapterOrbit from './ChapterOrbit';
+import BirthdayParty from './BirthdayParty';
 import './epilogue.css';
 const moods=[
  {label:'Вечер без подвигов',line:'Бургер тёплый. Матч найден. Никто не считает повторения.',stamp:'ОТДЫХ ОДОБРЕН'},
@@ -14,6 +15,7 @@ export function Celebration({onComplete,onReplay,busy=false}:{onComplete:()=>voi
  const [mood,setMood]=useState(0),[shareOpen,setShareOpen]=useState(false);
  const emblem=useRef<SVGSVGElement>(null);
  return <section className="finale-ticket" aria-labelledby="finale-title">
+  <BirthdayParty/>
   <div className="finale-kicker"><span>С НУЛЯ! / ИМЕНИННЫЙ ВЫПУСК</span><strong>11 / 11</strong></div>
   <div className="finale-art">
    <svg ref={emblem} viewBox="0 0 520 360" role="img" aria-label="Бургер со свечами и геймпад в окружении восьми наград: велосипед, бассейн, покупки, готовка, спортзал, сон, бег и расписание" className="finale-emblem">
@@ -31,7 +33,7 @@ export function Celebration({onComplete,onReplay,busy=false}:{onComplete:()=>voi
    </svg>
    <span className="finale-sticker">СЕГОДНЯ МОЖНО<br/><b>ПРАЗДНОВАТЬ!</b></span>
   </div>
-  <div className="finale-copy"><span className="finale-overline">СЧАСТЛИВЫЙ ФИНАЛ РАЗБЛОКИРОВАН</span><h1 id="finale-title">С днём<br/><em>рождения!</em></h1><p className="finale-lead">Все 11 глав позади.<br/>А сегодня главный герой — именинник.</p></div>
+  <div className="finale-copy"><span className="finale-overline">СЧАСТЛИВЫЙ ФИНАЛ РАЗБЛОКИРОВАН</span><h1 id="finale-title" className="birthday-title"><img src="/art/birthday-title.svg" alt="С днём рождения!" width="800" height="300"/></h1></div>
   <div className="birthday-lettering"><img src="/art/birthday-wish.svg" alt={BIRTHDAY_WISH} width="800" height="600"/></div>
   <div className="finale-achievements" aria-label="Достижения истории"><span><AchievementIcon kind="chapters"/><b>11/11</b> глав пройдено</span><span><AchievementIcon kind="dream"/><b>40</b> лет приснилось</span><span><AchievementIcon kind="plant"/><b>1</b> фикус выжил</span></div>
   <div className="finale-route" aria-label="Пройдено одиннадцать глав">{Array.from({length:11},(_,i)=><span key={i}>{String(i+1).padStart(2,'0')}</span>)}</div>

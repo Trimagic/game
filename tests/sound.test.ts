@@ -17,3 +17,14 @@ test('sound is gesture-gated, mute persists, pause stops voices, gym has no extr
   sound.set('gym',false);sound.stop();assert.equal(created,1);
  }finally{sound.stop();if(oldAudio)Object.defineProperty(globalThis,'AudioContext',oldAudio);else Reflect.deleteProperty(globalThis,'AudioContext');if(oldStorage)Object.defineProperty(globalThis,'localStorage',oldStorage);else Reflect.deleteProperty(globalThis,'localStorage');}
 });
+
+test('birthday melody starts after unlock, mute stops it and leaving cancels the loop',async(t)=>{
+ const previous=Object.getOwnPropertyDescriptor(globalThis,'AudioContext');const notes:number[]=[];let stopped=0;
+ class Context{state='running';currentTime=0;destination={};resume(){return Promise.resolve();}createGain(){return {gain:{value:1,setValueAtTime(){},exponentialRampToValueAtTime(){}},connect(){},disconnect(){}};}createOscillator(){const node={type:'sine',frequency:{value:0},onended:null,connect(){},disconnect(){},start(){notes.push(node.frequency.value);},stop(){stopped++;}};return node;}}
+ Object.defineProperty(globalThis,'AudioContext',{value:Context,configurable:true});t.mock.timers.enable({apis:['setInterval']});const track=new Soundtrack();
+ try{
+  track.set('birthday',true);assert.equal(notes.length,0);track.unlock();await Promise.resolve();assert.ok(Math.abs(notes[0]-392)<1);
+  t.mock.timers.tick(520);assert.ok(notes.some(hz=>Math.abs(hz-440)<1));track.toggle();const muted=notes.length;t.mock.timers.tick(1000);assert.equal(notes.length,muted);assert.ok(stopped>0);
+  track.toggle();await Promise.resolve();t.mock.timers.tick(520);assert.ok(notes.length>muted);track.stop();const ended=notes.length;t.mock.timers.tick(2000);assert.equal(notes.length,ended);
+ }finally{track.stop();t.mock.timers.reset();if(previous)Object.defineProperty(globalThis,'AudioContext',previous);else Reflect.deleteProperty(globalThis,'AudioContext');}
+});
