@@ -28,7 +28,7 @@ export function Celebration({onComplete,onReplay,busy=false}:{onComplete:()=>voi
    <span className="finale-sticker">СЕГОДНЯ МОЖНО<br/><b>ПРАЗДНОВАТЬ!</b></span>
   </div>
   <div className="finale-copy"><span className="finale-overline">СЧАСТЛИВЫЙ ФИНАЛ РАЗБЛОКИРОВАН</span><h1 id="finale-title">С днём<br/><em>рождения!</em></h1><p className="finale-lead">Все 11 глав позади.<br/>А сегодня главный герой — именинник.</p></div>
-  <blockquote className="finale-wish birthday-wish">{BIRTHDAY_WISH}</blockquote>
+  <div className="birthday-lettering"><img src="/art/birthday-wish.svg" alt={BIRTHDAY_WISH} width="800" height="600"/></div>
   <div className="finale-achievements" aria-label="Достижения истории"><span><AchievementIcon kind="chapters"/><b>11/11</b> глав пройдено</span><span><AchievementIcon kind="dream"/><b>40</b> лет приснилось</span><span><AchievementIcon kind="plant"/><b>1</b> фикус выжил</span></div>
   <div className="finale-route" aria-label="Пройдено одиннадцать глав">{Array.from({length:11},(_,i)=><span key={i}>{String(i+1).padStart(2,'0')}</span>)}</div>
   <div className="finale-evening" aria-live="polite" aria-atomic="true"><span className="finale-stamp">{moods[mood].stamp}</span><strong>{moods[mood].label}</strong><p>{moods[mood].line}</p><button className="text-button" onClick={()=>setMood(i=>(i+1)%moods.length)}>Ещё один хороший вариант ↻</button></div>
