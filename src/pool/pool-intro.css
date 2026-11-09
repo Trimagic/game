@@ -1,0 +1,25 @@
+.pool-comic .bike-comic-caption>span{color:#236e7d}
+.pool-comic .bike-comic-progress button.reached span{background:#238390}
+.pool-comic .bike-comic-progress button[aria-current] span{background:#795185}
+.pool-comic .bike-comic-narrator{background:#e1f3ec}
+.pool-comic-frame-0 .bike-comic-dialogue{bottom:15%}
+.pool-comic-frame-1 .bike-comic-dialogue{bottom:28%}
+.pool-comic-frame-2 .bike-comic-dialogue{bottom:25%}
+.pool-comic-frame-3 .bike-dialogue-outline{fill:#fff6ff;stroke:#593960}
+.pool-comic-frame-3 .bike-comic-dialogue p{color:#593960}
+.pool-comic .pool-comic-splash{top:7%;left:9%;color:#fffdf2;font-size:clamp(20px,8cqw,36px);font-style:italic;letter-spacing:-1px;-webkit-text-stroke:1.2px #236e7d;paint-order:stroke fill;text-shadow:2px 2px #236e7d;transform:rotate(-12deg)}
+.paper-panel.pool-brief h1 em{color:#246f7c}
+.pool-brief .bike-rule-icon{color:#246f7c;background:#e1f0ec;border-color:#bdd0c7}
+.pool-brief .bike-pickup-tip{background:#e1f0ec}
+.pool-brief .bike-pickup-tip>span{color:#246f7c}
+.pool-brief .bike-fact-list dd{color:#246f7c}
+.pool-brief .bike-underline{text-decoration-color:#8fbdb9}
+.pool-brief .bike-ride-stats dd small{color:#795185}
+.pool-brief .bike-facts-takeaway{border-color:#795185}
+@media(max-width:650px){
+ .pool-comic .bike-comic-caption>span{font-size:7px;letter-spacing:.8px}
+ .paper-panel.pool-brief h1{font-size:28px}
+ .pool-brief .bike-quick-rules p{font-size:11.5px}
+ .pool-brief .bike-quick-rules strong{font-size:12px}
+ .pool-brief .bike-facts-takeaway{font-size:12px}
+}

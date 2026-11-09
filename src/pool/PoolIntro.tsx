@@ -1,34 +1,34 @@
-import PagedPanel from '../PagedPanel';
-export const poolPanels = [
-  { title: 'Новый день. Новый абонемент.', words: 'В бассейне хотя бы никто не бросает банановую кожуру.', position: '0% 0%' },
-  { title: 'Вода с характером.', words: 'Стоп. Это точно не шоколадный батончик?', position: '100% 0%' },
-  { title: 'Кардио пошло по плану.', words: 'Я хотел плавать для здоровья. Теперь — ради спасения.', position: '0% 100%' },
-  { title: 'У каждой дорожки есть хозяин.', words: 'Какун. Абонемент «всё включено». Даже то, что не просили.', position: '100% 100%' },
-];
+import { BOSS_MS, ROUND_MS, SOAP_FOR_SHIELD } from './model';
+import '../bike/bike-intro.css';
+import './pool-intro.css';
 
 export function PoolBrief({ onContinue, onComic }: { onContinue: () => void; onComic: () => void }) {
-  return <PagedPanel className="paper-panel pool-intro">
-    <span className="eyebrow">ЭТАП 02 / ЗАПЛЫВ С СЮРПРИЗОМ</span>
-    <h1>Не всё золото,<br/><em>что плывёт.</em></h1>
-    <div className="pool-cast"><svg viewBox="0 0 2172 724" role="img" aria-label="Наш пловец, коричневое препятствие и босс Какун"><image href="/art/chapter-02-sprites.png" width="2172" height="724" /></svg></div>
-    <p>Продержись 45 секунд в самом гостеприимном бассейне города. Обходи коричневые сюрпризы и доберись до выхода. Собирай мыло: четыре куска дают пенный щит, который выдержит одно столкновение. Красный «!» у бортика значит, что сейчас прилетит торпеда.</p>
-    <div className="rules"><b>↑ ↓</b><p><strong>Удерживай</strong> кнопку, экран, пробел или ↑ — плыви вверх. <strong>Отпусти</strong> — опускайся. Бортики тоже опасны: касание верха или дна бассейна считается столкновением. Три столкновения — новая попытка.</p></div>
-    <div className="boss-notice"><b>ФИНАЛЬНЫЙ БОСС: КАКУН</b><p>С 30-й секунды он лично пополняет бассейн. Ищи свободный проход между волнами. Выдержишь последние 15 секунд — победа!</p></div>
-    <button className="full-button" onClick={onContinue}>Дальше →</button>
-    <button className="text-button" onClick={onComic}>Прочитать комикс</button>
-  </PagedPanel>;
+  return <section className="paper-panel bike-intro pool-brief" aria-labelledby="pool-brief-title">
+    <header className="bike-intro-heading"><span className="eyebrow">02 / ЗАПЛЫВ С СЮРПРИЗОМ</span><span className="bike-intro-step">Как играть · 1/2</span></header>
+    <h1 id="pool-brief-title">Плыви к выходу.<br/><em>Без лишних встреч.</em></h1>
+    <p className="bike-intro-lead">Продержись до конца заплыва.</p>
+    <dl className="bike-ride-stats" aria-label="Условия заплыва"><div><dt>До выхода</dt><dd>{ROUND_MS / 1000} <small>сек</small></dd></div><div><dt>Запас жизней</dt><dd>3 <small aria-label="сердца">♥</small></dd></div><div><dt>Мыло → щит</dt><dd>{SOAP_FOR_SHIELD} <small>шт.</small></dd></div></dl>
+    <ul className="bike-quick-rules">
+      <li><span className="bike-rule-icon" aria-hidden="true">↕</span><div><strong>Зажми — вверх. Отпусти — вниз.</strong><p>Экран, кнопка «↑» или пробел. Не касайся бортиков.</p></div></li>
+      <li><span className="bike-rule-icon" aria-hidden="true">⚡</span><div><strong>Рывок — кнопка «⚡» или X.</strong><p>Разбивает игрушки и медуз. Торпеды и волны обходи.</p></div></li>
+      <li><span className="bike-rule-icon" aria-hidden="true">!</span><div><strong>На {BOSS_MS / 1000}-й секунде — Какун.</strong><p>Ищи просвет в волнах. Красный «!» — скоро торпеда.</p></div></li>
+    </ul>
+    <div className="bike-pickup-tip"><span aria-hidden="true">◈</span><p><strong>{SOAP_FOR_SHIELD} мыла = щит на одно столкновение.</strong><br/>Через центр круга — бонус.</p></div>
+    <div className="bike-intro-actions"><button className="full-button" onClick={onContinue}>Дальше: перед заплывом →</button><button className="text-button" onClick={onComic}>Перечитать комикс</button></div>
+  </section>;
 }
 
-export function PoolFacts({ onContinue }: { onContinue: () => void }) {
-  return <PagedPanel className="paper-panel facts pool-intro" aria-labelledby="pool-facts-title">
-    <span className="eyebrow">ПЕРЕД ЗАПЛЫВОМ / ВОЗ И CDC</span>
-    <h1 id="pool-facts-title">Прозрачная вода.<br/><em>Не всё так ясно.</em></h1>
-    <dl className="facts-numbers"><div><dt>Остатки кала на коже одного человека</dt><dd>≈ 0,14 г</dd><p>CDC приводит такую среднюю оценку для области вокруг ануса. Эти остатки могут смываться в воду, если не принять душ с мылом перед плаванием.</p></div></dl>
-    <p className="facts-note">Это оценка на коже, а не измеренное количество в бассейне. Цифра приведена CDC в 2013 году со ссылкой на исследование 2000 года; это не статистика ВОЗ.</p>
-    <div className="who-note"><strong>Что говорит ВОЗ</strong><p>Душ перед плаванием помогает удалять следы кала и другие загрязнения. При попадании кала в бассейн купание прекращают до обеззараживания.</p></div>
-    <p className="facts-note">В игре — сатира. В жизни при таком загрязнении выйди из воды и сообщи персоналу.</p>
-    <div className="facts-sources">Источники: <a href="https://www.cdc.gov/mmwr/preview/mmwrhtml/mm6219a3.htm" target="_blank" rel="noopener noreferrer">CDC, MMWR, 2013</a> · <a href="https://www.who.int/publications/i/item/9241546808" target="_blank" rel="noopener noreferrer">ВОЗ, руководство по бассейнам, 2006 (раздел 5.1 и резюме)</a></div>
-    <button className="full-button" onClick={onContinue}>Продолжить →</button>
-  </PagedPanel>;
+export function PoolFacts({ onContinue, onBack }: { onContinue: () => void; onBack: () => void }) {
+  return <section className="paper-panel bike-intro pool-brief pool-facts" aria-labelledby="pool-facts-title">
+    <header className="bike-intro-heading"><span className="eyebrow">ПЕРЕД ЗАПЛЫВОМ</span><span className="bike-intro-step">Коротко о важном · 2/2</span></header>
+    <h1 id="pool-facts-title">Вода общая.<br/><em>Забота — тоже.</em></h1>
+    <p className="bike-intro-lead">Какун — выдумка. А вот <span className="bike-underline">душ перед бассейном</span> нужен по-настоящему.</p>
+    <dl className="bike-fact-list">
+      <div><dt>следов кала на коже вокруг ануса</dt><dd>≈ 0,14 <small>г</small></dd><p>Средняя оценка, которую приводит CDC. Это не количество в воде бассейна.</p></div>
+      <div><dt>минимум под душем перед плаванием</dt><dd>1 <small>минута</small></dd><p>Рекомендация CDC: смыть грязь и загрязнения с тела.</p></div>
+    </dl>
+    <p className="bike-facts-takeaway">В игре — уворачивайся.<br/><strong className="bike-underline">В жизни — выйди и сообщи персоналу.</strong></p>
+    <details className="bike-facts-sources"><summary>Источники и подробности</summary><p>0,14 г — оценка на коже человека, а не результат замера воды. CDC приводит её в публикации 2013 года со ссылкой на исследование 2000 года. Душ с мылом помогает смыть такие следы перед плаванием. Если в бассейне обнаружен кал, нужно выйти из воды и сообщить персоналу.</p><p><a href="https://www.cdc.gov/mmwr/preview/mmwrhtml/mm6219a3.htm" target="_blank" rel="noopener noreferrer">CDC · исследование и оценка</a><br/><a href="https://www.cdc.gov/healthy-swimming/safety/what-you-can-do-to-stay-healthy-in-swimming-pools.html" target="_blank" rel="noopener noreferrer">CDC · душ перед плаванием</a><br/><a href="https://www.cdc.gov/healthy-swimming/response/what-to-do-when-there-is-poop-in-the-pool.html" target="_blank" rel="noopener noreferrer">CDC · загрязнение бассейна</a></p></details>
+    <div className="bike-intro-actions"><button className="full-button" onClick={onContinue}>Начать заплыв →</button><button className="text-button" onClick={onBack}>← Как играть</button></div>
+  </section>;
 }
-
