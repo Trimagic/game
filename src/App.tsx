@@ -15,7 +15,8 @@ import { RunBrief, runPanels, runComicStyle } from './run/RunIntro';
 import SleepGame from './sleep/SleepGame';
 import { SleepBrief, sleepPanels, sleepComicStyle } from './sleep/SleepIntro';
 import GymGame from './gym/GymGame';
-import { GymBrief, gymPanels, gymComicStyle } from './gym/GymIntro';
+import { GymBrief, GymFacts } from './gym/GymIntro';
+import GymComic from './gym/GymComic';
 import CookGame from './cook/CookGame';
 import { CookBrief, CookFacts } from './cook/CookIntro';
 import CookComic from './cook/CookComic';
@@ -28,7 +29,7 @@ import { isTelegram, progress } from './telegram';
 export default function App({initialChapter}:{initialChapter?:1|2|3|4|5|6|7|8|9|10|11}={}) {
   const comicRef=useComicFit();
   const [chapter, setChapter] = useState<1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11>(initialChapter ?? 1);
-  const panels = chapter === 8 ? schedulePanels : chapter === 7 ? runPanels : chapter === 6 ? sleepPanels : gymPanels;
+  const panels = chapter === 8 ? schedulePanels : chapter === 7 ? runPanels : sleepPanels;
   const [completed, setCompleted] = useState(0);
   const [panel, setPanel] = useState(0);
   const [screen, setScreen] = useState<'map' | 'comic' | 'brief' | 'facts' | 'game' | 'win'>(initialChapter ? initialChapter >= 9 ? 'game' : 'comic' : 'map');
@@ -72,19 +73,21 @@ export default function App({initialChapter}:{initialChapter?:1|2|3|4|5|6|7|8|9|
     {screen === 'comic' && chapter === 2 && <PoolComic onContinue={() => setScreen('brief')} onExit={exit}/>}
     {screen === 'comic' && chapter === 3 && <ShopComic onContinue={() => setScreen('brief')} onExit={exit}/>}
     {screen === 'comic' && chapter === 4 && <CookComic onContinue={() => setScreen('brief')} onExit={exit}/>}
-    {screen === 'comic' && chapter !== 1 && chapter !== 2 && chapter !== 3 && chapter !== 4 && <section ref={comicRef} className="comic-reader">
+    {screen === 'comic' && chapter === 5 && <GymComic onContinue={() => setScreen('brief')} onExit={exit}/>}
+    {screen === 'comic' && chapter !== 1 && chapter !== 2 && chapter !== 3 && chapter !== 4 && chapter !== 5 && <section ref={comicRef} className="comic-reader">
       <div className="section-heading"><button className="text-button" onClick={exit}>← К главам</button><span className="eyebrow">ПРОЛОГ / {panel + 1} ИЗ 4</span></div>
-      <div className="comic-panel" style={chapter === 8 ? scheduleComicStyle(panel) : chapter === 7 ? runComicStyle(panel) : chapter === 6 ? sleepComicStyle(panel) : chapter === 5 ? gymComicStyle(panel) : { backgroundPosition: panels[panel].position, backgroundImage: `url(/art/chapter-0${chapter}-comic.png)` }} role="group" aria-label={panels[panel].title}><span className="narration">{panels[panel].title}</span></div><div className="speech comic-dialogue">{panels[panel].words}</div>
-      <div className="comic-navigation"><button className="small-button" disabled={panel === 0} onClick={() => setPanel(value => value - 1)}>← Назад</button><div className="dots" aria-label={`Кадр ${panel + 1} из 4`}>{panels.map((_, index) => <span key={index} className={index === panel ? 'active' : ''}/>)}</div><button onClick={() => panel < 3 ? setPanel(value => value + 1) : setScreen('brief')}>{panel < 3 ? 'Дальше →' : chapter === 8 ? 'К ежедневнику →' : chapter === 7 ? 'На пробежку →' : chapter === 6 ? 'Ко сну →' : chapter === 5 ? 'В зал →' : 'Поехали →'}</button></div>
+      <div className="comic-panel" style={chapter === 8 ? scheduleComicStyle(panel) : chapter === 7 ? runComicStyle(panel) : chapter === 6 ? sleepComicStyle(panel) : { backgroundPosition: panels[panel].position, backgroundImage: `url(/art/chapter-0${chapter}-comic.png)` }} role="group" aria-label={panels[panel].title}><span className="narration">{panels[panel].title}</span></div><div className="speech comic-dialogue">{panels[panel].words}</div>
+      <div className="comic-navigation"><button className="small-button" disabled={panel === 0} onClick={() => setPanel(value => value - 1)}>← Назад</button><div className="dots" aria-label={`Кадр ${panel + 1} из 4`}>{panels.map((_, index) => <span key={index} className={index === panel ? 'active' : ''}/>)}</div><button onClick={() => panel < 3 ? setPanel(value => value + 1) : setScreen('brief')}>{panel < 3 ? 'Дальше →' : chapter === 8 ? 'К ежедневнику →' : chapter === 7 ? 'На пробежку →' : chapter === 6 ? 'Ко сну →' : 'Поехали →'}</button></div>
     </section>}
     {screen === 'brief' && chapter === 8 && <ScheduleBrief onContinue={() => setScreen('game')} onComic={() => { setPanel(0); setScreen('comic'); }}/> }
     {screen === 'brief' && chapter === 7 && <RunBrief onContinue={() => setScreen('game')} onComic={() => { setPanel(0); setScreen('comic'); }}/> }
     {screen === 'brief' && chapter === 6 && <SleepBrief onContinue={() => setScreen('game')} onComic={() => { setPanel(0); setScreen('comic'); }}/> }
-    {screen === 'brief' && chapter === 5 && <GymBrief onContinue={() => setScreen('game')} onComic={() => { setPanel(0); setScreen('comic'); }}/> }
+    {screen === 'brief' && chapter === 5 && <GymBrief onContinue={() => setScreen('facts')} onComic={() => { setPanel(0); setScreen('comic'); }}/> }
     {screen === 'brief' && chapter === 4 && <CookBrief onContinue={() => setScreen('facts')} onComic={() => { setPanel(0); setScreen('comic'); }}/>}
     {screen === 'brief' && chapter === 3 && <ShopBrief onContinue={() => setScreen('facts')} onComic={() => { setPanel(0); setScreen('comic'); }}/>}
     {screen === 'brief' && chapter === 2 && <PoolBrief onContinue={() => setScreen('facts')} onComic={() => { setPanel(0); setScreen('comic'); }}/>}
     {screen === 'brief' && chapter === 1 && <BikeBrief onContinue={() => setScreen('facts')} onComic={() => { setPanel(0); setScreen('comic'); }}/>}
+    {screen === 'facts' && chapter === 5 && <GymFacts onContinue={() => setScreen('game')} onBack={() => setScreen('brief')}/>}
     {screen === 'facts' && chapter === 4 && <CookFacts onContinue={() => setScreen('game')} onBack={() => setScreen('brief')}/>}
     {screen === 'facts' && chapter === 3 && <ShopFacts onContinue={() => setScreen('game')} onBack={() => setScreen('brief')}/>}
     {screen === 'facts' && chapter === 2 && <PoolFacts onContinue={() => setScreen('game')} onBack={() => setScreen('brief')}/>}
