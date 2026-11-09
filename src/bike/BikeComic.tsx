@@ -59,8 +59,8 @@ export default function BikeComic({ onContinue, onExit }: { onContinue: () => vo
   }}>
     <div className="section-heading"><button className="text-button" onClick={onExit}>← К главам</button><span className="eyebrow">ОДИН КРУГ / {frame + 1} ИЗ {frames.length}</span></div>
     <div className="bike-comic-caption"><span>{current.place}</span><h1>{current.title}</h1></div>
-    <div className={`comic-panel bike-comic-panel bike-comic-frame-${frame}`} style={{ aspectRatio: extraScene ? '2 / 3' : `512 / ${height}` }}>
-      <div key={frame} className="bike-comic-art" role="img" aria-label={current.description} style={{ backgroundImage: extraScene ? 'url(/art/chapter-01-park-surprise.png)' : undefined, backgroundPosition: current.position, backgroundSize: extraScene ? 'cover' : `200% ${1536 / height * 100}%`, '--comic-drift': frame === 1 ? '1.025' : '1.012' } as CSSProperties}/>
+    <div className={`comic-panel bike-comic-panel bike-comic-frame-${frame}`}>
+      <svg key={frame} className="bike-comic-art" role="img" aria-label={current.description} viewBox={extraScene ? '0 0 1024 1536' : `${frame % 2 * 512} ${frame < 2 ? 0 : 712} 512 ${height}`} preserveAspectRatio="xMidYMid slice" style={{ '--comic-drift': frame === 1 ? '1.025' : '1.012' } as CSSProperties}><image href={extraScene ? '/art/chapter-01-park-surprise.png' : '/art/chapter-01-comic.png'} width="1024" height="1536"/></svg>
       {frame >= 2 && <span key={`effect-${frame}`} className={`bike-comic-lettering bike-lettering-${current.lettering}`} aria-hidden="true">{current.lettering === 'snap' || current.lettering === 'bell' ? <svg className="bike-lettering-rays" viewBox="0 0 160 90"><path d="M15 30 2 20M25 15 20 2M52 12 51 0M115 12 122 0M141 28 157 17M143 60 159 67M117 78 122 89M35 73 28 87M14 53 0 57"/></svg> : null}<span>{current.effect}</span></span>}
       <div className="bike-comic-dialogue" data-kind={frame < 2 ? 'thought' : 'speech'} key={`dialogue-${frame}`} aria-label={frame < 2 ? 'Мысли героя' : 'Реплика героя'} aria-live="polite" aria-atomic="true">
         <svg className="bike-dialogue-outline" viewBox="0 0 360 160" preserveAspectRatio="none" aria-hidden="true">
