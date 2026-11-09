@@ -35,7 +35,6 @@
 @keyframes finale-spark{to{transform:scale(1.04) rotate(2deg)}}
 @media(max-width:650px){.finale-ticket{margin-top:12px;box-shadow:4px 4px #263d38}.finale-copy h1{font-size:39px}.finale-art{padding:6px 4px 0}.finale-copy{padding:18px 12px 4px}.finale-overline{font-size:6.5px}.finale-route{gap:3px;padding:0 12px}.finale-route span{width:23px;height:23px;font-size:7px}.finale-kicker{padding:10px 12px}.finale-sticker{padding:6px;right:8px;bottom:0}.finale-sticker b{font-size:9px}}
 @media(prefers-reduced-motion:reduce){.finale-sparks,.finale-pad{animation:none}}
-.birthday-achievement-icon{display:block;width:30px;height:30px;fill:none;stroke:#527962;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;margin:0 auto 8px}
 .finale-achievements b{font-size:28px}
 .birthday-result-note{text-align:center;font-size:12px;line-height:1.7;margin:20px 12px;color:#536358}
 .birthday-result-note strong{font-size:16px;color:#263d38}
@@ -57,8 +56,19 @@
 .birthday-share-links button{font-size:10px;padding:10px 0}
 .birthday-share-url{width:100%;font-size:10px;background:#f2ead7;border:1px solid #c6bea6;padding:10px;color:#536358;user-select:text;-webkit-user-select:text;margin-top:8px}
 .birthday-share .birthday-share-status{font-size:11px;min-height:16px;line-height:1.4;margin:8px 0 0;color:#3e735a}
-@media(max-width:650px){.birthday-achievement-icon{width:25px;height:25px}.finale-copy h1{font-size:44px}.finale-actions .birthday-share-button{font-size:13px}.birthday-share{padding:14px}}
+@media(max-width:650px){.finale-copy h1{font-size:44px}.finale-actions .birthday-share-button{font-size:13px}.birthday-share{padding:14px}}
 
 .birthday-lettering{margin:18px 10px 8px;transform:rotate(-1deg)}
 .birthday-lettering img{display:block;width:100%;height:auto;filter:drop-shadow(1px 4px 0 #263d3818)}
 @media(max-width:650px){.birthday-lettering{margin:14px 7px 6px}}
+.finale-art .finale-emblem{max-height:360px}
+.birthday-achievement-badge{display:block;width:66px;height:76px;margin:0 auto 7px;filter:drop-shadow(1px 3px 0 #263d381c)}
+.finale-achievements{gap:9px;border:0;padding:0;margin-top:20px}
+.finale-achievements>span{border:1px solid #c9c2a6;border-radius:9px;background:linear-gradient(#fff7e4,#f0e6c9);padding:12px 4px 10px;box-shadow:0 3px #d2c6a6}
+.finale-achievements>span:nth-child(2){background:linear-gradient(#f1f2e9,#e1e6eb)}
+.finale-achievements>span:nth-child(3){background:linear-gradient(#f3f6e7,#e0e8d3)}
+@media(max-width:650px){.birthday-achievement-badge{width:53px;height:61px}.finale-achievements{gap:6px;margin-inline:12px}.finale-achievements b{font-size:25px}.finale-achievements span{font-size:8px}}
+
+.finale-art .finale-sticker{right:auto;left:50%;bottom:-5px;transform:translateX(-50%) rotate(-3deg);white-space:nowrap}
+
+.finale-footer b{white-space:nowrap;font-size:20px}
