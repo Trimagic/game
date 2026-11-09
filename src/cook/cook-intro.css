@@ -1,0 +1,28 @@
+.cook-comic .bike-comic-caption>span{color:#347777}
+.cook-comic .bike-comic-narrator{background:#e0ede4}
+.cook-comic .cook-comic-ring{right:5%;bottom:37%;font-size:clamp(22px,9cqw,38px);font-style:italic;transform:rotate(-12deg);color:#fff5c8;-webkit-text-stroke:1px #302d26;paint-order:stroke fill;text-shadow:2px 2px #302d26}
+.paper-panel.kitchen-brief h1{font-size:34px}
+.paper-panel.kitchen-brief h1 em{color:#2c7375}
+.kitchen-brief .bike-rule-icon{background:#e0ede4;color:#2c7375}
+.kitchen-brief .bike-ride-stats dt{font-size:9px}
+.kitchen-brief .bike-ride-stats dd small{font-size:9px}
+.kitchen-extra-rules{margin-top:8px}
+.kitchen-myth-card{border:1px solid #c6bda8;background:#f1e8d5;padding:12px;margin-bottom:14px;border-radius:5px}
+.kitchen-myth-card>span{font-size:8px;letter-spacing:1px;font-weight:800;color:#985037}
+.kitchen-myth-card blockquote{margin:10px 0;font-size:18px;line-height:1.4;font-weight:800;letter-spacing:-.4px;text-decoration:line-through;text-decoration-color:#bd694d;text-decoration-thickness:2px;color:#5f594d}
+.kitchen-brief .kitchen-myth-card p{font-size:11px;line-height:1.4;margin:0;color:#2c7375;font-weight:700}
+.kitchen-info-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.kitchen-info-tabs button{min-height:44px;padding:9px 6px;font-size:11px;box-shadow:none;border:1px solid #bacdc1;background:#fff9eb;transform:none}
+.kitchen-info-tabs button[aria-pressed='true']{background:#d3e7df;border-color:#2c7375;box-shadow:inset 0 -3px #2c7375}
+.kitchen-info-field{min-height:140px;padding:14px 0 8px}
+.kitchen-info-field strong{font-size:13px}
+.kitchen-brief .kitchen-info-field p{font-size:12px;line-height:1.5;margin:7px 0 0}
+.kitchen-facts .bike-facts-takeaway{margin:4px 0 8px}
+.kitchen-facts .bike-intro-actions{margin-top:12px}
+@media(max-width:650px){
+ .paper-panel.kitchen-brief h1{font-size:27px}
+ .kitchen-brief .bike-intro-heading .eyebrow{font-size:7px}
+ .kitchen-brief .bike-quick-rules strong{font-size:12px}
+ .kitchen-brief .bike-quick-rules p{font-size:11.5px}
+ .kitchen-facts .bike-facts-takeaway{font-size:12px}
+}
