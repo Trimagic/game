@@ -11,12 +11,12 @@
 .bike-lettering-ride{top:6%;left:5%;font-size:clamp(18px,7cqw,30px);color:#fffdf2;transform:rotate(-8deg)}
 .bike-lettering-rays{position:absolute;inset:-12%;width:124%;height:124%;overflow:visible;fill:none;stroke:#302d26;stroke-width:2.5;stroke-linecap:round;filter:drop-shadow(1px 1px 0 #fff9df)}
 .bike-comic-panel{container-type:inline-size}
-.bike-comic .bike-comic-dialogue{position:absolute;z-index:2;left:6%;right:6%;bottom:12%;padding:34px 30px 23px;margin:0;animation:bike-comic-reveal .25s ease-out}
+.bike-comic .bike-comic-dialogue{position:absolute;z-index:2;left:6%;right:6%;bottom:12%;padding:42px 38px 29px;margin:0;animation:bike-comic-reveal .25s ease-out}
 .bike-dialogue-outline{position:absolute;inset:0;width:100%;height:100%;overflow:visible;fill:#fffdf4;stroke:#302d26;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(1px 2px 1px #302d2628);pointer-events:none}
 .bike-comic .bike-comic-dialogue p{position:relative;font-family:'Comic Sans MS','Trebuchet MS',cursive;font-size:clamp(13px,4.2cqw,19px);line-height:1.35;font-weight:700;color:#302d26;text-align:center;margin:0}
 .bike-comic .bike-comic-narrator{position:absolute;z-index:2;left:4%;right:4%;bottom:2%;width:fit-content;max-width:92%;margin:0;padding:5px 8px;background:#ffedb5;border:1.5px solid #302d26;box-shadow:1px 1px #302d26;font-size:clamp(10px,3.1cqw,13px);line-height:1.3;font-weight:700;color:#302d26}
 .bike-comic-frame-0 .bike-comic-dialogue{bottom:17%}
-.bike-comic-frame-4 .bike-comic-dialogue{left:18%;right:5%;bottom:12%;padding:34px 26px 23px}
+.bike-comic-frame-4 .bike-comic-dialogue{left:18%;right:5%;bottom:12%;padding:42px 34px 29px}
 .bike-comic .bike-comic-navigation{gap:10px;margin-top:16px}
 .bike-comic-navigation>button{min-height:44px;padding:10px 14px;font-size:12px;white-space:nowrap}
 .bike-comic-progress{display:flex;align-items:center;justify-content:center;flex:1;min-width:0}

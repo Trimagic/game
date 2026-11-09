@@ -2,7 +2,7 @@
 .night-comic.night-epilogue .bike-comic-panel{aspect-ratio:4/5}
 .night-comic .bike-comic-caption>span{color:#4c657f}
 .night-comic .bike-comic-narrator{background:#dce4ee}
-.night-comic .bike-comic-dialogue{padding:34px 30px 23px;left:5%;right:5%;bottom:13%}
+.night-comic .bike-comic-dialogue{left:5%;right:5%;bottom:13%}
 .night-comic .bike-comic-dialogue p{font-size:clamp(12px,3.9cqw,17px)}
 .night-comic .night-comic-click{top:5%;right:5%;font-size:clamp(19px,7cqw,30px);transform:rotate(8deg);color:#fff0a4;-webkit-text-stroke:1px #343c50;paint-order:stroke fill;text-shadow:2px 2px #343c50}
 .night-page-count{font-size:10px;font-weight:800;white-space:nowrap;color:#4c657f}

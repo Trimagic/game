@@ -1,7 +1,7 @@
 .delivery-comic .bike-comic-panel{aspect-ratio:3/4}
 .delivery-comic .bike-comic-caption>span{color:#946039}
 .delivery-comic .bike-comic-narrator{background:#f1ddba}
-.delivery-comic .bike-comic-dialogue{padding:34px 30px 23px;left:5%;right:5%;bottom:13%}
+.delivery-comic .bike-comic-dialogue{left:5%;right:5%;bottom:13%}
 .delivery-comic .bike-comic-dialogue p{font-size:clamp(12px,3.9cqw,17px)}
 .delivery-comic .delivery-comic-ping{bottom:43%;right:5%;font-size:clamp(13px,4.8cqw,21px);transform:rotate(-7deg);color:#fff0a4;-webkit-text-stroke:1px #453c2d;paint-order:stroke fill;text-shadow:1px 1px #453c2d}
 .paper-panel.delivery-brief h1{font-size:33px}
