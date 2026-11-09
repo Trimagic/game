@@ -17,7 +17,7 @@ export default class ShopScene extends SceneBase{
  constructor(events:ArcadeEvents){super('belt',events);}
  preload(){this.load.image('products','/art/chapter-03-products.png');this.load.on('loaderror',this.bridge.error);}
  create(){if(!this.textures.exists('products'))return;frames.forEach(([x,y,w,h],i)=>this.textures.get('products').add(i,0,x,y,w,h));this.makeExtras();
-  this.view={title:'Лови будущий ужин!',detail:'Четыре списка подряд: «Ужин», «Гости придут», «Распродажа» и «Праздник». Продукты падают с полок — веди тележку пальцем или стрелками и лови только то, что в списке. Лишнее, просрочка и перерасход бюджета отнимают жизнь, арбуз ещё и заклинит тележку. В поздних списках приманки качаются из стороны в сторону. Вор крадётся к тележке и уносит последнее: толкни его тележкой на скорости, чтобы прогнать.',status:'ready',actions:[]};
+  this.view={title:'Лови будущий ужин!',detail:'Список сверху. Лови нужное, следи за бюджетом и пропускай просрочку. Полки уже шевелятся. Готов?',status:'ready',actions:[]};
   this.setup();this.drawStatic();
   // Drag works like a touchpad anywhere on the board, so the finger never hides the cart.
   this.input.on('pointerdown',(p:Phaser.Input.Pointer)=>{if(!this.running)return;this.held.clear();this.drag={id:p.id,x:p.x,cart:this.model.cartX};});

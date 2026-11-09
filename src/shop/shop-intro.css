@@ -1,0 +1,37 @@
+.shop-comic .bike-comic-caption>span{color:#966126}
+.shop-comic .bike-comic-narrator{background:#ffe9b9}
+.shop-comic .bike-comic-progress button.reached span{background:#b67b34}
+.shop-comic-frame-0 .bike-comic-dialogue{bottom:12%}
+.shop-comic-frame-1 .bike-comic-dialogue{bottom:12%}
+.shop-comic .shop-comic-sale{top:10%;left:6%;font-size:clamp(22px,9cqw,40px);font-style:italic;color:#b74124;transform:rotate(-12deg);text-shadow:1px 1px #fff4c7}
+.paper-panel.market-brief h1{font-size:34px}
+.paper-panel.market-brief h1 em{color:#a65d27}
+.market-brief .bike-rule-icon{color:#966126;background:#f5ead3}
+.market-brief .bike-ride-stats dd{font-size:24px}
+.market-brief .bike-ride-stats dd small{font-size:10px}
+.market-extra-rules{margin-top:8px}
+.market-label-example{background:#f2ead6;border:1px solid #cbbda2;border-radius:5px;padding:12px;margin:0 0 14px}
+.market-example-tag{display:block;font-size:8px;font-weight:800;letter-spacing:.7px;color:#755b36}
+.market-label-example dl{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:12px 0 0}
+.market-label-example dl>div+div{padding-left:14px;border-left:1px solid #cbbda2}
+.market-label-example dt{font-size:11px;font-weight:600;color:#555747}
+.market-label-example dd{font-size:36px;line-height:1.2;font-weight:800;letter-spacing:-1px;color:#a65d27;margin:3px 0}
+.market-label-example dd small{font-size:16px;letter-spacing:0}
+.market-brief .market-label-example p{font-size:10px;margin:8px 0 0;color:#755b36}
+.market-info-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.market-info-tabs button{font-size:11px;line-height:1.25;padding:9px 7px;min-height:44px;background:#fff9eb;border:1px solid #cbbda2;box-shadow:none;transform:none}
+.market-info-tabs button[aria-pressed='true']{background:#f5cc5c;border-color:#755b36;box-shadow:inset 0 -3px #b67b34}
+.market-info-field{min-height:142px;padding:14px 0 8px}
+.market-info-field strong{font-size:13px}
+.market-brief .market-info-field p{font-size:12px;line-height:1.5;margin:7px 0 0}
+.market-facts .bike-facts-takeaway{margin:4px 0 8px;border-color:#b67b34}
+.market-facts .bike-intro-actions{margin-top:12px}
+@media(max-width:650px){
+ .paper-panel.market-brief h1{font-size:27px}
+ .market-brief .bike-intro-heading .eyebrow{font-size:7px}
+ .market-brief .bike-quick-rules strong{font-size:12px}
+ .market-brief .bike-quick-rules p{font-size:11.5px}
+ .market-info-field{min-height:126px}
+ .market-info-tabs button{font-size:10px}
+ .market-facts .bike-facts-takeaway{font-size:12px}
+}
