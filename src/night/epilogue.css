@@ -1,5 +1,37 @@
-.comic-panel.epilogue-panel{aspect-ratio:1;background-size:300% 200%;background-repeat:no-repeat;isolation:isolate}
-.epilogue-blackout:after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse,transparent 25%,#101d23cc 100%);pointer-events:none;z-index:-1}
-.epilogue-choice{background:#f5cc5c;max-width:75%}
-.epilogue-end{text-align:center}.epilogue-end .epilogue-wish{font-size:clamp(22px,5vw,32px);line-height:1.4;color:#252b29;font-weight:800}.epilogue-end .text-button{display:block;margin:20px auto 0}
-@media(max-width:480px){.epilogue-reader .comic-navigation{gap:10px}.epilogue-choice{font-size:13px;padding:12px}}
+.finale-ticket{max-width:540px;margin:24px auto;border:3px solid #263d38;background:#fff7e4;box-shadow:7px 7px #263d38;overflow:hidden;position:relative}
+.finale-kicker{display:flex;justify-content:space-between;align-items:center;background:#263d38;color:#fff1cc;padding:12px 18px;font-size:9px;letter-spacing:1.5px;font-weight:800}
+.finale-kicker strong{padding:4px 9px;border:1px solid #f1cc68;border-radius:20px;color:#f1cc68;font-size:12px;letter-spacing:0}
+.finale-art{position:relative;background:#eee1bb;padding:12px 10px 0;isolation:isolate}
+.finale-art:before{content:'';position:absolute;inset:0;z-index:-1;background:repeating-conic-gradient(from -15deg at 50% 60%,#edc65b44 0 10deg,transparent 10deg 20deg)}
+.finale-emblem{width:100%;display:block;max-height:300px;overflow:visible}
+.finale-sticker{position:absolute;right:12px;bottom:4px;background:#f4cc5a;border:2px solid #263d38;padding:8px 10px;transform:rotate(-7deg);font-size:7px;line-height:1.5;box-shadow:2px 2px #263d38;text-align:center}
+.finale-sticker b{font-size:11px}
+.finale-copy{text-align:center;padding:22px 18px 4px}
+.finale-overline{font-size:8px;letter-spacing:1px;font-weight:800;color:#537568}
+.finale-copy h1{font-size:48px;letter-spacing:-2.3px;margin:12px 0;line-height:1.05}
+.finale-copy h1 em{color:#bf542e}
+.finale-copy .finale-lead{font-size:12px;line-height:1.6;margin:0;color:#5d6758}
+.finale-achievements{display:grid;grid-template-columns:repeat(3,1fr);text-align:center;margin:18px 18px 12px;border-block:1px dashed #b4ad92;padding:12px 0;gap:7px}
+.finale-achievements span{font-size:9px;line-height:1.5;color:#536358}
+.finale-achievements b{display:block;color:#263d38;font-size:30px;line-height:1.1}
+.finale-route{display:flex;justify-content:center;gap:4px;padding:0 18px;margin-bottom:20px}
+.finale-route span{display:grid;place-items:center;width:29px;height:25px;border:1px solid #9ab397;background:#dce8d6;color:#385c4d;font-size:8px;font-weight:800;transform:rotate(-3deg)}
+.finale-route span:nth-child(even){transform:rotate(3deg)}
+.finale-evening{margin:0 18px;background:#e0e9d8;border:1px solid #aec0a5;padding:16px 12px 8px;text-align:center;position:relative}
+.finale-stamp{display:table;margin:0 auto 12px;padding:4px 10px;border:2px solid #507a63;transform:rotate(-3deg);color:#507a63;font-size:10px;font-weight:900;letter-spacing:1px}
+.finale-evening>strong{font-size:16px}
+.finale-evening p{font-size:12px;line-height:1.5;min-height:36px;margin:8px 0;color:#536358}
+.finale-evening button{font-size:10px;padding:10px;min-height:44px}
+.finale-ticket .finale-wish{font-size:14px;line-height:1.55;text-align:center;color:#263d38;font-weight:700;margin:22px 10px}
+.finale-actions{display:grid;gap:8px;padding:0 18px 20px}
+.finale-actions button{min-height:46px;font-size:12px}
+.finale-actions .text-button{font-size:11px}
+.finale-footer{padding:13px 18px;border-top:1px dashed #b4ad92;display:flex;align-items:center;gap:12px;justify-content:space-between;background:#f3e8cb}
+.finale-footer span{font-size:7px;line-height:1.4;letter-spacing:1px;max-width:210px}
+.finale-footer b{font-size:24px;transform:rotate(-6deg);letter-spacing:-1px;color:#bf542e}
+.finale-sparks{transform-origin:220px 130px;animation:finale-spark 3s ease-in-out infinite alternate}
+.finale-pad{transform-origin:220px 180px;animation:finale-float 4s ease-in-out infinite}
+@keyframes finale-float{50%{transform:translateY(-4px) rotate(-2deg)}}
+@keyframes finale-spark{to{transform:scale(1.04) rotate(2deg)}}
+@media(max-width:650px){.finale-ticket{margin-top:12px;box-shadow:4px 4px #263d38}.finale-copy h1{font-size:39px}.finale-art{padding:6px 4px 0}.finale-copy{padding:18px 12px 4px}.finale-overline{font-size:6.5px}.finale-route{gap:3px;padding:0 12px}.finale-route span{width:23px;height:23px;font-size:7px}.finale-kicker{padding:10px 12px}.finale-sticker{padding:6px;right:8px;bottom:0}.finale-sticker b{font-size:9px}}
+@media(prefers-reduced-motion:reduce){.finale-sparks,.finale-pad{animation:none}}
