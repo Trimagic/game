@@ -1,0 +1,56 @@
+.paper-panel.bike-intro{max-width:520px;padding:26px 28px;margin-top:24px}
+.bike-intro-heading{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.bike-intro-heading .eyebrow{font-size:9px;letter-spacing:1px}
+.bike-intro-step{font-size:10px;color:#64675b;white-space:nowrap}
+.paper-panel.bike-intro h1{font-size:38px;line-height:1.08;letter-spacing:-1.6px;margin:18px 0 10px}
+.bike-intro p{font-size:13px;line-height:1.5}
+.bike-intro .bike-intro-lead{margin:0 0 18px;color:#51584e}
+.bike-ride-stats{display:grid;grid-template-columns:repeat(3,1fr);margin:0 0 16px;border-block:1px solid #cfc5af;padding:12px 0}
+.bike-ride-stats>div{padding-left:14px;border-left:1px solid #cfc5af}
+.bike-ride-stats>div:first-child{padding-left:0;border:0}
+.bike-ride-stats dt{font-size:10px;color:#64675b}
+.bike-ride-stats dd{font-size:26px;font-weight:800;margin:3px 0 0;line-height:1.2;font-variant-numeric:tabular-nums}
+.bike-ride-stats dd small{font-size:13px;color:#a34429}
+.bike-quick-rules{display:grid;gap:14px;list-style:none;padding:0;margin:0}
+.bike-quick-rules li{display:flex;align-items:flex-start;gap:12px}
+.bike-rule-icon{display:grid;place-items:center;flex:0 0 32px;height:32px;background:#eee9d8;color:#337b78;border:1px solid #cfc5af;border-radius:6px;font-weight:800;font-size:20px}
+.bike-quick-rules strong{font-size:13px}
+.bike-quick-rules p{margin:3px 0 0}
+.bike-pickup-tip{display:flex;align-items:center;gap:12px;background:#f8edcb;padding:10px 12px;border-radius:4px;margin-top:16px}
+.bike-pickup-tip>span{font-size:26px;color:#8b641c}
+.bike-pickup-tip p{margin:0;font-size:11px;color:#555747}
+.bike-pickup-tip strong{color:#252b29}
+.bike-intro-actions{display:grid;gap:2px;margin-top:20px}
+.bike-intro-actions button{min-height:44px}
+.bike-intro-actions .text-button{justify-self:center;padding:10px 12px}
+.bike-underline{text-decoration:underline;text-decoration-color:#d3a646;text-decoration-thickness:3px;text-underline-offset:4px;text-decoration-skip-ink:auto}
+.bike-facts-period{display:block;font-size:9px;letter-spacing:1px;font-weight:700;color:#64675b;margin:20px 0 8px}
+.bike-fact-list{margin:0}
+.bike-fact-list>div{display:flex;flex-direction:column;padding:14px 0;border-top:1px solid #cfc5af}
+.bike-fact-list dt{font-size:13px;font-weight:700;margin-top:8px}
+.bike-fact-list dd{order:-1;margin:0;color:#b54e2d;font-size:46px;font-weight:800;letter-spacing:-2px;line-height:1.15;font-variant-numeric:tabular-nums}
+.bike-fact-list dd small{font-size:24px;letter-spacing:-.5px}
+.bike-fact-list p{font-size:10px;margin:4px 0 0}
+.bike-intro .bike-facts-takeaway{border-left:3px solid #337b78;padding-left:12px;margin:12px 0 16px;color:#252b29;line-height:1.8}
+.bike-facts-sources{font-size:11px;color:#64675b}
+.bike-facts-sources summary{cursor:pointer;min-height:32px;padding:7px 0;text-decoration:underline;text-underline-offset:3px}
+.bike-facts-sources summary:focus-visible{outline:2px solid #168d95;outline-offset:3px}
+.bike-facts-sources p{font-size:11px;margin:8px 0}
+.bike-facts-sources a{color:#337b78;text-underline-offset:3px}
+@media(max-width:650px){
+ main:has(.bike-intro){padding:calc(6px + var(--game-safe-top)) 12px calc(12px + var(--game-safe-bottom))}
+ main:has(.bike-intro)>.masthead{min-height:34px;padding:0 0 6px;gap:8px}
+ main:has(.bike-intro)>footer{display:none}
+ .paper-panel.bike-intro{padding:16px;margin-top:12px;box-shadow:3px 3px #252b29}
+ .paper-panel.bike-intro h1{font-size:30px;margin-top:12px}
+ .bike-intro-heading .eyebrow{font-size:8px;letter-spacing:.6px}
+ .bike-intro-step{font-size:9px}
+ .bike-intro .bike-intro-lead{font-size:12px;margin-bottom:14px}
+ .bike-quick-rules{gap:12px}
+ .bike-quick-rules p{font-size:12px}
+ .bike-intro-actions{margin-top:16px}
+ .bike-intro-actions .full-button{font-size:13px;padding:12px 10px}
+ .bike-facts-period{margin-top:16px;font-size:8px}
+ .bike-fact-list>div{padding:12px 0}
+ .bike-fact-list dd{font-size:42px}
+}

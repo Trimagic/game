@@ -1,4 +1,4 @@
-import PagedPanel from './PagedPanel';
+import { BikeBrief, BikeFacts } from './bike/BikeIntro';
 import {useComicFit} from './useComicFit';
 import NightChapter from './night/NightChapter';
 import DeliveryChapter from './delivery/DeliveryChapter';
@@ -20,10 +20,6 @@ import { CookBrief, cookPanels, cookComicStyle } from './cook/CookIntro';
 import { ShopBrief, shopPanels, shopComicStyle } from './shop/ShopIntro';
 import { PoolBrief, PoolFacts, poolPanels } from './pool/PoolIntro';
 import { isTelegram, progress } from './telegram';
-
-function CastIcon({ viewBox }: { viewBox: string }) {
-  return <svg className="cast-portrait" viewBox={viewBox} aria-hidden="true"><image href="/art/chapter-01-sprites.png" width="1000" height="1000" /></svg>;
-}
 
 const bikePanels = [
   { title: 'Обычное утро.', words: 'Так. Посмотрим, что скажут весы…', position: '0% 0%' },
@@ -86,19 +82,9 @@ export default function App({initialChapter}:{initialChapter?:1|2|3|4|5|6|7|8|9|
     {screen === 'brief' && chapter === 4 && <CookBrief onContinue={() => setScreen('game')} onComic={() => { setPanel(0); setScreen('comic'); }}/>}
     {screen === 'brief' && chapter === 3 && <ShopBrief onContinue={() => setScreen('game')} onComic={() => { setPanel(0); setScreen('comic'); }}/>}
     {screen === 'brief' && chapter === 2 && <PoolBrief onContinue={() => setScreen('facts')} onComic={() => { setPanel(0); setScreen('comic'); }}/>}
-    {screen === 'brief' && chapter === 1 && <PagedPanel className="brief paper-panel"><span className="eyebrow">ЭТАП 01 / КРУТИ ПЕДАЛИ</span><h1>Парк полон<br/><em>сюрпризов.</em></h1><p>Проедь 500 метров. Перестраивайся между тремя полосами и оставляй прохожим достаточно места. Звёзды подсказывают свободную полосу: собирай их подряд, и серия умножит очки. Сердечко вернёт потерянную попытку.</p><div className="obstacle-legend"><div><CastIcon viewBox="580 30 300 550"/><b>Бабушки</b><small>Гуляют по парку</small></div><div><CastIcon viewBox="140 600 230 380"/><b>Дети</b><small>Играют с мячом</small></div><div><CastIcon viewBox="520 640 410 310"/><b>Кожура</b><small>Лучше объехать</small></div></div><div className="rules"><b>← →</b><p>Стрелки на клавиатуре или кнопки на экране.<br/>Три ошибки — перезапуск. Один заезд — 40 секунд.</p></div><button className="full-button" onClick={() => setScreen('facts')}>Дальше →</button><button className="text-button" onClick={() => { setPanel(0); setScreen('comic'); }}>Прочитать комикс</button></PagedPanel>}
+    {screen === 'brief' && chapter === 1 && <BikeBrief onContinue={() => setScreen('facts')} onComic={() => { setPanel(0); setScreen('comic'); }}/>}
     {screen === 'facts' && chapter === 2 && <PoolFacts onContinue={() => setScreen('game')}/>}
-    {screen === 'facts' && chapter === 1 && <PagedPanel className="paper-panel facts" aria-labelledby="facts-title">
-      <span className="eyebrow">ПЕРЕД ЗАЕЗДОМ / МИР · 2021 ГОД</span>
-      <h1 id="facts-title">Немного<br/><em>статистики.</em></h1>
-      <dl className="facts-numbers">
-        <div><dt>Дорожные травмы велосипедистов</dt><dd>≈ 9,8 млн</dd><p>Оценка числа случаев за 2021 год по данным GBD. Диапазон неопределённости: 8,3–11,7 млн.</p></div>
-        <div><dt>Погибшие велосипедисты</dt><dd>≈ 71 000</dd><p>Оценка ВОЗ числа погибших на дорогах во всём мире за 2021 год.</p></div>
-      </dl>
-      <p className="facts-note">Это оценки из разных источников, а не единый реестр всех травм при катании.</p>
-      <div className="facts-sources">Источники: <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC11997400/" target="_blank" rel="noopener noreferrer">исследование GBD 2021, таблица 1</a> · <a href="https://www.who.int/news/item/13-12-2023-despite-notable-progress-road-safety-remains-urgent-global-issue" target="_blank" rel="noopener noreferrer">ВОЗ, отчёт 2023</a></div>
-      <button className="full-button" onClick={() => setScreen('game')}>Продолжить →</button>
-    </PagedPanel>}
+    {screen === 'facts' && chapter === 1 && <BikeFacts onContinue={() => setScreen('game')} onBack={() => setScreen('brief')}/>}
     {screen === 'game' && (chapter === 11 ? <NightChapter onComplete={() => void save()} onExit={exit} busy={busy}/> : chapter === 10 ? <DeliveryChapter onComplete={() => void save()} onExit={exit} busy={busy}/> : chapter === 9 ? <RemoteChapter onComplete={() => void save()} onExit={exit} busy={busy}/> : chapter === 8 ? <ScheduleGame onWin={win} onExit={exit}/> : chapter === 7 ? <RunGame onWin={win} onExit={exit}/> : chapter === 6 ? <SleepGame onWin={win} onExit={exit}/> : chapter === 5 ? <GymGame onWin={win} onExit={exit}/> : chapter === 4 ? <CookGame onWin={win} onExit={exit}/> : chapter === 3 ? <ShopGame onWin={win} onExit={exit}/> : chapter === 2 ? <PoolGame onWin={win} onExit={exit}/> : <Game onWin={win} onExit={exit}/>)}
     {screen === 'win' && <section className="paper-panel finish"><span className="eyebrow">ЭТАП {String(chapter).padStart(2, '0')} / ФИНИШ</span><span className="finish-burst">{chapter === 8 ? 'БАЛАНС!' : chapter === 7 ? '1 КМ!' : chapter === 6 ? 'ZZZ…' : chapter === 5 ? 'В РИТМ!' : chapter === 4 ? 'ГОТОВО!' : chapter === 3 ? '5 / 5!' : chapter === 2 ? '45 с!' : '500 м!'}</span><h1>{chapter === 8 ? 'В плане есть' : chapter === 7 ? 'Утро без' : chapter === 6 ? 'Ещё пять минут…' : chapter === 5 ? 'Последний —' : chapter === 4 ? 'Мам, теперь' : chapter === 3 ? 'Ужин почти' : chapter === 2 ? 'Какун остался' : 'Вот это'}<br/><em>{chapter === 8 ? 'место для себя.' : chapter === 7 ? 'стресса. Почти.' : chapter === 6 ? 'посплю.' : chapter === 5 ? 'значит последний!' : chapter === 4 ? 'я поел!' : chapter === 3 ? 'на столе!' : chapter === 2 ? 'с носом!' : 'начало!'}</em></h1><p>{chapter === 8 ? 'Неделя собрана. Работа, движение, еда и отдых наконец поместились. Идеальный план — тот, который можно менять, не забывая о себе.' : chapter === 7 ? 'Километр позади. Лужи, самокат и ветки не помешали начать день с движения. Осталось успеть на автобус. Кажется, разминка закончилась…' : chapter === 6 ? 'Уведомления замолчали, ролики закончились, следующий матч отменён. Ты добрался до кровати. Иногда лучший шаг к себе — просто выключить экран.' : chapter === 5 ? 'Три подхода позади. Ты поймал ритм, выдержал приседания и пережил тренерское «ещё один». Теперь мышцам нужен отдых. И тебе тоже.' : chapter === 4 ? 'Курица, гарнир и овощи — на тарелке. Первый домашний ужин готов. Рецепт обещал пятнадцать минут, зато гордости хватит на весь вечер.' : chapter === 3 ? 'Курица, рис, брокколи, помидоры и масло куплены. Бюджет выдержан. Осталось просто приготовить. В рецепте написано — пятнадцать минут…' : chapter === 2 ? 'Ты выбрался из бассейна! Кардио выполнено, абонемент мысленно сожжён. Пожалуй, пора попробовать здоровое питание…' : 'Первый круг позади. Не обязательно менять всю жизнь за один день — сегодня ты уже сделал шаг.'}</p><button disabled={busy} onClick={() => void save()}>{busy ? 'Сохраняем…' : 'Сохранить и к главам →'}</button><p className="control-hint">{chapter === 1 ? 'Дальше — заплыв с сюрпризом.' : chapter === 2 ? 'Дальше — правильная закупка.' : chapter === 3 ? 'Дальше — «Диетический ужин».' : chapter === 4 ? 'Дальше — «Качай в ритм».' : chapter === 5 ? 'Дальше — «Ещё пять минут».' : chapter === 6 ? 'Дальше — «Утренний бег».' : chapter === 7 ? 'Дальше — «Всё по расписанию».' : 'Следующая страница готова.'}</p></section>}
     {screen !== 'game' && <footer><b>С НУЛЯ!</b><span>ПРОДОЛЖЕНИЕ СЛЕДУЕТ…</span></footer>}
