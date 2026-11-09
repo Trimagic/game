@@ -1,17 +1,17 @@
 import { BikeBrief, BikeFacts } from './bike/BikeIntro';
 import BikeComic from './bike/BikeComic';
-import {useComicFit} from './useComicFit';
 import NightChapter from './night/NightChapter';
 import DeliveryChapter from './delivery/DeliveryChapter';
 import RemoteChapter from './remote/RemoteChapter';
 import ScheduleGame from './schedule/ScheduleGame';
-import { ScheduleBrief, schedulePanels, scheduleComicStyle } from './schedule/ScheduleIntro';
+import { ScheduleBrief, ScheduleFacts } from './schedule/ScheduleIntro';
+import ScheduleComic from './schedule/ScheduleComic';
 import { useCallback, useEffect, useState } from 'react';
 import Game from './Game';
 import PoolGame from './pool/PoolGame';
 import ShopGame from './shop/ShopGame';
 import RunGame from './run/RunGame';
-import { RunBrief, RunFacts, runPanels } from './run/RunIntro';
+import { RunBrief, RunFacts } from './run/RunIntro';
 import RunComic from './run/RunComic';
 import SleepGame from './sleep/SleepGame';
 import { SleepBrief, SleepFacts } from './sleep/SleepIntro';
@@ -29,11 +29,8 @@ import PoolComic from './pool/PoolComic';
 import { isTelegram, progress } from './telegram';
 
 export default function App({initialChapter}:{initialChapter?:1|2|3|4|5|6|7|8|9|10|11}={}) {
-  const comicRef=useComicFit();
   const [chapter, setChapter] = useState<1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11>(initialChapter ?? 1);
-  const panels = chapter === 8 ? schedulePanels : runPanels;
   const [completed, setCompleted] = useState(0);
-  const [panel, setPanel] = useState(0);
   const [screen, setScreen] = useState<'map' | 'comic' | 'brief' | 'facts' | 'game' | 'win'>(initialChapter ? initialChapter >= 9 ? 'game' : 'comic' : 'map');
   const [busy, setBusy] = useState(true);
   const [loaded, setLoaded] = useState(false);
@@ -45,7 +42,7 @@ export default function App({initialChapter}:{initialChapter?:1|2|3|4|5|6|7|8|9|
     finally { setBusy(false); }
   }, []);
   useEffect(() => { void load(); }, [load]);
-  useEffect(() => { window.scrollTo({ top: 0, behavior: 'instant' }); }, [screen, panel]);
+  useEffect(() => { window.scrollTo({ top: 0, behavior: 'instant' }); }, [screen]);
   const win = useCallback(() => setScreen('win'), []);
   const exit = useCallback(() => { setError(''); setScreen('map'); }, []);
   async function save() {
@@ -58,16 +55,16 @@ export default function App({initialChapter}:{initialChapter?:1|2|3|4|5|6|7|8|9|
     <nav className="masthead"><button className="wordmark" onClick={exit}>С НУЛЯ<span>!</span></button><span>МАЛЕНЬКАЯ ИСТОРИЯ<br/>БОЛЬШИХ ПЕРЕМЕН</span><span className="issue">ВЫПУСК {String(chapter).padStart(2, '0')}</span></nav>
     {error && <div role="alert" className="error">{error}{!loaded && <button onClick={() => void load()} disabled={busy}>Повторить</button>}</div>}
     {screen === 'map' && <>
-      <header className="cover"><div className="cover-copy"><span className="eyebrow">ИНТЕРАКТИВНЫЙ КОМИКС</span><h1>Всё начинается<br/>с <em>одного<br/> оборота.</em></h1><p>Наш герой решил заняться собой.<br/>Помоги ему не свернуть с пути.</p><button disabled={busy || !loaded} onClick={() => { setChapter(1); setPanel(0); setScreen('comic'); }}>{busy ? 'Загрузка…' : completed >= 1 ? 'Перечитать историю →' : 'Начать историю →'}</button><span className="cover-note">КОМИКС + ВЕЛОЗАЕЗД · ОКОЛО 2 МИНУТ</span></div><div className="cover-art" role="img" aria-label="Рыжеволосый герой едет на велосипеде по парку"><span className="sticker">ПОЕХАЛИ!</span></div></header>
+      <header className="cover"><div className="cover-copy"><span className="eyebrow">ИНТЕРАКТИВНЫЙ КОМИКС</span><h1>Всё начинается<br/>с <em>одного<br/> оборота.</em></h1><p>Наш герой решил заняться собой.<br/>Помоги ему не свернуть с пути.</p><button disabled={busy || !loaded} onClick={() => { setChapter(1); setScreen('comic'); }}>{busy ? 'Загрузка…' : completed >= 1 ? 'Перечитать историю →' : 'Начать историю →'}</button><span className="cover-note">КОМИКС + ВЕЛОЗАЕЗД · ОКОЛО 2 МИНУТ</span></div><div className="cover-art" role="img" aria-label="Рыжеволосый герой едет на велосипеде по парку"><span className="sticker">ПОЕХАЛИ!</span></div></header>
       <div className="chapter-heading"><h2>Путь к себе</h2><span>11 ЭТАПОВ · ОДИН ГЕРОЙ</span></div>
-      <button className="chapter-card" disabled={busy || !loaded} onClick={() => { setChapter(1); setPanel(0); setScreen('comic'); }}><span className="chapter-number">01</span><div><span className="eyebrow">{completed >= 1 ? 'ПРОЙДЕНО ✓' : 'ПЕРВЫЙ ЭТАП'}</span><h3>Крути педали</h3><p>Парк, велосипед и немного неожиданностей.</p></div><span className="chapter-arrow">↗</span></button>
-      <button className="chapter-card pool-chapter" disabled={busy || !loaded || completed < 1} onClick={() => { setChapter(2); setPanel(0); setScreen('comic'); }}><span className="chapter-number">02</span><div><span className="eyebrow">{completed >= 2 ? 'ПРОЙДЕНО ✓' : completed >= 1 ? 'ВТОРОЙ ЭТАП' : 'ПОСЛЕ ВЕЛОЗАЕЗДА'}</span><h3>Заплыв с сюрпризом</h3><p>Бассейн, неожиданные препятствия и босс Какун.</p></div><span className="chapter-arrow">{completed >= 1 ? '↗' : '🔒'}</span></button>
-      <button className="chapter-card shop-chapter" disabled={busy || !loaded || completed < 2} onClick={() => { setChapter(3); setPanel(0); setScreen('comic'); }}><span className="chapter-number">03</span><div><span className="eyebrow">{completed >= 3 ? 'ПРОЙДЕНО ✓' : completed >= 2 ? 'ТРЕТИЙ ЭТАП' : 'ПОСЛЕ БАССЕЙНА'}</span><h3>Правильная закупка</h3><p>Пять продуктов, один список и слишком много акций.</p></div><span className="chapter-arrow">{completed >= 2 ? '↗' : '🔒'}</span></button>
-      <button className="chapter-card cook-chapter" disabled={busy || !loaded || completed < 3} onClick={() => { setChapter(4); setPanel(0); setScreen('comic'); }}><span className="chapter-number">04</span><div><span className="eyebrow">{completed >= 4 ? 'ПРОЙДЕНО ✓' : completed >= 3 ? 'ЧЕТВЁРТЫЙ ЭТАП' : 'ПОСЛЕ ЗАКУПКИ'}</span><h3>Диетический ужин</h3><p>Простой рецепт, две конфорки и один звонок.</p></div><span className="chapter-arrow">{completed >= 3 ? '↗' : '🔒'}</span></button>
-      <button className="chapter-card gym-chapter" disabled={busy || !loaded || completed < 4} onClick={() => { setChapter(5); setPanel(0); setScreen('comic'); }}><span className="chapter-number">05</span><div><span className="eyebrow">{completed >= 5 ? 'ПРОЙДЕНО ✓' : completed >= 4 ? 'ПЯТЫЙ ЭТАП' : 'ПОСЛЕ УЖИНА'}</span><h3>Качай в ритм</h3><p>Три подхода и бесконечный последний повтор.</p></div><span className="chapter-arrow">{completed >= 4 ? '↗' : '🔒'}</span></button>
-      <button className="chapter-card sleep-chapter" disabled={busy || !loaded || completed < 5} onClick={() => { setChapter(6); setPanel(0); setScreen('comic'); }}><span className="chapter-number">06</span><div><span className="eyebrow">{completed >= 6 ? 'ПРОЙДЕНО ✓' : completed >= 5 ? 'ШЕСТОЙ ЭТАП' : 'ПОСЛЕ СПОРТЗАЛА'}</span><h3>Ещё пять минут</h3><p>Уведомления не спят. А тебе пора.</p></div><span className="chapter-arrow">{completed >= 5 ? '↗' : '🔒'}</span></button>
-      <button className="chapter-card run-chapter" disabled={busy || !loaded || completed < 6} onClick={() => { setChapter(7); setPanel(0); setScreen('comic'); }}><span className="chapter-number">07</span><div><span className="eyebrow">{completed >= 7 ? 'ПРОЙДЕНО ✓' : completed >= 6 ? 'СЕДЬМОЙ ЭТАП' : 'ПОСЛЕ ХОРОШЕГО СНА'}</span><h3>Утренний бег</h3><p>Один километр. Ни одного скучного шага.</p></div><span className="chapter-arrow">{completed >= 6 ? '↗' : '🔒'}</span></button>
-      <button className="chapter-card" disabled={busy || !loaded || completed < 7} onClick={() => { setChapter(8); setPanel(0); setScreen('comic'); }}><span className="chapter-number">08</span><div><span className="eyebrow">{completed >= 8 ? 'ПРОЙДЕНО ✓' : completed >= 7 ? 'ВОСЬМОЙ ЭТАП' : 'ПОСЛЕ ПРОБЕЖКИ'}</span><h3>Всё по расписанию</h3><p>Дел много. День один. Отдых тоже в списке.</p></div><span className="chapter-arrow">{completed >= 7 ? '↗' : '🔒'}</span></button>
+      <button className="chapter-card" disabled={busy || !loaded} onClick={() => { setChapter(1); setScreen('comic'); }}><span className="chapter-number">01</span><div><span className="eyebrow">{completed >= 1 ? 'ПРОЙДЕНО ✓' : 'ПЕРВЫЙ ЭТАП'}</span><h3>Крути педали</h3><p>Парк, велосипед и немного неожиданностей.</p></div><span className="chapter-arrow">↗</span></button>
+      <button className="chapter-card pool-chapter" disabled={busy || !loaded || completed < 1} onClick={() => { setChapter(2); setScreen('comic'); }}><span className="chapter-number">02</span><div><span className="eyebrow">{completed >= 2 ? 'ПРОЙДЕНО ✓' : completed >= 1 ? 'ВТОРОЙ ЭТАП' : 'ПОСЛЕ ВЕЛОЗАЕЗДА'}</span><h3>Заплыв с сюрпризом</h3><p>Бассейн, неожиданные препятствия и босс Какун.</p></div><span className="chapter-arrow">{completed >= 1 ? '↗' : '🔒'}</span></button>
+      <button className="chapter-card shop-chapter" disabled={busy || !loaded || completed < 2} onClick={() => { setChapter(3); setScreen('comic'); }}><span className="chapter-number">03</span><div><span className="eyebrow">{completed >= 3 ? 'ПРОЙДЕНО ✓' : completed >= 2 ? 'ТРЕТИЙ ЭТАП' : 'ПОСЛЕ БАССЕЙНА'}</span><h3>Правильная закупка</h3><p>Пять продуктов, один список и слишком много акций.</p></div><span className="chapter-arrow">{completed >= 2 ? '↗' : '🔒'}</span></button>
+      <button className="chapter-card cook-chapter" disabled={busy || !loaded || completed < 3} onClick={() => { setChapter(4); setScreen('comic'); }}><span className="chapter-number">04</span><div><span className="eyebrow">{completed >= 4 ? 'ПРОЙДЕНО ✓' : completed >= 3 ? 'ЧЕТВЁРТЫЙ ЭТАП' : 'ПОСЛЕ ЗАКУПКИ'}</span><h3>Диетический ужин</h3><p>Простой рецепт, две конфорки и один звонок.</p></div><span className="chapter-arrow">{completed >= 3 ? '↗' : '🔒'}</span></button>
+      <button className="chapter-card gym-chapter" disabled={busy || !loaded || completed < 4} onClick={() => { setChapter(5); setScreen('comic'); }}><span className="chapter-number">05</span><div><span className="eyebrow">{completed >= 5 ? 'ПРОЙДЕНО ✓' : completed >= 4 ? 'ПЯТЫЙ ЭТАП' : 'ПОСЛЕ УЖИНА'}</span><h3>Качай в ритм</h3><p>Три подхода и бесконечный последний повтор.</p></div><span className="chapter-arrow">{completed >= 4 ? '↗' : '🔒'}</span></button>
+      <button className="chapter-card sleep-chapter" disabled={busy || !loaded || completed < 5} onClick={() => { setChapter(6); setScreen('comic'); }}><span className="chapter-number">06</span><div><span className="eyebrow">{completed >= 6 ? 'ПРОЙДЕНО ✓' : completed >= 5 ? 'ШЕСТОЙ ЭТАП' : 'ПОСЛЕ СПОРТЗАЛА'}</span><h3>Ещё пять минут</h3><p>Уведомления не спят. А тебе пора.</p></div><span className="chapter-arrow">{completed >= 5 ? '↗' : '🔒'}</span></button>
+      <button className="chapter-card run-chapter" disabled={busy || !loaded || completed < 6} onClick={() => { setChapter(7); setScreen('comic'); }}><span className="chapter-number">07</span><div><span className="eyebrow">{completed >= 7 ? 'ПРОЙДЕНО ✓' : completed >= 6 ? 'СЕДЬМОЙ ЭТАП' : 'ПОСЛЕ ХОРОШЕГО СНА'}</span><h3>Утренний бег</h3><p>Один километр. Ни одного скучного шага.</p></div><span className="chapter-arrow">{completed >= 6 ? '↗' : '🔒'}</span></button>
+      <button className="chapter-card" disabled={busy || !loaded || completed < 7} onClick={() => { setChapter(8); setScreen('comic'); }}><span className="chapter-number">08</span><div><span className="eyebrow">{completed >= 8 ? 'ПРОЙДЕНО ✓' : completed >= 7 ? 'ВОСЬМОЙ ЭТАП' : 'ПОСЛЕ ПРОБЕЖКИ'}</span><h3>Всё по расписанию</h3><p>Дел много. День один. Отдых тоже в списке.</p></div><span className="chapter-arrow">{completed >= 7 ? '↗' : '🔒'}</span></button>
       <button className="chapter-card" disabled={busy || !loaded || completed < 8} onClick={() => { setChapter(9); setScreen('game'); }}><span className="chapter-number">09</span><div><span className="eyebrow">{completed >= 9 ? 'ПРОЙДЕНО ✓' : 'ПРОДОЛЖЕНИЕ ИСТОРИИ'}</span><h3>{completed >= 8 ? 'Следующая глава' : 'Впереди ещё многое'}</h3><p>{completed >= 8 ? 'Открой следующую страницу.' : 'После распорядка дня.'}</p></div><span className="chapter-arrow">{completed >= 8 ? '↗' : '🔒'}</span></button><button className="chapter-card" disabled={busy || !loaded || completed < 9} onClick={() => { setChapter(10); setScreen('game'); }}><span className="chapter-number">10</span><div><span className="eyebrow">{completed >= 10 ? 'ПРОЙДЕНО ✓' : 'ПРОДОЛЖЕНИЕ ИСТОРИИ'}</span><h3>{completed >= 9 ? 'Операция «Обед»' : 'Ещё одна история'}</h3><p>{completed >= 9 ? 'Аппетит требует изобретательности.' : 'После девятой главы.'}</p></div><span className="chapter-arrow">{completed >= 9 ? '↗' : '🔒'}</span></button><button className="chapter-card" disabled={busy || !loaded || completed < 10} onClick={() => { setChapter(11); setScreen('game'); }}><span className="chapter-number">11</span><div><span className="eyebrow">{completed >= 11 ? 'ПРОЙДЕНО ✓' : 'ФИНАЛЬНАЯ ГЛАВА'}</span><h3>{completed >= 10 ? 'Ночной маршрут' : 'Последняя страница'}</h3><p>{completed >= 10 ? 'Тапочки надеты. Главное — успеть.' : 'После десятой главы.'}</p></div><span className="chapter-arrow">{completed >= 10 ? '↗' : '🔒'}</span></button>
       <div className="save-note"><span className="save-dot"/>{isTelegram ? 'Прогресс сохраняется в твоём Telegram-профиле' : 'Деморежим · прогресс сохраняется в этом браузере'}</div>
     </>}
@@ -78,19 +75,16 @@ export default function App({initialChapter}:{initialChapter?:1|2|3|4|5|6|7|8|9|
     {screen === 'comic' && chapter === 5 && <GymComic onContinue={() => setScreen('brief')} onExit={exit}/>}
     {screen === 'comic' && chapter === 6 && <SleepComic onContinue={() => setScreen('brief')} onExit={exit}/>}
     {screen === 'comic' && chapter === 7 && <RunComic onContinue={() => setScreen('brief')} onExit={exit}/>}
-    {screen === 'comic' && chapter !== 7 && chapter !== 1 && chapter !== 2 && chapter !== 3 && chapter !== 4 && chapter !== 5 && chapter !== 6 && <section ref={comicRef} className="comic-reader">
-      <div className="section-heading"><button className="text-button" onClick={exit}>← К главам</button><span className="eyebrow">ПРОЛОГ / {panel + 1} ИЗ 4</span></div>
-      <div className="comic-panel" style={chapter === 8 ? scheduleComicStyle(panel) : { backgroundPosition: panels[panel].position, backgroundImage: `url(/art/chapter-0${chapter}-comic.png)` }} role="group" aria-label={panels[panel].title}><span className="narration">{panels[panel].title}</span></div><div className="speech comic-dialogue">{panels[panel].words}</div>
-      <div className="comic-navigation"><button className="small-button" disabled={panel === 0} onClick={() => setPanel(value => value - 1)}>← Назад</button><div className="dots" aria-label={`Кадр ${panel + 1} из 4`}>{panels.map((_, index) => <span key={index} className={index === panel ? 'active' : ''}/>)}</div><button onClick={() => panel < 3 ? setPanel(value => value + 1) : setScreen('brief')}>{panel < 3 ? 'Дальше →' : chapter === 8 ? 'К ежедневнику →' : 'Поехали →'}</button></div>
-    </section>}
-    {screen === 'brief' && chapter === 8 && <ScheduleBrief onContinue={() => setScreen('game')} onComic={() => { setPanel(0); setScreen('comic'); }}/> }
-    {screen === 'brief' && chapter === 7 && <RunBrief onContinue={() => setScreen('facts')} onComic={() => { setPanel(0); setScreen('comic'); }}/> }
-    {screen === 'brief' && chapter === 6 && <SleepBrief onContinue={() => setScreen('facts')} onComic={() => { setPanel(0); setScreen('comic'); }}/> }
-    {screen === 'brief' && chapter === 5 && <GymBrief onContinue={() => setScreen('facts')} onComic={() => { setPanel(0); setScreen('comic'); }}/> }
-    {screen === 'brief' && chapter === 4 && <CookBrief onContinue={() => setScreen('facts')} onComic={() => { setPanel(0); setScreen('comic'); }}/>}
-    {screen === 'brief' && chapter === 3 && <ShopBrief onContinue={() => setScreen('facts')} onComic={() => { setPanel(0); setScreen('comic'); }}/>}
-    {screen === 'brief' && chapter === 2 && <PoolBrief onContinue={() => setScreen('facts')} onComic={() => { setPanel(0); setScreen('comic'); }}/>}
-    {screen === 'brief' && chapter === 1 && <BikeBrief onContinue={() => setScreen('facts')} onComic={() => { setPanel(0); setScreen('comic'); }}/>}
+    {screen === 'comic' && chapter === 8 && <ScheduleComic onContinue={() => setScreen('brief')} onExit={exit}/>}
+    {screen === 'brief' && chapter === 8 && <ScheduleBrief onContinue={() => setScreen('facts')} onComic={() => { setScreen('comic'); }}/> }
+    {screen === 'brief' && chapter === 7 && <RunBrief onContinue={() => setScreen('facts')} onComic={() => { setScreen('comic'); }}/> }
+    {screen === 'brief' && chapter === 6 && <SleepBrief onContinue={() => setScreen('facts')} onComic={() => { setScreen('comic'); }}/> }
+    {screen === 'brief' && chapter === 5 && <GymBrief onContinue={() => setScreen('facts')} onComic={() => { setScreen('comic'); }}/> }
+    {screen === 'brief' && chapter === 4 && <CookBrief onContinue={() => setScreen('facts')} onComic={() => { setScreen('comic'); }}/>}
+    {screen === 'brief' && chapter === 3 && <ShopBrief onContinue={() => setScreen('facts')} onComic={() => { setScreen('comic'); }}/>}
+    {screen === 'brief' && chapter === 2 && <PoolBrief onContinue={() => setScreen('facts')} onComic={() => { setScreen('comic'); }}/>}
+    {screen === 'brief' && chapter === 1 && <BikeBrief onContinue={() => setScreen('facts')} onComic={() => { setScreen('comic'); }}/>}
+    {screen === 'facts' && chapter === 8 && <ScheduleFacts onContinue={() => setScreen('game')} onBack={() => setScreen('brief')}/>}
     {screen === 'facts' && chapter === 7 && <RunFacts onContinue={() => setScreen('game')} onBack={() => setScreen('brief')}/>}
     {screen === 'facts' && chapter === 6 && <SleepFacts onContinue={() => setScreen('game')} onBack={() => setScreen('brief')}/>}
     {screen === 'facts' && chapter === 5 && <GymFacts onContinue={() => setScreen('game')} onBack={() => setScreen('brief')}/>}
