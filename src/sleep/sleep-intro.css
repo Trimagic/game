@@ -1,0 +1,33 @@
+.sleep-comic .bike-comic-caption>span{color:#565c8f}
+.sleep-comic .bike-comic-narrator{background:#e1e2f2}
+.sleep-comic .sleep-comic-quiet{top:6%;right:5%;font-size:clamp(17px,6cqw,26px);font-style:italic;transform:rotate(-8deg);color:#f5f0d2;-webkit-text-stroke:1px #313c5a;paint-order:stroke fill;text-shadow:1px 1px #313c5a}
+.paper-panel.night-brief h1{font-size:33px}
+.paper-panel.night-brief h1 em{color:#565c8f}
+.night-brief .bike-rule-icon{background:#e5e4f0;color:#565c8f}
+.night-brief .bike-ride-stats dt{font-size:9px}
+.night-brief .bike-ride-stats dd{font-size:25px}
+.night-brief .bike-pickup-tip{background:#e5e4f0}
+.night-brief .bike-pickup-tip>span{color:#565c8f}
+.night-extra{margin-top:8px}
+.night-sleep-card{display:grid;grid-template-columns:1.2fr 1fr;gap:12px;padding:14px;border:1px solid #c2bfd2;border-radius:5px;background:#e5e4f0;margin:0 0 14px}
+.night-sleep-card strong{display:block;font-size:36px;line-height:1.2;letter-spacing:-1px;color:#454c7d}
+.night-sleep-card strong small{font-size:18px;letter-spacing:0}
+.night-sleep-card span{display:block;font-size:9px;line-height:1.5;margin-top:6px;color:#565c72}
+.night-sleep-card ul{padding:0 0 0 15px;margin:0;display:flex;flex-direction:column;justify-content:center;gap:8px;font-size:11px;font-weight:700;color:#454c7d;border-left:1px solid #c2bfd2;list-style:none}
+.night-info-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+.night-info-tabs button{min-height:44px;padding:8px 5px;font-size:10px;background:#fff9eb;border:1px solid #c2bfd2;box-shadow:none;transform:none}
+.night-info-tabs button[aria-pressed='true']{background:#d7d8ec;border-color:#565c8f;box-shadow:inset 0 -3px #565c8f}
+.night-info-field{min-height:152px;padding:14px 0 8px}
+.night-info-field strong{font-size:13px}
+.night-brief .night-info-field p{font-size:12px;line-height:1.5;margin:7px 0 0}
+.night-facts .bike-facts-takeaway{margin:4px 0 8px;border-color:#565c8f}
+.night-facts .bike-underline{text-decoration-color:#aaa6cd}
+.night-facts .bike-intro-actions{margin-top:12px}
+@media(max-width:650px){
+ .paper-panel.night-brief h1{font-size:27px}
+ .night-brief .bike-intro-heading .eyebrow{font-size:7px}
+ .night-brief .bike-intro-step{font-size:8px}
+ .night-brief .bike-quick-rules strong{font-size:12px}
+ .night-brief .bike-quick-rules p{font-size:11.5px}
+ .night-facts .bike-facts-takeaway{font-size:12px}
+}
