@@ -1,4 +1,5 @@
 import {sound} from '../audio/sound';
+import {reportError} from '../error-report';
 import Phaser from 'phaser';
 import type {ArcadeEvents,ArcadeView} from './types';
 export default abstract class SceneBase extends Phaser.Scene{
@@ -10,8 +11,8 @@ export default abstract class SceneBase extends Phaser.Scene{
   // An error in one frame or one press is logged and play goes on, instead of the loop stopping and the screen freezing.
   const self=this as unknown as {update?:(t:number,d:number)=>void;action:(id:string)=>void};
   const update=self.update?.bind(this),act=self.action.bind(this);
-  if(update)self.update=(t,d)=>{try{update(t,d);}catch(error){console.error(error);}};
-  self.action=id=>{try{act(id);}catch(error){console.error(error);}};
+  if(update)self.update=(t,d)=>{try{update(t,d);}catch(error){reportError(error);}};
+  self.action=id=>{try{act(id);}catch(error){reportError(error);}};
  }
  protected setup(){
   this.root=this.add.container(0,0);this.input.dragDistanceThreshold=8;this.input.on('pointerdown',()=>{if(this.running&&this.sys.settings.key!=='gym')sound.cue('tap');});

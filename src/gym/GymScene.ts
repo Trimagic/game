@@ -12,7 +12,7 @@ export default class GymScene extends SceneBase {
  private model=initial(); private elapsed=0; private hudAt=0;
  private ink!:Phaser.GameObjects.Graphics; private stats!:Phaser.GameObjects.Text;
  private coach!:Phaser.GameObjects.Text; private judgement!:Phaser.GameObjects.Text;
- private sources=[new Set<string>(),new Set<string>()]; private pointers=new Map<number,Lane>();
+ private sources=[new Set<string>(),new Set<string>()];private pads:Phaser.GameObjects.Rectangle[]=[]; private pointers=new Map<number,Lane>();
   private beat=''; private stage=-1; private bonusGroup=-1;
  constructor(events:ArcadeEvents){super('gym',events);}
  create(){
@@ -21,9 +21,9 @@ export default class GymScene extends SceneBase {
   this.box(210,137,420,146,0xe9d8b6);this.coach=this.text(168,91,'',13);this.coach.setWordWrapWidth(238);
   this.box(210,350,420,280,0x173d40);this.ink=this.add.graphics();
   this.judgement=this.text(210,480,'',13,'#fff3d6',true).setDepth(4);
-  for(const lane of [0,1] as Lane[]){const x=lane?310:110;const pad=this.box(x,528,186,50,colors[lane]).setInteractive({useHandCursor:true});this.text(x,528,lane?'ПРАВАЯ →':'← ЛЕВАЯ',15,'#293a34',true);
-   pad.on('pointerdown',(p:Phaser.Input.Pointer)=>{if(this.running){this.pointers.set(p.id,lane);this.setSource(lane,'p'+p.id,true);}});
-  }
+  for(const lane of [0,1] as Lane[]){const x=lane?310:110;this.pads.push(this.box(x,528,186,50,colors[lane]));this.text(x,528,lane?'ПРАВАЯ →':'← ЛЕВАЯ',15,'#293a34',true);}
+  // The whole lower half of each side is its hand, not just the drawn pad, so a slightly off tap still counts.
+  this.input.on('pointerdown',(p:Phaser.Input.Pointer)=>{if(this.running&&p.y>=215)this.press(p.id,p.x<210?0:1);});
   this.input.on('pointerup',(p:Phaser.Input.Pointer)=>this.releasePointer(p));
   this.input.on('pointerupoutside',(p:Phaser.Input.Pointer)=>this.releasePointer(p));
   this.input.keyboard?.on('keyup',(e:KeyboardEvent)=>{const lane=this.lane(e.code);if(lane!==undefined)this.setSource(lane,e.code,false);});
@@ -31,6 +31,10 @@ export default class GymScene extends SceneBase {
  }
  private lane(code:string):Lane|undefined{return ['KeyA','ArrowLeft'].includes(code)?0:['KeyD','ArrowRight'].includes(code)?1:undefined;}
  protected key(e:KeyboardEvent){const lane=this.lane(e.code);if(lane!==undefined){e.preventDefault();this.setSource(lane,e.code,true);}if(e.code==='Space'&&!(e.target instanceof HTMLButtonElement)){e.preventDefault();this.action('wind');}if(e.code==='KeyM')this.action('mute');}
+ /** A finger takes one hand; if its id was holding the other hand, that hand is let go first. */
+ private press(id:number,lane:Lane){const old=this.pointers.get(id);if(old!==undefined&&old!==lane)this.setSource(old,'p'+id,false);this.pointers.set(id,lane);this.setSource(lane,'p'+id,true);}
+ /** A finger whose release was lost (left the canvas, cancelled by the app) would hold its hand forever; let it go. */
+ private releaseLost(){for(const [id,lane] of [...this.pointers]){const pointer=this.input.manager.pointers.find(q=>q.id===id);if(!pointer||!pointer.isDown){this.pointers.delete(id);this.setSource(lane,'p'+id,false);}}}
  private releasePointer(p:Phaser.Input.Pointer){const lane=this.pointers.get(p.id);if(lane!==undefined){this.pointers.delete(p.id);this.setSource(lane,'p'+p.id,false);}}
  private setSource(lane:Lane,id:string,down:boolean){if(!this.running)return;if(down)haptics.cue('tap');down?this.sources[lane].add(id):this.sources[lane].delete(id);const before=this.model;this.model=input(before,lane,this.sources[lane].size>0,this.elapsed);if(this.model.points>before.points){this.pop(lane?310:110,435,this.model.feedback,this.model.feedback.startsWith('ЕЩЁ')||this.model.feedback==='В ТОЧКУ!'?'#9b5725':'#286b56');if(this.model.fevers>before.fevers){sound.fx('powerup');if(!this.reduced)this.cameras.main.flash(180,255,214,120);}}if(this.model.energy<before.energy&&this.model.status==='playing')sound.fx('buzz');this.paint();this.publishResult();}
  protected pause(){this.sources.forEach(s=>s.clear());this.pointers.clear();this.model={...this.model,pressed:[false,false]};super.pause();}
@@ -56,11 +60,12 @@ export default class GymScene extends SceneBase {
    if(y<=462&&n.bonus){g.fillStyle(0xf5cc5c);g.fillCircle(x,y,21);g.lineStyle(3,0x9b5725);g.strokeCircle(x,y,21);g.fillStyle(0x9b5725);g.fillTriangle(x,y-10,x-9,y+7,x+9,y+7);g.fillTriangle(x,y+12,x-9,y-4,x+9,y-4);continue;}
    if(y<=462){g.fillStyle(held?0xffed9e:colors[n.lane]);g.fillCircle(x,y,18);g.lineStyle(3,0xfff4d7);g.strokeCircle(x,y,18);g.lineStyle(3,0x294941);g.lineBetween(x-6,y,x+6,y);if(n.end)g.lineBetween(x,y-6,x,y+6);}
   }
+  this.pads.forEach((pad,lane)=>pad.setFillStyle(s.pressed[lane]?0xffed9e:colors[lane]));
   g.lineStyle(3,0xfff6df);g.lineBetween(15,440,405,440);for(const lane of [0,1] as Lane[]){g.lineStyle(s.pressed[lane]?5:2,s.pressed[lane]?0xffed9e:colors[lane]);g.strokeCircle(lane?310:110,440,25);}
   const next=phases.find(p=>t<p.start);this.judgement.setText(group>=0&&!s.feedback.startsWith('ЕЩЁ')?'ЗОЛОТЫЕ ПОВТОРЫ — БОНУС':t<3000||rest&&next?`ГОТОВЬСЯ · ${Math.max(1,Math.ceil((next!.start-t)/1000))}`:fever&&['В ТОЧКУ!','В РИТМ!'].includes(s.feedback)?`РЕЖИМ ЗВЕРЯ · ${Math.ceil((s.feverUntil-t)/1000)} С`:s.feedback);
   g.fillStyle(0xefb569);g.fillRect(0,558,420*t/END,2);
  }
- update(_time:number,delta:number){if(!this.running)return;if(delta>500){this.pause();return;}this.elapsed+=delta;const before=this.model;this.model=tick(this.model,this.elapsed);if(this.model.energy<before.energy&&this.model.status==='playing')sound.fx('buzz');this.paint();this.playBeat();if(this.model.status!=='playing')this.publishResult();else if(this.elapsed-this.hudAt>120){this.hudAt=this.elapsed;this.sync();}}
+ update(_time:number,delta:number){if(!this.running)return;if(delta>500){this.pause();return;}this.elapsed+=delta;this.releaseLost();const before=this.model;this.model=tick(this.model,this.elapsed);if(this.model.energy<before.energy&&this.model.status==='playing')sound.fx('buzz');this.paint();this.playBeat();if(this.model.status!=='playing')this.publishResult();else if(this.elapsed-this.hudAt>120){this.hudAt=this.elapsed;this.sync();}}
 }
 
 
