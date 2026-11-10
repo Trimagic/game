@@ -5,13 +5,14 @@ import {botWebhook,webhookSecret} from '../worker/bot.ts';
 const token='integration-token';
 const mf=new Miniflare(convertV4MiniflareOptions({modules:true,scriptPath:'dist/telegram_comic_game/index.js',compatibilityDate:'2026-10-12',d1Databases:['DB'],bindings:{BOT_TOKEN:token}}));
 try{
- const DB=await mf.getD1Database('DB');await DB.prepare(await readFile('migrations/0003_bot_updates.sql','utf8')).run();
+ const DB=await mf.getD1Database('DB');
  const env={BOT_TOKEN:token,DB};let sent=0;
  const transport=async()=>{sent++;return Response.json({ok:true})};
  const secret=await webhookSecret(token);
  const request=id=>new Request('https://test/api/telegram/webhook',{method:'POST',headers:{'X-Telegram-Bot-Api-Secret-Token':secret},body:JSON.stringify({update_id:id,message:{text:'/start',chat:{type:'private',id:42}}})});
  assert.equal((await mf.dispatchFetch('https://test/api/telegram/webhook',{method:'POST',body:'{}'})).status,401);
  assert.equal((await botWebhook(request(1),env,transport)).status,200);assert.equal(sent,1);
+ await DB.prepare(await readFile('migrations/0003_bot_updates.sql','utf8')).run();
  assert.equal((await botWebhook(request(1),env,transport)).status,200);assert.equal(sent,1);
  let release,started;const waiting=new Promise(r=>release=r),entered=new Promise(r=>started=r);
  const pending=botWebhook(request(2),env,async()=>{sent++;started();await waiting;return Response.json({ok:true})});
