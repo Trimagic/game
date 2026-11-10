@@ -6,7 +6,7 @@ export default function MainMenu({completed,busy,isTelegram,onOpen}:{completed:n
  const next=resumeChapter(completed),finished=completed===11;
  return <div className="journey-menu">
   <header className="journey-hero">
-   <div className="journey-art"><img src="/art/main-menu-cover-secret.png" alt="Рыжий герой с велосипедом в солнечном парке"/><span className="journey-stamp">ВЫПУСК<br/><b>28</b></span></div>
+   <div className="journey-art"><img src="/art/main-menu-cover.png" alt="Рыжий герой с велосипедом, золотая дорожка и комиксные значки"/><span className="journey-stamp">ВЫПУСК<br/><b>28</b></span></div>
    <div className="journey-copy"><span className="eyebrow">КОМИКС, В КОТОРЫЙ ИГРАЮТ</span><h1 className="journey-logo"><img src="/art/game-logo.svg" alt="Ещё один годик"/></h1><p>Началось с «займусь собой».<br/>А дальше… лучше сыграть самому.</p><button disabled={busy} onClick={()=>onOpen(next)}>{busy?'Загружаем историю…':finished?'Пережить всё ещё раз →':completed?`Продолжить · глава ${String(next).padStart(2,'0')} →`:'Ну что, поехали? →'}</button><span className="journey-small">КОМИКС → ЗАДАНИЕ → НОВАЯ ГЛАВА</span></div>
   </header>
   <section className="journey-progress" aria-label={`Пройдено ${completed} из 11 глав`}><div><span className="eyebrow">ТВОЯ ИСТОРИЯ</span><h2>{finished?'Вот это приключение!':completed?'Уже есть что вспомнить.':'Всё ещё впереди.'}</h2></div><strong>{String(completed).padStart(2,'0')}<span> / 11</span></strong><div className="journey-track" aria-hidden="true">{chapters.map((_,i)=><span key={i} className={i<completed?'done':i===completed?'current':''}/>)}</div></section>
