@@ -1,12 +1,12 @@
 export const GAME_URL='https://telegram-comic-game.trimadgic.workers.dev/';
 export const BIRTHDAY_WISH='Желаю недолгих, но очень счастливых и радостных лет жизни! )))';
-export const SHARE_TEXT='С днём рождения! Все 11 глав «С нуля!» пройдены. 40 лет приснилось, фикус выжил, хорошее настроение разблокировано!';
+export const SHARE_TEXT='С днём рождения! Все 11 глав «Ещё один годик» пройдены. 40 лет приснилось, фикус выжил, хорошее настроение разблокировано!';
 export async function createBirthdayCard(emblem:SVGSVGElement):Promise<Blob>{
  const canvas=document.createElement('canvas');canvas.width=1080;canvas.height=1920;
  const c=canvas.getContext('2d');if(!c)throw new Error('Canvas unavailable');
  const ink='#263d38',cream='#fff7e4',green='#dce8d6',gold='#f0c758';
  c.fillStyle='#ecdfb8';c.fillRect(0,0,1080,1920);c.fillStyle=ink;c.fillRect(48,52,990,1820);c.fillStyle=cream;c.fillRect(38,38,990,1820);c.strokeStyle=ink;c.lineWidth=6;c.strokeRect(38,38,990,1820);
- c.fillStyle=ink;c.fillRect(38,38,990,86);c.fillStyle=cream;c.font='bold 26px Arial';c.fillText('С НУЛЯ! / ИМЕНИННЫЙ ВЫПУСК',76,92);c.textAlign='right';c.fillStyle=gold;c.fillText('11 / 11',988,92);c.textAlign='center';
+ c.fillStyle=ink;c.fillRect(38,38,990,86);c.fillStyle=cream;c.font='bold 26px Arial';c.fillText('ЕЩЁ ОДИН ГОДИК / ИМЕНИННЫЙ ВЫПУСК',76,92);c.textAlign='right';c.fillStyle=gold;c.fillText('11 / 11',988,92);c.textAlign='center';
  const svg=emblem.cloneNode(true) as SVGSVGElement;svg.setAttribute('xmlns','http://www.w3.org/2000/svg');svg.setAttribute('width','1040');svg.setAttribute('height','720');
  const imageUrl=URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(svg)],{type:'image/svg+xml'}));
  try{const img=new Image();await new Promise<void>((resolve,reject)=>{img.onload=()=>resolve();img.onerror=()=>reject(new Error('Artwork unavailable'));img.src=imageUrl;});c.drawImage(img,168,130,744,515);}finally{URL.revokeObjectURL(imageUrl);}

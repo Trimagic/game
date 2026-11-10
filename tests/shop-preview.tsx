@@ -7,7 +7,7 @@ import ShopComic from '../src/shop/ShopComic';
 import '../src/style.css';
 function Preview() {
   const [screen,setScreen]=useState('brief');
-  return <main><nav className="masthead"><b className="wordmark">С НУЛЯ!</b><span>ПРОВЕРКА ГЛАВЫ 03</span></nav>
+  return <main><nav className="masthead"><b className="wordmark game-wordmark"><span>ЕЩЁ ОДИН</span><strong>ГОДИК</strong></b><span>ПРОВЕРКА ГЛАВЫ 03</span></nav>
     {screen==='brief' && <ShopBrief onContinue={()=>setScreen('facts')} onComic={()=>setScreen('comic')}/>}
     {screen==='comic' && <ShopComic onContinue={()=>setScreen('brief')} onExit={()=>setScreen('brief')}/>}
     {screen==='facts' && <ShopFacts onContinue={()=>setScreen('game')} onBack={()=>setScreen('brief')}/>}

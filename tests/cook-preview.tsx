@@ -9,7 +9,7 @@ import '../src/shop/shop.css';
 function Preview(){
   const [screen,setScreen]=useState('brief');
   useEffect(()=>{window.scrollTo({top:0,behavior:'instant'});},[screen]);
-  return <main><nav className="masthead"><b className="wordmark">С НУЛЯ!</b><span>ПРОВЕРКА ГЛАВЫ 04</span></nav>
+  return <main><nav className="masthead"><b className="wordmark game-wordmark"><span>ЕЩЁ ОДИН</span><strong>ГОДИК</strong></b><span>ПРОВЕРКА ГЛАВЫ 04</span></nav>
     {screen==='brief'&&<CookBrief onContinue={()=>setScreen('facts')} onComic={()=>setScreen('comic')}/>}
     {screen==='comic'&&<CookComic onContinue={()=>setScreen('brief')} onExit={()=>setScreen('brief')}/>}
     {screen==='facts'&&<CookFacts onContinue={()=>setScreen('game')} onBack={()=>setScreen('brief')}/>}

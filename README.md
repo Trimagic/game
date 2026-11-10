@@ -1,4 +1,4 @@
-# С нуля! — Telegram Mini App
+# Ещё один годик — Telegram Mini App
 
 Основа игры на 11 глав: **React + TypeScript + Vite + Phaser**, **Cloudflare Workers Static Assets**, прогресс в **D1**.
 

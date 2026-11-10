@@ -16,7 +16,7 @@ export function Celebration({onComplete,onReplay,busy=false}:{onComplete:()=>voi
  const emblem=useRef<SVGSVGElement>(null);
  return <section className="finale-ticket" aria-labelledby="finale-title">
   <BirthdayParty/>
-  <div className="finale-kicker"><span>С НУЛЯ! / ИМЕНИННЫЙ ВЫПУСК</span><strong>11 / 11</strong></div>
+  <div className="finale-kicker"><span>ЕЩЁ ОДИН ГОДИК / ИМЕНИННЫЙ ВЫПУСК</span><strong>11 / 11</strong></div>
   <div className="finale-art">
    <svg ref={emblem} viewBox="0 0 520 360" role="img" aria-label="Бургер со свечами и геймпад в окружении восьми наград: велосипед, бассейн, покупки, готовка, спортзал, сон, бег и расписание" className="finale-emblem">
     <defs><pattern id="finale-dots" width="10" height="10" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1" fill="#355750" opacity=".16"/></pattern></defs>
