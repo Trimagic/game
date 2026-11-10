@@ -1,7 +1,7 @@
 import { chapters, canOpenChapter, resumeChapter, type Chapter } from './chapters';
 import { GameIcon } from './night/ChapterOrbit';
 import './menu.css';
-import {useRef,useSyncExternalStore} from 'react';
+import {useEffect,useRef,useSyncExternalStore} from 'react';
 import {useSound} from './audio/useSound';
 import {sound} from './audio/sound';
 
@@ -12,11 +12,12 @@ function MenuMusicButton(){
  const intent=useRef<boolean|null>(null);
  const toggle=()=>{const wasPlaying=intent.current??playing;intent.current=null;if(wasPlaying)sound.toggle();else{sound.foreground();if(!sound.enabled)sound.toggle();else sound.unlock();}};
  // Keep the intent from the beginning of the gesture: unlock may finish before click.
- return <button className="menu-music-button" aria-label={playing?'Выключить музыку':'Включить музыку'} aria-pressed={playing} onPointerDown={()=>{intent.current=playing;}} onKeyDown={event=>{if((event.key==='Enter'||event.key===' ')&&!event.repeat)intent.current=playing;}} onClick={toggle}><span aria-hidden="true">{playing?'♫':'♪'}</span>{playing?'Музыка играет':'Включить музыку'}<span className="menu-music-bars" aria-hidden="true"><i/><i/><i/></span></button>;
+ return <button className="menu-music-button" aria-label={playing?'Выключить музыку':enabled?'Запустить музыку':'Включить музыку'} title={enabled&&!ready?'Музыка начнётся автоматически или после первого касания':undefined} aria-pressed={playing} onPointerDown={()=>{intent.current=playing;}} onKeyDown={event=>{if((event.key==='Enter'||event.key===' ')&&!event.repeat)intent.current=playing;}} onClick={toggle}><span aria-hidden="true">{enabled?'♫':'♪'}</span>{playing?'Музыка играет':enabled?'Музыка включена':'Включить музыку'}<span className="menu-music-bars" aria-hidden="true"><i/><i/><i/></span></button>;
 }
 
 export default function MainMenu({completed,busy,isTelegram,onOpen}:{completed:number;busy:boolean;isTelegram:boolean;onOpen:(chapter:Chapter)=>void}){
  useSound('menu','playing');
+ useEffect(()=>{if(sound.enabled)sound.unlock();},[]);
  const next=resumeChapter(completed),finished=completed===11;
  return <div className="journey-menu">
   <div className="menu-music"><span>ПРИКЛЮЧЕНИЕ ПОД ХОРОШИЙ БИТ</span><MenuMusicButton/></div>
