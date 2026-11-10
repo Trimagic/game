@@ -22,7 +22,8 @@ export async function botWebhook(request:Request,env:BotEnv,transport:typeof fet
  const chat=update.message?.chat,text=update.message?.text,id=update.update_id;
  if(!Number.isSafeInteger(id)||(id as number)<0)return reply(400);
  if(chat?.type!=='private'||!Number.isSafeInteger(chat.id)||(chat.id as number)<=0||typeof text!=='string')return reply();
- if(!new RegExp(`^/(?:start|help)(?:@${BOT_USERNAME})?(?:\\s|$)`,'i').test(text))return reply();
+ const command=new RegExp(`^/(start|help|reset)(?:@${BOT_USERNAME})?(?:\\s|$)`,'i').exec(text)?.[1].toLowerCase();
+ if(!command)return reply();
  const now=Math.floor(Date.now()/1000);
  try{
   // The Worker binding can initialise its own table when migration-CLI access is unavailable.
@@ -35,9 +36,17 @@ export async function botWebhook(request:Request,env:BotEnv,transport:typeof fet
    const response=await transport(`https://api.telegram.org/bot${env.BOT_TOKEN}/${method}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
    return await response.json() as {ok:boolean;error_code?:number};
   };
-  let result=await send('sendPhoto',{chat_id:chat.id,photo:WELCOME_PHOTO,caption:WELCOME_CAPTION,parse_mode:'HTML',reply_markup:keyboard});
+  let result:{ok:boolean;error_code?:number};
+  if(command==='reset'){
+   // Complete the reset and its receipt atomically. A retried message cannot erase a new run.
+   await env.DB.batch([
+    env.DB.prepare('UPDATE progress SET completed=0, updated_at=CURRENT_TIMESTAMP WHERE user_id=?').bind(String(chat.id)),
+    env.DB.prepare("UPDATE bot_updates SET state='sent',touched_at=? WHERE update_id=?").bind(now,id),
+   ]);
+   result=await send('sendMessage',{chat_id:chat.id,text:'🔄 <b>Твой прогресс сброшен.</b>\n\nСнова открыта первая глава. Закрой игру, если она запущена, и нажми «🎮 Старт», чтобы начать сначала.',parse_mode:'HTML',reply_markup:keyboard});
+  }else result=await send('sendPhoto',{chat_id:chat.id,photo:WELCOME_PHOTO,caption:WELCOME_CAPTION,parse_mode:'HTML',reply_markup:keyboard});
   // The launch button still works if Telegram cannot fetch the cover.
-  if(!result.ok&&result.error_code===400)result=await send('sendMessage',{chat_id:chat.id,text:WELCOME_CAPTION,parse_mode:'HTML',reply_markup:keyboard});
+  if(command!=='reset'&&!result.ok&&result.error_code===400)result=await send('sendMessage',{chat_id:chat.id,text:WELCOME_CAPTION,parse_mode:'HTML',reply_markup:keyboard});
   if(!result.ok&&result.error_code!==403)throw new Error('Delivery failed');
   await env.DB.prepare("UPDATE bot_updates SET state='sent',touched_at=? WHERE update_id=?").bind(now,id).run();
   await env.DB.prepare("DELETE FROM bot_updates WHERE state='sent' AND touched_at<?").bind(now-7*86400).run();

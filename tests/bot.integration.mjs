@@ -19,5 +19,14 @@ try{
  await entered;assert.equal((await botWebhook(request(2),env,transport)).status,503);release();await pending;assert.equal(sent,2);
  await DB.prepare("INSERT INTO bot_updates VALUES (3,'pending',0)").run();assert.equal((await botWebhook(request(3),env,transport)).status,200);assert.equal(sent,3);
  assert.equal((await DB.prepare("SELECT count(*) AS n FROM bot_updates WHERE state='sent'").first()).n,3);
+ await DB.prepare(await readFile('migrations/0001_progress.sql','utf8')).run();
+ await DB.prepare("INSERT INTO progress(user_id,completed) VALUES ('42',7),('43',5)").run();
+ const reset=()=>new Request('https://test/api/telegram/webhook',{method:'POST',headers:{'X-Telegram-Bot-Api-Secret-Token':secret},body:JSON.stringify({update_id:4,message:{text:'/reset 43',chat:{type:'private',id:42}}})});
+ assert.equal((await botWebhook(reset(),env,transport)).status,200);
+ assert.equal((await DB.prepare("SELECT completed FROM progress WHERE user_id='42'").first()).completed,0);
+ assert.equal((await DB.prepare("SELECT completed FROM progress WHERE user_id='43'").first()).completed,5);
+ await DB.prepare("UPDATE progress SET completed=1 WHERE user_id='42'").run();
+ assert.equal((await botWebhook(reset(),env,transport)).status,200);
+ assert.equal((await DB.prepare("SELECT completed FROM progress WHERE user_id='42'").first()).completed,1,'duplicate reset cannot erase the new run');
  console.log('PASS: real D1 migration, authenticated route, greeting persistence, duplicate/concurrent delivery, expired lease retry; no Telegram messages sent');
 }finally{await mf.dispose()}

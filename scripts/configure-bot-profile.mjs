@@ -18,7 +18,7 @@ for(const language_code of ['','ru']){
  await api('setMyDescription',{description:BOT_DESCRIPTION,language_code});
  await api('setMyShortDescription',{short_description:BOT_SHORT_DESCRIPTION,language_code});
 }
-await api('setMyCommands',{commands:[{command:'start',description:'🎂 Открыть именинное приключение'},{command:'help',description:'🎮 Как начать играть'}]});
+await api('setMyCommands',{commands:[{command:'start',description:'🎂 Открыть именинное приключение'},{command:'help',description:'🎮 Как начать играть'},{command:'reset',description:'🔄 Сбросить свой прогресс и начать сначала'}]});
 await api('setWebhook',{url:webhook,secret_token:await webhookSecret(token),allowed_updates:['message']});
 const [description,short,configured]=await Promise.all([api('getMyDescription'),api('getMyShortDescription'),api('getWebhookInfo')]);
 if(description.description!==BOT_DESCRIPTION||short.short_description!==BOT_SHORT_DESCRIPTION||configured.url!==webhook)throw new Error('Bot profile verification failed');
