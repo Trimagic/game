@@ -28,15 +28,15 @@ export function ShopBrief({ onContinue, onComic }: { onContinue: () => void; onC
   return <section className="paper-panel bike-intro market-brief" aria-labelledby="shop-brief-title">
     <header className="bike-intro-heading"><span className="eyebrow">03 / ПРАВИЛЬНАЯ ЗАКУПКА</span><span className="bike-intro-step">Как играть · 1/2</span></header>
     <h1 id="shop-brief-title">Лови продукты.<br/><em>Не ведись на обёртку.</em></h1>
-    <p className="bike-intro-lead">Собери все списки и уложись в бюджет.</p>
-    <dl className="bike-ride-stats" aria-label="Условия закупки"><div><dt>Списков</dt><dd>{LEVELS.length}</dd></div><div><dt>На всю игру</dt><dd>3 <small>♥</small></dd></div><div><dt>Монет на список</dt><dd>25–35</dd></div></dl>
+    <p className="bike-intro-lead">Три раунда. В каждом — новый список и свой бюджет.</p>
+    <dl className="bike-ride-stats" aria-label="Условия закупки"><div><dt>Раундов</dt><dd>{LEVELS.length}</dd></div><div><dt>На всю игру</dt><dd>3 <small>♥</small></dd></div><div><dt>Монет на раунд</dt><dd>25–35</dd></div></dl>
     <ul className="bike-quick-rules">
       <li><span className="bike-rule-icon" aria-hidden="true">↔</span><div><strong>Веди тележку за нужным.</strong><p>Веди пальцем по полю или держи ← →. Лови по списку.</p></div></li>
-      <li><span className="bike-rule-icon" aria-hidden="true">!</span><div><strong>Сверяй срок и цену.</strong><p>Лишнее, просрочка и нехватка денег — минус жизнь.</p></div></li>
+      <li><span className="bike-rule-icon" aria-hidden="true">!</span><div><strong>Повтор — тоже покупка.</strong><p>Уже есть в тележке? Пропусти. За повтор снова спишутся монеты. Превысишь бюджет — проиграешь.</p></div></li>
       <li><span className="bike-rule-icon" aria-hidden="true">↗</span><div><strong>Защищай покупки.</strong><p>Вор рядом? Толкни его тележкой на скорости. Арбуз заклинит колёса.</p></div></li>
     </ul>
-    <div className="bike-pickup-tip"><span aria-hidden="true">★</span><p><strong>Быстро и экономно — больше очков.</strong><br/>Таймер вышел: −♥ и ещё 15 сек.</p></div>
-    <details className="bike-facts-sources market-extra-rules"><summary>Скидки, списки и медали</summary><p>{LEVELS.map(item => `${item.name} — ${item.budget} мон.`).join(' · ')}. Цены игровые. Дешёвая копия по акции заменяет дорогую. Медали дают по 40 очков: без потери жизней, за две покупки по акции, все списки за 110 секунд или серию из 10 нужных продуктов.</p></details>
+    <div className="bike-pickup-tip"><span aria-hidden="true">★</span><p><strong>Быстро и экономно — больше очков.</strong><br/>Просрочка и товары вне списка: −♥. Таймер вышел: −♥ и ещё 15 сек.</p></div>
+    <details className="bike-facts-sources market-extra-rules"><summary>Скидки, раунды и медали</summary><p>{LEVELS.map(item => `${item.name} — ${item.budget} мон.`).join(' · ')}. Цены игровые. Скидка уменьшает цену, но повтор всё равно оплачивается и не заменяет старую покупку. Новый раунд обнуляет покупки и расходы. Медали дают по 40 очков: без ошибок, за две нужные покупки по акции, три раунда за 90 секунд или серию из 10 нужных продуктов.</p></details>
     <div className="bike-intro-actions"><button className="full-button" onClick={onContinue}>Дальше: читаем этикетку →</button><button className="text-button" onClick={onComic}>Перечитать комикс</button></div>
   </section>;
 }

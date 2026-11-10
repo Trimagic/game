@@ -5,7 +5,7 @@ import SceneBase from '../arcade/SceneBase';
 import type {ArcadeEvents} from '../arcade/types';
 import {recipe} from './model';
 import {saveBest} from '../best';
-import {aim,cartCost,cartInitial,cartRating,goods as products,hold,level,LEVELS,tickCart,CART_HALF,CART_Y,MEDAL_POINTS,SPAWN_Y,WIDTH} from './cart';
+import {aim,cartCost,cartInitial,cartRating,goods as products,hold,level,LEVELS,tickCart,CART_HALF,CART_Y,MEDAL_POINTS,SPAWN_Y,WIDTH,type CartState} from './cart';
 const frames=[[0,70,405,400],[410,40,330,455],[745,45,405,435],[1150,60,385,420],[65,490,215,480],[350,550,405,410],[770,530,380,405],[1165,535,371,440]];
 const keys:Record<string,number>={ArrowLeft:-1,KeyA:-1,ArrowRight:1,KeyD:1};
 export default class ShopScene extends SceneBase{
@@ -14,10 +14,10 @@ export default class ShopScene extends SceneBase{
  private header!:Phaser.GameObjects.Text;private budget!:Phaser.GameObjects.Text;private chips:Phaser.GameObjects.Text[]=[];
  private cartBody!:Phaser.GameObjects.Container;private cartLoad!:Phaser.GameObjects.Text;private banner!:Phaser.GameObjects.Text;
  private sprites=new Map<number,Phaser.GameObjects.Container>();private thief?:Phaser.GameObjects.Container;private thiefLoot?:Phaser.GameObjects.Image;private thiefMark?:Phaser.GameObjects.Text;private held=new Set<string>();private drag:{id:number;x:number;cart:number}|null=null;private lane!:Phaser.GameObjects.Rectangle;
- constructor(events:ArcadeEvents){super('belt',events);}
+ constructor(events:ArcadeEvents,initialState?:CartState){super('belt',events);if(initialState)this.model=initialState;}
  preload(){this.load.image('products','/art/chapter-03-products.png');this.load.on('loaderror',this.bridge.error);}
  create(){if(!this.textures.exists('products'))return;frames.forEach(([x,y,w,h],i)=>this.textures.get('products').add(i,0,x,y,w,h));this.makeExtras();
-  this.view={title:'Лови будущий ужин!',detail:'Список сверху. Лови нужное, следи за бюджетом и пропускай просрочку. Полки уже шевелятся. Готов?',status:'ready',actions:[]};
+  this.view={title:'Три раунда. Ни одной лишней покупки!',detail:'Список сверху. Каждый пойманный товар из списка оплачивается — даже повтор. Превысишь бюджет — проиграешь. Новый раунд начинается с нового бюджета. Готов?',status:'ready',actions:[]};
   this.setup();this.drawStatic();
   // Drag works like a touchpad anywhere on the board, so the finger never hides the cart.
   this.input.on('pointerdown',(p:Phaser.Input.Pointer)=>{if(!this.running)return;this.held.clear();this.drag={id:p.id,x:p.x,cart:this.model.cartX};});
@@ -63,10 +63,11 @@ export default class ShopScene extends SceneBase{
  }
  private refreshHud(){
   const s=this.model,lv=level(s);
-  this.header.setText(`${s.level+1}/${LEVELS.length} · ${lv.name.toUpperCase()}   ${Math.max(0,Math.ceil((lv.ms-s.levelTime)/1000))} С   ★ ${s.score}\n${'♥'.repeat(Math.max(0,s.lives))}${'♡'.repeat(Math.max(0,3-s.lives))}   СЕРИЯ ${s.combo}`);
+  this.header.setText(`РАУНД ${s.level+1}/${LEVELS.length} · ${lv.name.toUpperCase()}   ${Math.max(0,Math.ceil((lv.ms-s.levelTime)/1000))} С\n${'♥'.repeat(Math.max(0,s.lives))}${'♡'.repeat(Math.max(0,3-s.lives))}   СЕРИЯ ${s.combo}   ★ ${s.score}`);
   lv.list.forEach((key,i)=>{const got=s.cart.some(p=>products[p.product].key===key);const name=recipe.find(r=>r.key===key)!.name;this.chips[i]?.setText(`${got?'✓':'○'} ${name}`).setColor(got?'#286b56':'#293a34');});
   const cost=cartCost(s);this.budget.setText(`${cost} / ${lv.budget}`).setColor(cost>lv.budget-4?'#ac412c':'#293a34');
-  this.cartLoad.setText(`${s.cart.length} / ${lv.list.length}`);
+  const collected=lv.list.filter(key=>s.cart.some(p=>products[p.product].key===key)).length;
+  this.cartLoad.setText(`${collected}/${lv.list.length} · ${s.cart.length} шт.`);
  }
  private syncItems(){
   const live=new Set(this.model.items.map(i=>i.id));
@@ -76,11 +77,15 @@ export default class ShopScene extends SceneBase{
    if(!c){
     const p=products[item.product];const image=p.icon>=8?this.add.image(0,0,'extra'+p.icon):this.add.image(0,0,'products',p.icon);image.setScale(Math.min(58/image.width,62/image.height));
     const parts:Phaser.GameObjects.GameObject[]=[image];
+    parts.push(this.add.text(0,36,`${item.sale?Math.ceil(p.price/2):p.price} мон.`,{fontFamily:'Arial',fontSize:'11px',fontStyle:'bold',color:'#293a34',backgroundColor:'#fff7e3',padding:{x:3,y:1},resolution:2}).setOrigin(.5));
+    const duplicate=this.add.text(0,-51,'УЖЕ ЕСТЬ',{fontFamily:'Arial',fontSize:'10px',fontStyle:'bold',color:'#fff7e3',backgroundColor:'#a64630',padding:{x:3,y:2},resolution:2}).setOrigin(.5);parts.push(duplicate);
     if(item.sale)parts.push(this.add.text(0,-34,'−50%',{fontFamily:'Arial',fontSize:'12px',fontStyle:'bold',color:'#fff7e3',backgroundColor:'#c4552d',padding:{x:4,y:1},resolution:2}).setOrigin(.5));
     if(item.expired)parts.push(this.add.text(0,4,'ПРОСРОЧЕНО',{fontFamily:'Arial',fontSize:'11px',fontStyle:'bold',color:'#c4302b',backgroundColor:'#fff7e3dd',padding:{x:3,y:1},resolution:2}).setOrigin(.5).setAngle(-18));
-    c=this.add.container(item.x,item.y,parts).setDepth(10);this.sprites.set(item.id,c);
+    c=this.add.container(item.x,item.y,parts).setDepth(10).setData('duplicate',duplicate);this.sprites.set(item.id,c);
    }
    c.setPosition(item.x,item.y).setAngle(this.reduced?0:Math.sin((item.y+item.id*40)/40)*8);
+   const p=products[item.product];const duplicate=(level(this.model).list as readonly string[]).includes(p.key)&&this.model.cart.some(entry=>products[entry.product].key===p.key);
+   (c.getData('duplicate') as Phaser.GameObjects.Text).setVisible(!item.expired&&duplicate);
   }
  }
  /** The thief walks at the cart's height and runs off with whatever he took. */
@@ -99,19 +104,21 @@ export default class ShopScene extends SceneBase{
    if(e.type==='steal'){sound.fx('alarm');this.pop(Math.max(80,Math.min(WIDTH-80,e.x)),CART_Y-70,e.label,'#aa4933',false);if(!this.reduced)this.cameras.main.shake(140,.006);continue;}
    if(e.type==='shoo'){sound.fx('crash');this.pop(Math.max(80,Math.min(WIDTH-80,e.x)),CART_Y-70,e.label,'#286b56',false);continue;}
    if(e.type==='heavy'){sound.fx('thud');if(!this.reduced)this.cameras.main.shake(220,.01);}
-   const bad=e.type==='slip'||e.type==='timeout';if(bad)haptics.cue('error');
+   const bad=e.type==='slip'||e.type==='timeout'||e.type==='over'||e.type==='dup';if(bad)haptics.cue('error');
+   if(e.type==='over')sound.fx('alarm');
    if(e.type==='clear'){sound.fx('powerup');this.flash(e.label);continue;}if(e.type==='dup')sound.fx('buzz');
-   this.pop(Math.max(60,Math.min(WIDTH-60,e.x)),CART_Y-60,e.type==='slip'?'МИНУС ЖИЗНЬ':e.label,bad?'#aa4933':e.type==='swap'?'#9b5725':'#286b56',e.type!=='dup');
+   this.pop(Math.max(60,Math.min(WIDTH-60,e.x)),CART_Y-60,e.type==='slip'?'МИНУС ЖИЗНЬ':e.label,bad?'#aa4933':'#286b56',e.type!=='dup'&&e.type!=='over');
    if(bad&&!this.reduced)this.cameras.main.shake(140,.006);
   }
  }
  private flash(label:string){this.banner.setText(label).setVisible(true).setAlpha(1);this.tweens.killTweensOf(this.banner);this.tweens.add({targets:this.banner,alpha:0,delay:1200,duration:400,onComplete:()=>this.banner.setVisible(false)});}
- private result(){const s=this.model;if(s.status==='lost'){this.finish(false,'Магазин закрылся. Ужин — не весь.',`Дошёл до списка «${level(s).name}». Лови только то, что в списке, следи за бюджетом и не хватай просрочку. Дешёвая копия по акции спасает от перерасхода.`);return;}
+ private result(){const s=this.model;if(s.status==='lost'){const over=cartCost(s)>level(s).budget;this.finish(false,over?'Бюджет превышен!':'Магазин закрылся. Ужин — не весь.',over?`${s.notice} Раунд ${s.level+1}/${LEVELS.length}. Лови каждый продукт только один раз: повторы оплачиваются, даже со скидкой.`:`Раунд ${s.level+1}/${LEVELS.length} «${level(s).name}». Лови по списку, пропускай просрочку и лишние товары. Повторы тратят бюджет.`);return;}
   const saved=saveBest('shop-best',s.score),stars=cartRating(s);
-  this.finish(true,`${'★'.repeat(stars)}${'☆'.repeat(3-stars)} Всё куплено! ${s.score} очков`,`Все списки за ${(s.cleared.reduce((n,c)=>n+c.time,0)/1000).toFixed(0)} с, жизней осталось ${s.lives}, лучшая серия ${s.best}. ${s.medals.length?'Медали: '+s.medals.join(', ')+' (+'+s.medals.length*MEDAL_POINTS+'). ':'Медали: без промахов, две акции, все списки за 110 с, серия из 10. '}${saved.record?'Новый личный рекорд!':'Рекорд: '+saved.best+'.'}`);}
- protected sync(){const s=this.model,lv=level(s);this.view={status:'playing',title:`Список ${s.level+1}/${LEVELS.length} «${lv.name}» · ${cartCost(s)} / ${lv.budget} монет · ★ ${s.score}`,detail:s.notice,actions:[]};this.bridge.publish(this.view);}
+  this.finish(true,`${'★'.repeat(stars)}${'☆'.repeat(3-stars)} Три раунда пройдены! ${s.score} очков`,`Все списки за ${(s.cleared.reduce((n,c)=>n+c.time,0)/1000).toFixed(0)} с, жизней осталось ${s.lives}, лучшая серия ${s.best}. ${s.medals.length?'Медали: '+s.medals.join(', ')+' (+'+s.medals.length*MEDAL_POINTS+'). ':'Медали: без промахов, две акции, все списки за 90 с, серия из 10. '}${saved.record?'Новый личный рекорд!':'Рекорд: '+saved.best+'.'}`);}
+ protected sync(){const s=this.model,lv=level(s);this.view={status:'playing',title:`Раунд ${s.level+1}/${LEVELS.length} «${lv.name}» · ${cartCost(s)} / ${lv.budget} монет · ★ ${s.score}`,detail:s.notice,actions:[]};this.bridge.publish(this.view);}
  update(_time:number,delta:number){
   if(!this.running)return;
+  if(delta>500){this.pause();return;}
   const before=this.model;this.model=tickCart(this.model,Math.min(50,delta));
   // The last seconds of a list count down out loud.
   const left=Math.ceil((level(this.model).ms-this.model.levelTime)/1000);if(left<=5&&left>0&&left!==this.countdown){this.countdown=left;sound.fx('warn');}

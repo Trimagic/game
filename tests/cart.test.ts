@@ -8,7 +8,7 @@ const drop=(s:CartState,product:number,extra:Partial<Item>={}):CartState=>({...s
 const step=(s:CartState,ms=50)=>tickCart(s,ms,()=>.99);
 
 // A careful player: chase useful items, sidestep bad ones about to land.
-function good(s:CartState,item:Item){const p=products[item.product];const lv=level(s);if(item.expired||!(lv.list as readonly string[]).includes(p.key))return false;const owned=have(s,p.key);const price=item.sale?Math.ceil(p.price/2):p.price;const rest=missing(s).filter(k=>k!==p.key).reduce((n,k)=>n+products.find(q=>q.key===k)!.price,0);return owned?price<(owned.price??p.price):cartCost(s)+price+rest<=lv.budget;}
+function good(s:CartState,item:Item){const p=products[item.product];const lv=level(s);if(item.expired||!(lv.list as readonly string[]).includes(p.key))return false;const owned=have(s,p.key);const price=item.sale?Math.ceil(p.price/2):p.price;const rest=missing(s).filter(k=>k!==p.key).reduce((n,k)=>n+products.find(q=>q.key===k)!.price,0);return !owned&&cartCost(s)+price+rest<=lv.budget;}
 function bot(s:CartState){
  // It reads the sway too: where an item will land, bouncing off the walls, not where it is now.
  const land=(i:Item)=>{let x=i.x+(i.vx??0)*(CART_Y-12-i.y)/i.speed;for(let k=0;k<3;k++){if(x<30)x=60-x;if(x>WIDTH-30)x=2*(WIDTH-30)-x;}return {...i,x};};
@@ -22,7 +22,8 @@ function bot(s:CartState){
 }
 function play(seed:number,every=1){const random=rng(seed);let s=cartInitial();for(let i=0;i<4000&&s.status==='playing';i++){if(i%every===0)s=bot(s);s=tickCart(s,50,random);}return s;}
 
-test('levels fit their budgets and grow harder',()=>{
+test('exactly three rounds fit their budgets and grow harder',()=>{
+ assert.equal(LEVELS.length,3);
  for(const lv of LEVELS){const cost=lv.list.reduce((n,k)=>n+products.find(p=>p.key===k)!.price,0);assert.ok(cost<=lv.budget,lv.name);}
  assert.ok(LEVELS.every(l=>(CART_Y-100)/(l.fall*1.15)>=2.4),'every item stays in the air for a few seconds');
  for(let i=1;i<LEVELS.length;i++){assert.ok(LEVELS[i].fall>LEVELS[i-1].fall);assert.ok(LEVELS[i].list.length>=LEVELS[i-1].list.length);}
@@ -31,20 +32,44 @@ test('the cart follows the aim and keys, staying on screen',()=>{
  let s=aim(cartInitial(),9999);for(let i=0;i<40;i++)s=step(s);assert.equal(s.cartX,WIDTH-CART_HALF);
  s=hold(s,-1);for(let i=0;i<40;i++)s=step(s);assert.equal(s.cartX,CART_HALF);assert.equal(s.target,null);
 });
-test('catching listed items scores a streak; decoys, expired and overspending cost a life',()=>{
+test('catching listed items scores a streak; decoys/expired cost a life and overspending loses',()=>{
  let s=step(drop(cartInitial(),0));assert.equal(s.cart.length,1);assert.equal(s.combo,1);assert.equal(s.score,15);
  const decoy=step(drop(s,5));assert.equal(decoy.lives,2);assert.equal(decoy.combo,0);assert.equal(decoy.cart.length,1);
  const old=step(drop(s,1,{expired:true}));assert.equal(old.lives,2);assert.equal(old.cart.length,1);
- const pricey=step(drop(step(drop(s,6)),2));assert.equal(pricey.cart.length,2);assert.equal(pricey.lives,2,'12+11+6 is over 25');
+ const pricey=step(drop(step(drop(s,6)),2));assert.equal(pricey.cart.length,3);assert.equal(pricey.status,'lost');assert.equal(cartCost(pricey),29,'12+11+6 is over 25');
  const off=step({...s,items:[{id:5,product:5,x:s.cartX+CART_HALF+20,y:CART_Y-14,sale:false,expired:false,speed:100}]});assert.equal(off.lives,3);
 });
-test('a cheaper copy swaps in and duplicates are harmless',()=>{
- let s=step(drop(cartInitial(),0));const dup=step(drop(s,0));assert.equal(dup.cart.length,1);assert.equal(dup.lives,3);
- s=step(drop(s,0,{sale:true}));assert.equal(cartCost(s),6);assert.equal(s.deals,1);assert.equal(s.combo,2);
+test('duplicates are paid purchases, including discounted copies; overspending ends the attempt',()=>{
+ const s=step(drop(cartInitial(),0));const dup=step(drop(s,0));
+ assert.equal(dup.cart.length,2);assert.equal(cartCost(dup),24);assert.equal(dup.lives,3);assert.equal(dup.combo,0);assert.equal(dup.score,s.score);assert.equal(dup.events[0].type,'dup');
+ const sale=step(drop(s,0,{sale:true}));assert.equal(sale.cart.length,2);assert.equal(cartCost(sale),18);assert.equal(sale.deals,0,'duplicates do not earn useful-sale medals');
+ const lost=step(drop(dup,1));assert.equal(cartCost(lost),28);assert.equal(lost.status,'lost');assert.equal(lost.lives,3,'budget loss is independent of hearts');assert.equal(lost.events[0].type,'over');assert.deepEqual(tickCart(lost,50),lost);
 });
+
+test('a last missing item cannot win when paid repeats already exhausted the budget',()=>{
+ let s=cartInitial();for(const p of [0,1,1])s=step(drop(s,p));assert.equal(cartCost(s),20);
+ s=step(drop(s,2));assert.equal(s.status,'lost');assert.equal(cartCost(s),26);assert.equal(s.cleared.length,0);
+});
+
+test('all three rounds advance once, clear old falling items and win only after the final list',()=>{
+ let s=cartInitial();
+ for(let round=0;round<3;round++){
+  s={...s,breakMs:0};assert.equal(s.level,round);
+  for(const key of LEVELS[round].list)s=step(drop(s,products.findIndex(p=>p.key===key)));
+  assert.equal(s.cleared.length,round+1);assert.equal(s.status,round===2?'won':'playing');
+  if(round<2){assert.equal(s.cart.length,0);assert.equal(cartCost(s),0);assert.equal(s.items.length,0);}
+ }
+ assert.deepEqual(tickCart(s,50),s);
+});
+
+test('multiple catches cannot overwrite a budget loss in the same frame',()=>{
+ let s=step(drop(cartInitial(),0));s=step(drop(s,0));
+ const failed=step(drop(drop(s,1),2));assert.equal(failed.status,'lost');assert.equal(failed.cleared.length,0);assert.equal(cartCost(failed),28);
+});
+
 test('finishing a list moves to the next level after a short break; the last list wins with medals',()=>{
  let s=cartInitial();for(const p of [0,1,2])s=step(drop(s,p));
- assert.equal(s.level,1);assert.equal(s.cart.length,0);assert.ok(s.breakMs>0);assert.equal(s.cleared.length,1);
+ assert.equal(s.level,1);assert.equal(s.cart.length,0);assert.ok(s.breakMs>0);assert.equal(s.cleared.length,1);assert.equal(cartCost(s),0);
  const items=s.items.length;s=step(s);assert.equal(s.items.length,items);
  s={...s,level:LEVELS.length-1,breakMs:0,best:12,deals:2};for(const k of LEVELS.at(-1)!.list)s=step(drop(s,products.findIndex(p=>p.key===k)));
  assert.equal(s.status,'won');assert.deepEqual(s.medals,['Железная воля','Охотник за скидками','Спринтер','Ловкие руки']);assert.ok(s.score>=4*MEDAL_POINTS);
@@ -54,7 +79,7 @@ test('running out of time costs a life and extends the level; three slips lose',
  let lost={...cartInitial(),lives:1};lost=step(drop(lost,7));assert.equal(lost.status,'lost');assert.deepEqual(tickCart(lost,50),lost);
 });
 test('spawns favour missing items and every level can be finished by a careful player',()=>{
- // Four lists with many decoys are meant to be hard: a careful player wins most runs, not all of them.
+ // Three rounds with many decoys are meant to be hard: a careful player wins most runs, not all of them.
  const careful=[1,2,3,5,8,13,21,34].map(seed=>play(seed));const won=careful.filter(s=>s.status==='won');
  assert.ok(won.length>=6,`careful wins ${won.length} of 8`);assert.ok(won.every(s=>cartRating(s)>=2),'a careful win earns at least two stars');assert.ok(won.filter(s=>cartRating(s)===3).length>=3);
  // A player who reacts only once a second rarely earns three stars.
@@ -69,7 +94,7 @@ test('items touching the cart edge are caught; a melon jams the cart',()=>{
 test('the thief waits for a full cart, steals the last item, and is chased off by a rammed cart',()=>{
  let s:CartState={...cartInitial(),levelTime:THIEF.first[0]-10,nextThief:THIEF.first[0]};s=step(s);assert.equal(s.thief,null,'nothing to steal yet');
  s=step(drop({...s,nextThief:0},0));assert.equal(s.cart.length,1);s=step({...s,nextThief:0});assert.ok(s.thief);assert.equal(s.thief!.phase,'warn');
- let quiet=s;for(let i=0;i<200&&quiet.thief?.phase!=='flee';i++)quiet=step(hold(quiet,0));assert.equal(quiet.cart.length,0,'took the item');assert.equal(quiet.stolen,1);assert.notEqual(quiet.thief!.loot,null);
+ let quiet=s;for(let i=0;i<200&&quiet.thief?.phase!=='flee';i++)quiet=step(hold(quiet,0));assert.equal(quiet.cart.length,0,'took the item');assert.equal(quiet.stolen,1);assert.equal(cartCost(quiet),0,'stolen goods leave the basket budget');assert.notEqual(quiet.thief!.loot,null);
  let rammed=s;for(let i=0;i<200&&rammed.thief?.phase!=='flee';i++){const t=rammed.thief!;rammed=step(t.phase==='walk'&&Math.abs(t.x-rammed.cartX)<150?aim(rammed,t.x+Math.sign(t.x-rammed.cartX)*300):hold(rammed,0));}
  assert.equal(rammed.cart.length,1,'nothing taken');assert.equal(rammed.shooed,1);
  for(let i=0;i<100&&rammed.thief;i++)rammed=step(rammed);assert.equal(rammed.thief,null);assert.ok(rammed.nextThief>rammed.levelTime);
