@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 215" role="img" aria-labelledby="title">
+ <title id="title">Ещё один годик</title>
+ <defs>
+  <!-- Hand-drawn block lettering. All letters are paths, independent of fonts. -->
+  <path id="e" d="M0 0H40V12H14V23H36V35H14V48H41V60H0Z"/>
+  <path id="sh" d="M0 0H12V47H23V0H35V47H46V0H58V47H64V68H52V60H0Z"/>
+  <g id="yo"><use href="#e"/><path d="M5-18H17V-7H5ZM25-18H37V-7H25Z"/></g>
+  <path id="o" fill-rule="evenodd" d="M10 0H36L46 10V50L36 60H10L0 50V10ZM15 13V47H31V13Z"/>
+  <path id="d" fill-rule="evenodd" d="M11 0H45V47H52V70H39V60H13V70H0V47H5L11 28ZM24 13 20 47H31V13Z"/>
+  <path id="i" d="M0 0H14V35L32 0H46V60H32V25L14 60H0Z"/>
+  <path id="n" d="M0 0H14V23H32V0H46V60H32V37H14V60H0Z"/>
+  <path id="g" d="M0 0H43V14H15V60H0Z"/>
+  <path id="k" d="M0 0H14V23H20L33 0H49L31 29 51 60H34L20 37H14V60H0Z"/>
+  <g id="letters">
+   <g transform="translate(28 41) scale(.68)" fill="#fff3ce">
+    <use href="#e"/><use href="#sh" x="51"/><use href="#yo" x="125"/><use href="#o" x="197"/><use href="#d" x="253"/><use href="#i" x="315"/><use href="#n" x="371"/>
+   </g>
+   <g transform="translate(28 106) scale(1.22)" fill="#ed7945">
+    <use href="#g"/><use href="#o" x="53"/><use href="#d" x="109"/><use href="#i" x="171"/><use href="#k" x="227"/>
+   </g>
+  </g>
+ </defs>
+ <path d="m17 22 18-6 12 2M347 92l18-8m-12 20 24 2M10 144l-7 9m9 6-9 2" fill="none" stroke="#c98a3c" stroke-width="4" stroke-linecap="round"/>
+ <g transform="rotate(-3 200 105)">
+  <use href="#letters" transform="translate(4 7)" stroke="#263e38" stroke-width="9" stroke-linejoin="round"/>
+  <use href="#letters" stroke="#263e38" stroke-width="5" stroke-linejoin="round" paint-order="stroke fill"/>
+  <path d="M33 117h28m42 0h19m49 0h24m48 0h19m49 0h15" fill="none" stroke="#ffd28b" stroke-width="4" stroke-linecap="round"/>
+ </g>
+ <path d="m366 155 5 13 14 4-14 5-5 14-5-14-13-5 13-4Z" fill="#e7b74e" stroke="#263e38" stroke-width="2.5"/>
+ <path d="M37 201q151 11 301-5" fill="none" stroke="#2d7069" stroke-width="5" stroke-linecap="round"/>
+</svg>

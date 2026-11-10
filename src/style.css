@@ -87,3 +87,5 @@
 .wordmark.game-wordmark>strong{font-size:24px;color:#c4552d;white-space:nowrap}
 footer .game-wordmark>span{font-size:7px;letter-spacing:.6px}
 footer .game-wordmark>strong{font-size:16px}
+
+.wordmark.game-wordmark:has(>img){display:block;padding:0;background:transparent;box-shadow:none;border:0;line-height:0;transform:none}.game-wordmark>img{display:block;width:95px;height:auto}footer .game-wordmark>img{width:70px}

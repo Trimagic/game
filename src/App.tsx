@@ -66,7 +66,7 @@ export default function App({initialChapter}:{initialChapter?:1|2|3|4|5|6|7|8|9|
     finally { saving.current = false; setBusy(false); }
   }
   return <main className={screen === 'game' ? 'playing-page' : ''}>
-    <nav className="masthead"><button className="wordmark game-wordmark" onClick={exit}><span>ЕЩЁ ОДИН</span><strong>ГОДИК</strong></button><span>ИНТЕРАКТИВНЫЙ<br/>ИМЕНИННЫЙ КВЕСТ</span><span className="issue">ВЫПУСК {String(chapter).padStart(2, '0')}</span></nav>
+    <nav className="masthead"><button className="wordmark game-wordmark" onClick={exit}><img src="/art/game-logo.svg" alt="Ещё один годик"/></button><span>ИНТЕРАКТИВНЫЙ<br/>ИМЕНИННЫЙ КВЕСТ</span><span className="issue">ВЫПУСК 28</span></nav>
     {error && <div role="alert" className="error">{error}{!loaded && <button onClick={() => void load()} disabled={busy}>Повторить</button>}</div>}
     {screen === 'map' && <MainMenu completed={completed} busy={busy || !loaded} isTelegram={isTelegram} onOpen={openChapter}/>}
     {screen === 'comic' && chapter === 1 && <BikeComic onContinue={() => setScreen('brief')} onExit={exit}/>}
@@ -95,7 +95,7 @@ export default function App({initialChapter}:{initialChapter?:1|2|3|4|5|6|7|8|9|
     {screen === 'facts' && chapter === 1 && <BikeFacts onContinue={() => setScreen('game')} onBack={() => setScreen('brief')}/>}
     {screen === 'game' && (chapter === 11 ? <NightChapter onComplete={() => void save()} onExit={exit} busy={busy}/> : chapter === 10 ? <DeliveryChapter onComplete={() => void save()} onExit={exit} busy={busy}/> : chapter === 9 ? <RemoteChapter onComplete={() => void save()} onExit={exit} busy={busy}/> : chapter === 8 ? <ScheduleGame onWin={win} onExit={exit}/> : chapter === 7 ? <RunGame onWin={win} onExit={exit}/> : chapter === 6 ? <SleepGame onWin={win} onExit={exit}/> : chapter === 5 ? <GymGame onWin={win} onExit={exit}/> : chapter === 4 ? <CookGame onWin={win} onExit={exit}/> : chapter === 3 ? <ShopGame onWin={win} onExit={exit}/> : chapter === 2 ? <PoolGame onWin={win} onExit={exit}/> : <Game onWin={win} onExit={exit}/>)}
     {screen === 'win' && <section className="chapter-transition" aria-live="polite"><span className="eyebrow">ГЛАВА {String(chapter).padStart(2,'0')}</span><h1>{busy?'Есть! Двигаемся дальше…':'Сохраним твою победу'}</h1><p>{busy?'Сохраняем результат и открываем следующую страницу.':'Не удалось сохранить результат. Повтори — проходить задание заново не нужно.'}</p>{!busy && <button onClick={()=>void save()}>Повторить сохранение →</button>}</section>}
-    {screen !== 'game' && <footer><b className="wordmark game-wordmark"><span>ЕЩЁ ОДИН</span><strong>ГОДИК</strong></b><span>ПРОДОЛЖЕНИЕ СЛЕДУЕТ…</span></footer>}
+    {screen !== 'game' && <footer><b className="wordmark game-wordmark"><img src="/art/game-logo.svg" alt="Ещё один годик"/></b><span>ПРОДОЛЖЕНИЕ СЛЕДУЕТ…</span></footer>}
   </main>;
 }
 
