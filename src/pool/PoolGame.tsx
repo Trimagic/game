@@ -1,3 +1,4 @@
+import { guardTouches } from '../arcade/touches';
 import {SoundButton,useSound} from '../audio/useSound';
 import {sound} from '../audio/sound';
 import { useEffect, useRef, useState } from 'react';
@@ -17,6 +18,7 @@ export default function PoolGame({ onWin, onExit }: { onWin: () => void; onExit:
   useEffect(() => {
     let disposed = false;
     let game: import('phaser').Game | undefined;
+    const unguard = host.current ? guardTouches(host.current, () => game?.input?.pointers) : () => {};
     setStatus('loading'); setHud({ seconds: 0, lives: 3, boss: false, score: 0, charge: 0, shield: false, dash: true }); setResult(null);
     const clearHold = () => controls.current?.hold(false);
     const hide = () => {
@@ -220,7 +222,7 @@ export default function PoolGame({ onWin, onExit }: { onWin: () => void; onExit:
       game = new Phaser.Game({ type: Phaser.AUTO, parent: host.current!, width: 360, height: 600, backgroundColor: '#5fc7c9', scene: PoolScene, scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH }, input: { activePointers: 2 } });
     }).catch(() => { if (!disposed) setStatus('error'); });
     return () => {
-      disposed = true; controls.current = null; game?.destroy(true);
+      disposed = true; unguard(); controls.current = null; game?.destroy(true);
       window.removeEventListener('blur', clearHold); document.removeEventListener('visibilitychange', hide);
     };
   }, [attempt]);

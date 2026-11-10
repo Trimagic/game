@@ -1,3 +1,4 @@
+import {guardTouches} from '../arcade/touches';
 import {SoundButton,useSound} from '../audio/useSound';
 import { useEffect, useRef, useState } from 'react';
 import { clock, enemyNames, GOAL, initial, sleepRating, stageAt, STAGES, timeBonus, type Direction } from './model';
@@ -18,7 +19,7 @@ export default function SleepGame({onWin,onExit}:{onWin:()=>void;onExit:()=>void
   function pause(){controls.current?.pause();}
   function start(retry=false){controls.current?.start(retry);setMode('playing');}
   useEffect(()=>{
-    let disposed=false;let game:import('phaser').Game|undefined;
+    let disposed=false;let game:import('phaser').Game|undefined;const unguard=host.current?guardTouches(host.current,()=>game?.input?.pointers):()=>{};
     setMode('loading');setView(initial());
     const hide=()=>{if(document.hidden)controls.current?.pause();};
     const blur=()=>controls.current?.pause();
@@ -28,7 +29,7 @@ export default function SleepGame({onWin,onExit}:{onWin:()=>void;onExit:()=>void
       const scene=new SleepScene(s=>{if(!disposed)setView(s);},c=>{if(!disposed){controls.current=c;setMode('ready');}},()=>{if(!disposed)setMode('paused');},()=>{if(!disposed)setMode('error');});
       game=new Phaser.Game({type:Phaser.AUTO,parent:host.current!,width:360,height:360,backgroundColor:'#172735',scene,scale:{mode:Phaser.Scale.FIT,autoCenter:Phaser.Scale.CENTER_BOTH},input:{activePointers:2,keyboard:{capture:[]}},render:{antialias:true}});
     }).catch(()=>{if(!disposed)setMode('error');});
-    return()=>{disposed=true;controls.current=null;game?.destroy(true);window.removeEventListener('blur',blur);document.removeEventListener('visibilitychange',hide);};
+    return()=>{disposed=true;unguard();controls.current=null;game?.destroy(true);window.removeEventListener('blur',blur);document.removeEventListener('visibilitychange',hide);};
   },[attempt]);
   const [record,setRecord]=useState<{best:number;record:boolean}|null>(null);
   useEffect(()=>{if(view.status==='won')setRecord(saveBest('sleep-best',view.points));else if(view.status==='playing')setRecord(null);},[view.status,view.points]);

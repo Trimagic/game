@@ -1,3 +1,4 @@
+import { guardTouches } from './arcade/touches';
 import {SoundButton,useSound} from './audio/useSound';
 import {sound} from './audio/sound';
 import { useEffect, useRef, useState } from 'react';
@@ -21,6 +22,7 @@ export default function Game({ onWin, onExit }: { onWin: () => void; onExit: () 
   useEffect(() => {
     let disposed = false;
     let game: import('phaser').Game | undefined;
+    const unguard = host.current ? guardTouches(host.current, () => game?.input?.pointers) : () => {};
     setState('loading'); setHud({ distance: 0, lives: 3, score: 0, combo: 1, bell: BELLS }); setResult(null);
     void import('phaser').then(({ default: Phaser }) => {
       if (disposed) return;
@@ -269,7 +271,7 @@ export default function Game({ onWin, onExit }: { onWin: () => void; onExit: () 
       }
       game = new Phaser.Game({ type: Phaser.AUTO, parent: host.current!, width: 360, height: 600, backgroundColor: '#ede0bf', scene: BikeScene, scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH }, input: { activePointers: 2 }, render: { antialias: true } });
     }).catch(() => { if (!disposed) setState('error'); });
-    return () => { disposed = true; controls.current = null; game?.destroy(true); };
+    return () => { disposed = true; unguard(); controls.current = null; game?.destroy(true); };
   }, [round]);
   // Buttons act the moment they are touched, not when the finger lifts. A keyboard click has detail 0.
   const steerButton = (direction: number) => ({

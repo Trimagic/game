@@ -9,7 +9,7 @@ import {saveBest} from '../best';
 const colors=[0xffae68,0x83e2d6];
 // Backing track: it follows the phase's own beat, so it can never drift off the notes.
 export default class GymScene extends SceneBase {
- private model=initial(); private elapsed=0; private hudAt=0;
+ private model=initial(); private elapsed=0; private hudAt=0; private frameAt=performance.now();
  private ink!:Phaser.GameObjects.Graphics; private stats!:Phaser.GameObjects.Text;
  private coach!:Phaser.GameObjects.Text; private judgement!:Phaser.GameObjects.Text;
  private sources=[new Set<string>(),new Set<string>()];private pads:Phaser.GameObjects.Rectangle[]=[]; private pointers=new Map<number,Lane>();
@@ -36,7 +36,9 @@ export default class GymScene extends SceneBase {
  /** A finger whose release was lost (left the canvas, cancelled by the app) would hold its hand forever; let it go. */
  private releaseLost(){for(const [id,lane] of [...this.pointers]){const pointer=this.input.manager.pointers.find(q=>q.id===id);if(!pointer||!pointer.isDown){this.pointers.delete(id);this.setSource(lane,'p'+id,false);}}}
  private releasePointer(p:Phaser.Input.Pointer){const lane=this.pointers.get(p.id);if(lane!==undefined){this.pointers.delete(p.id);this.setSource(lane,'p'+p.id,false);}}
- private setSource(lane:Lane,id:string,down:boolean){if(!this.running)return;if(down)haptics.cue('tap');down?this.sources[lane].add(id):this.sources[lane].delete(id);const before=this.model;this.model=input(before,lane,this.sources[lane].size>0,this.elapsed);if(this.model.points>before.points){this.pop(lane?310:110,435,this.model.feedback,this.model.feedback.startsWith('ЕЩЁ')||this.model.feedback==='В ТОЧКУ!'?'#9b5725':'#286b56');if(this.model.fevers>before.fevers){sound.fx('powerup');if(!this.reduced)this.cameras.main.flash(180,255,214,120);}}if(this.model.energy<before.energy&&this.model.status==='playing')sound.fx('buzz');this.paint();this.publishResult();}
+ /** The game clock at this very moment, not at the last frame: a late frame must not make a press late. */
+ private now(){return this.elapsed+Math.min(100,Math.max(0,performance.now()-this.frameAt));}
+ private setSource(lane:Lane,id:string,down:boolean){if(!this.running)return;down?this.sources[lane].add(id):this.sources[lane].delete(id);const before=this.model;this.model=input(before,lane,this.sources[lane].size>0,this.now());if(this.model.points>before.points){this.pop(lane?310:110,435,this.model.feedback,this.model.feedback.startsWith('ЕЩЁ')||this.model.feedback==='В ТОЧКУ!'?'#9b5725':'#286b56');if(this.model.fevers>before.fevers){sound.fx('powerup');if(!this.reduced)this.cameras.main.flash(180,255,214,120);}}if(this.model.energy<before.energy&&this.model.status==='playing')sound.fx('buzz');this.paint();if(this.model.status!=='playing')this.publishResult();}
  protected pause(){this.sources.forEach(s=>s.clear());this.pointers.clear();this.model={...this.model,pressed:[false,false]};super.pause();}
  action(id:string){if(!this.running)return;if(id==='unlock'){sound.unlock();}else if(id==='mute')sound.toggle();else if(id==='wind'){const old=this.model;this.model=secondWind(old);if(this.model!==old){sound.fx('powerup');this.pop(210,330,'ВТОРОЕ ДЫХАНИЕ!','#286b56',false);}}else {const [kind,lane,source]=id.split(':');if(kind==='down'||kind==='up')this.setSource(Number(lane) as Lane,source??'button',kind==='down');}this.sync();}
  protected sync(){const judged=regular.filter(n=>n.id in this.model.results).length;this.view={status:'playing',title:`Подход ${Math.max(0,this.stage)+1}/3 · ★ ${this.model.points} · точность ${judged?Math.floor(this.model.score/judged):100}% · серия ${this.model.combo} (×${multiplier(this.model.combo)})`,detail:'Круг — нажми. Хвост — удерживай и отпусти на линии. Пара — обе руки. После паузы удержание нужно зажать снова.',actions:[{id:'wind',label:this.model.windUsed?'Второе дыхание использовано':`Второе дыхание · ${Math.min(8,this.model.combo)}/8`,disabled:this.model.windUsed||this.model.combo<8},{id:'mute',label:!sound.enabled?'Звук: выкл.':'Звук: вкл.'}]};this.bridge.publish(this.view);}
@@ -65,7 +67,7 @@ export default class GymScene extends SceneBase {
   const next=phases.find(p=>t<p.start);this.judgement.setText(group>=0&&!s.feedback.startsWith('ЕЩЁ')?'ЗОЛОТЫЕ ПОВТОРЫ — БОНУС':t<3000||rest&&next?`ГОТОВЬСЯ · ${Math.max(1,Math.ceil((next!.start-t)/1000))}`:fever&&['В ТОЧКУ!','В РИТМ!'].includes(s.feedback)?`РЕЖИМ ЗВЕРЯ · ${Math.ceil((s.feverUntil-t)/1000)} С`:s.feedback);
   g.fillStyle(0xefb569);g.fillRect(0,558,420*t/END,2);
  }
- update(_time:number,delta:number){if(!this.running)return;if(delta>500){this.pause();return;}this.elapsed+=delta;this.releaseLost();const before=this.model;this.model=tick(this.model,this.elapsed);if(this.model.energy<before.energy&&this.model.status==='playing')sound.fx('buzz');this.paint();this.playBeat();if(this.model.status!=='playing')this.publishResult();else if(this.elapsed-this.hudAt>120){this.hudAt=this.elapsed;this.sync();}}
+ update(_time:number,delta:number){if(!this.running)return;if(delta>500){this.pause();return;}this.elapsed+=delta;this.frameAt=performance.now();this.releaseLost();const before=this.model;this.model=tick(this.model,this.elapsed);if(this.model.energy<before.energy&&this.model.status==='playing')sound.fx('buzz');this.paint();this.playBeat();if(this.model.status!=='playing')this.publishResult();else if(this.elapsed-this.hudAt>250){this.hudAt=this.elapsed;this.sync();}}
 }
 
 

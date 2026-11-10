@@ -1,3 +1,4 @@
+import {guardTouches} from './touches';
 import {SoundButton,useSound} from '../audio/useSound';
 import {useEffect,useRef,useState} from 'react';
 import type {ArcadeControls,ArcadeView} from './types';
@@ -10,7 +11,7 @@ export default function ArcadeGame({kind,onWin,onExit}:{kind:'shop'|'cook'|'gym'
  const host=useRef<HTMLDivElement>(null),controls=useRef<ArcadeControls|null>(null);
  const [view,setView]=useState(blank),[attempt,setAttempt]=useState(0);
  useEffect(()=>{
-  let disposed=false;let game:import('phaser').Game|undefined;setView(blank);
+  let disposed=false;let game:import('phaser').Game|undefined;const unguard=host.current?guardTouches(host.current,()=>game?.input?.pointers):()=>{};setView(blank);
   const pause=()=>controls.current?.pause();const hidden=()=>{if(document.hidden)pause();};
   window.addEventListener('blur',pause);document.addEventListener('visibilitychange',hidden);
   void Promise.all([import('phaser'),kind==='shop'?import('../shop/ShopScene'):kind==='gym'?import('../gym/GymScene'):kind==='run'?import('../run/RunScene'):kind==='schedule'?import('../schedule/ScheduleScene'):kind==='night'?import('../night/NightScene'):kind==='delivery'?import('../delivery/DeliveryScene'):kind==='remote'?import('../remote/RemoteScene'):import('../cook/CookScene')]).then(([{default:Phaser},{default:Scene}])=>{
@@ -18,7 +19,7 @@ export default function ArcadeGame({kind,onWin,onExit}:{kind:'shop'|'cook'|'gym'
    const scene=new Scene({publish:v=>{if(!disposed)setView(v);},ready:c=>{if(!disposed)controls.current=c;},error:()=>{if(!disposed)setView({...blank,status:'error',title:'Не удалось загрузить игру',detail:'Проверь подключение и попробуй ещё раз.'});}});
    game=new Phaser.Game({type:Phaser.AUTO,parent:host.current!,width:420,height:560,backgroundColor:'#f6ecd4',scene,scale:{mode:Phaser.Scale.FIT,autoCenter:Phaser.Scale.CENTER_BOTH},input:{activePointers:4,keyboard:{capture:[]}},render:{antialias:true}});
   }).catch(()=>{if(!disposed)setView({...blank,status:'error',title:'Не удалось загрузить игру',detail:'Попробуй загрузить сцену ещё раз.'});});
-  return()=>{disposed=true;controls.current=null;game?.destroy(true);window.removeEventListener('blur',pause);document.removeEventListener('visibilitychange',hidden);};
+  return()=>{disposed=true;unguard();controls.current=null;game?.destroy(true);window.removeEventListener('blur',pause);document.removeEventListener('visibilitychange',hidden);};
  },[attempt,kind]);
  useSound(kind,view.status);
  const overlay=view.status!=='playing';

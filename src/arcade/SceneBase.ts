@@ -27,7 +27,9 @@ export default abstract class SceneBase extends Phaser.Scene{
  protected text(x:number,y:number,text:string,size=14,color='#293a34',center=false){const t=this.add.text(x,y,text,{fontFamily:'Arial, sans-serif',fontSize:`${size}px`,fontStyle:'bold',resolution:2,color,wordWrap:{width:380},align:center?'center':'left'});if(center)t.setOrigin(.5);this.root.add(t);return t;}
  protected button(x:number,y:number,w:number,h:number,label:string,action:()=>void,color=0xe9bb6e){const b=this.box(x,y,w,h,color).setInteractive({useHandCursor:true});this.text(x,y,label,12,'#293a34',true);b.on('pointerdown',()=>{if(this.running)action();});return b;}
  protected image(x:number,y:number,key:string,frame:string|number,w:number,h:number){const i=this.add.image(x,y,key,frame);i.setScale(Math.min(w/i.width,h/i.height));this.root.add(i);return i;}
- protected pop(x:number,y:number,label:string,color='#286b56',feedback=true){if(feedback)sound.cue(color==='#aa4933'?'hit':'good');const t=this.add.text(x,y,label,{fontFamily:'Arial',fontSize:'17px',fontStyle:'bold',color,backgroundColor:'#fff5dd',padding:{x:6,y:4}}).setOrigin(.5).setDepth(50);this.tweens.add({targets:t,y:y-30,alpha:0,duration:this.reduced?200:850,onComplete:()=>t.destroy()});}
+ private pops:Phaser.GameObjects.Text[]=[];
+ /** Floating labels come from a small reused pool: creating a text for every hit makes a rhythm game stutter. */
+ protected pop(x:number,y:number,label:string,color='#286b56',feedback=true){if(feedback)sound.cue(color==='#aa4933'?'hit':'good');let t=this.pops.find(p=>p.active&&!p.visible);if(!t){t=this.add.text(x,y,'',{fontFamily:'Arial',fontSize:'17px',fontStyle:'bold',color,backgroundColor:'#fff5dd',padding:{x:6,y:4}}).setOrigin(.5).setDepth(50);this.pops.push(t);}const label_=t;this.tweens.killTweensOf(label_);label_.setText(label).setColor(color).setPosition(x,y).setAlpha(1).setVisible(true);this.tweens.add({targets:label_,y:y-30,alpha:0,duration:this.reduced?200:850,onComplete:()=>label_.setVisible(false)});}
  protected abstract key(e:KeyboardEvent):void;
  protected abstract sync():void;
  abstract action(id:string):void;
