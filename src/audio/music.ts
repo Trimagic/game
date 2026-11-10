@@ -2,6 +2,7 @@ export type MusicNote={hz:number;duration:number;type:OscillatorType;gain:number
 type Arrangement={bpm:number;root:number;melody:number[];chords:number[];lead:OscillatorType;soft?:boolean;syncopated?:boolean};
 // Eighth-note patterns; one chord per bar, four bars per phrase.
 export const MUSIC:Record<string,Arrangement>={
+ menu:{bpm:118,root:261.63,melody:[12,7,9,12,14,12,9,7,4,7,9,12,7,4,2,7],chords:[0,5,0,7],lead:'triangle',syncopated:true},
  bike:{bpm:116,root:220,melody:[0,4,7,12,7,4,2,7,4,7,12,14,12,7,4,2],chords:[0,5,7,0],lead:'triangle'},
  pool:{bpm:108,root:196,melody:[0,7,4,9,7,4,2,4,7,12,9,7,4,2,7,4],chords:[0,5,0,7],lead:'sine',syncopated:true},
  shop:{bpm:122,root:246.94,melody:[0,4,7,4,2,5,9,5,4,7,11,7,9,7,4,2],chords:[0,5,7,0],lead:'triangle',syncopated:true},

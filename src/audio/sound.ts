@@ -38,11 +38,12 @@ export class Soundtrack {
  constructor(){try{this.enabled=localStorage.getItem('game-sound')!=='off';}catch{/* Storage is optional. */}}
  subscribe=(fn:()=>void)=>{this.listeners.add(fn);return()=>{this.listeners.delete(fn);};};
  snapshot=()=>this.enabled;
- unlock(){try{this.context??=new AudioContext();if(!this.master){this.master=this.context.createGain();this.master.gain.value=this.enabled?.18:0;this.master.connect(this.context.destination);}void this.context.resume().then(()=>this.begin()).catch(()=>{});}catch{/* Silent play remains available. */}}
+ readySnapshot=()=>this.enabled&&!this.blocked&&this.context?.state==='running';
+ unlock(){try{this.context??=new AudioContext();if(!this.master){this.master=this.context.createGain();this.master.gain.value=this.enabled?.18:0;this.master.connect(this.context.destination);}void this.context.resume().then(()=>{this.begin();this.listeners.forEach(fn=>fn());}).catch(()=>{});}catch{/* Silent play remains available. */}}
  toggle(){this.enabled=!this.enabled;try{localStorage.setItem('game-sound',this.enabled?'on':'off');}catch{/* Optional. */}if(this.master)this.master.gain.value=this.enabled?.18:0;if(!this.enabled)this.clear();else this.unlock();this.listeners.forEach(fn=>fn());}
  set(theme:string,playing:boolean){if(theme!==this.theme){this.step=0;this.clear();}this.theme=theme;this.playing=playing;if(!playing)this.clear();else {this.ending=false;this.begin();}}
- suspend(){this.blocked=true;this.clear();}
- foreground(){this.blocked=false;if(this.theme==='birthday')this.begin();}
+ suspend(){this.blocked=true;this.clear();this.listeners.forEach(fn=>fn());}
+ foreground(){this.blocked=false;if(this.theme==='birthday'||this.theme==='menu')this.begin();this.listeners.forEach(fn=>fn());}
  stop(){this.playing=false;if(this.ending){if(this.timer!==undefined)clearInterval(this.timer);this.timer=undefined;this.ending=false;}else this.clear();}
  private clear(){if(this.timer!==undefined)clearInterval(this.timer);this.timer=undefined;for(const voice of this.voices){try{voice.stop();}catch{/* Already ended. */}}this.voices.clear();}
  tone(frequency:number,duration=.1,type:OscillatorType='sine',gain=.25,delay=0,endHz?:number){const c=this.context;if(!this.enabled||this.blocked||!c||c.state!=='running'||!this.master||this.voices.size>24)return;const o=c.createOscillator(),g=c.createGain(),t=c.currentTime+delay;o.type=type;o.frequency.value=frequency;if(endHz){o.frequency.setValueAtTime(frequency,t);o.frequency.exponentialRampToValueAtTime(endHz,t+duration);}g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(gain,t+.008);g.gain.exponentialRampToValueAtTime(.0001,t+duration);o.connect(g);g.connect(this.master);this.voices.add(o);o.onended=()=>{this.voices.delete(o);o.disconnect();g.disconnect();};o.start(t);o.stop(t+duration+.01);}
