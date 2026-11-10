@@ -1,5 +1,6 @@
 import {haptics} from '../haptics';
 import {sound} from '../audio/sound';
+import {gymBeat} from '../audio/music';
 import Phaser from 'phaser';
 import SceneBase from '../arcade/SceneBase';
 import type {ArcadeEvents} from '../arcade/types';
@@ -7,7 +8,6 @@ import {chart,END,initial,input,tick,phases,secondWind,gymRating,multiplier,bonu
 import {saveBest} from '../best';
 const colors=[0xffae68,0x83e2d6];
 // Backing track: it follows the phase's own beat, so it can never drift off the notes.
-const BASS=[0,0,7,0,3,3,10,7],MELODY=[12,15,19,15,17,15,14,10],ROOT=[110,98,130.81];
 export default class GymScene extends SceneBase {
  private model=initial(); private elapsed=0; private hudAt=0;
  private ink!:Phaser.GameObjects.Graphics; private stats!:Phaser.GameObjects.Text;
@@ -37,7 +37,7 @@ export default class GymScene extends SceneBase {
  action(id:string){if(!this.running)return;if(id==='unlock'){sound.unlock();}else if(id==='mute')sound.toggle();else if(id==='wind'){const old=this.model;this.model=secondWind(old);if(this.model!==old){sound.fx('powerup');this.pop(210,330,'ВТОРОЕ ДЫХАНИЕ!','#286b56',false);}}else {const [kind,lane,source]=id.split(':');if(kind==='down'||kind==='up')this.setSource(Number(lane) as Lane,source??'button',kind==='down');}this.sync();}
  protected sync(){const judged=regular.filter(n=>n.id in this.model.results).length;this.view={status:'playing',title:`Подход ${Math.max(0,this.stage)+1}/3 · ★ ${this.model.points} · точность ${judged?Math.floor(this.model.score/judged):100}% · серия ${this.model.combo} (×${multiplier(this.model.combo)})`,detail:'Круг — нажми. Хвост — удерживай и отпусти на линии. Пара — обе руки. После паузы удержание нужно зажать снова.',actions:[{id:'wind',label:this.model.windUsed?'Второе дыхание использовано':`Второе дыхание · ${Math.min(8,this.model.combo)}/8`,disabled:this.model.windUsed||this.model.combo<8},{id:'mute',label:!sound.enabled?'Звук: выкл.':'Звук: вкл.'}]};this.bridge.publish(this.view);}
  private publishResult(){const m=this.model;if(m.status==='playing'){this.sync();return;}const judged=regular.filter(n=>n.id in m.results).length;const accuracy=Math.floor(m.score/Math.max(1,judged));if(m.status!=='won'){this.finish(false,'Сбились с ритма?',`Точность ${accuracy}% · лучшая серия ${m.best}. ${m.energy===0?'Силы закончились. Попробуй спокойнее ловить белую линию.':'Для победы нужна точность от 65%.'}`);return;}const stars=gymRating(m),saved=saveBest('gym-best',m.points);this.finish(true,`${'★'.repeat(stars)}${'☆'.repeat(3-stars)} Вот теперь последний! ${m.points} очков`,`Точность ${Math.round(m.score/regular.length)}% · лучшая серия ${m.best} · «Режим зверя» ×${m.fevers} · бонусных повторов ${m.bonusHits} из ${chart.length-regular.length}. ${saved.record?'Новый личный рекорд!':`Рекорд: ${saved.best}.`}`);}
- private playBeat(){const phase=phases[Math.max(0,this.stage)];const beat=Math.floor((this.elapsed-phase.start)/(60000/phase.bpm));const id=phase.start+':'+beat;if(id===this.beat||beat>=phase.beats||beat< -4)return;this.beat=id;sound.tone(beat%4===0?660:330,.09,'sine',.3);if(beat<0)return;const root=ROOT[Math.max(0,this.stage)],step=beat%8;sound.tone(root*2**(BASS[step]/12),.34,'triangle',.24);if(beat%2===1)sound.tone(root*2*2**(MELODY[step]/12),.16,'triangle',.11);}
+ private playBeat(){const phase=phases[Math.max(0,this.stage)];const beat=Math.floor((this.elapsed-phase.start)/(60000/phase.bpm));const id=phase.start+':'+beat;if(id===this.beat||beat>=phase.beats||beat< -4)return;this.beat=id;for(const n of gymBeat(Math.max(0,this.stage),beat))sound.tone(n.hz,n.duration,n.type,n.gain,0,n.endHz);}
  private paint(){
   const s=this.model,t=this.elapsed;this.stage=t<21000?0:t<38000?1:2;const phase=phases[this.stage];const rest=t>19000&&t<22000||t>35500&&t<39000||t>54300;const group=bonusSets.findIndex(set=>t>set[0].at-1800&&t<set[set.length-1].at+250);if(group>=0&&group!==this.bonusGroup){this.bonusGroup=group;sound.fx('ding');this.pop(210,300,'ТРЕНЕР: «ЕЩЁ ОДИН!»','#9b5725',false);}const fever=t<s.feverUntil;const beat=(t-phase.start)/(60000/phase.bpm);
   const g=this.ink;g.clear();g.fillStyle(0x8b7a60);g.fillRect(12,67,396,7);g.fillStyle(s.energy<30?0xe66b48:0x86c8a5);g.fillRect(12,67,396*s.energy/100,7);

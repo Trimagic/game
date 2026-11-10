@@ -1,4 +1,5 @@
 import {haptics} from '../haptics.ts';
+import {MUSIC,musicStep} from './music.ts';
 export type Cue='tap'|'good'|'hit'|'jump'|'win'|'lose';
 export type Fx='click'|'tick'|'step'|'whoosh'|'coin'|'pickup'|'powerup'|'thud'|'land'|'splash'|'cut'|'ding'|'buzz'|'alarm'|'crash'|'ring'|'warn'|'hiss'|'boing'|'creak'|'rustle';
 type Note=[hz:number,duration:number,type:OscillatorType,gain:number,delay?:number];
@@ -32,7 +33,7 @@ export class Soundtrack {
  private master:GainNode|null=null;
  private voices=new Set<OscillatorNode>();
  private timer:ReturnType<typeof setInterval>|undefined;
- private theme='';private playing=false;private step=0;private blocked=false;private ending=false;
+ private theme='';private playing=false;private step=0;private blocked=false;private ending=false;private nextNote=0;
  private listeners=new Set<()=>void>();
  constructor(){try{this.enabled=localStorage.getItem('game-sound')!=='off';}catch{/* Storage is optional. */}}
  subscribe=(fn:()=>void)=>{this.listeners.add(fn);return()=>{this.listeners.delete(fn);};};
@@ -44,7 +45,7 @@ export class Soundtrack {
  foreground(){this.blocked=false;if(this.theme==='birthday')this.begin();}
  stop(){this.playing=false;if(this.ending){if(this.timer!==undefined)clearInterval(this.timer);this.timer=undefined;this.ending=false;}else this.clear();}
  private clear(){if(this.timer!==undefined)clearInterval(this.timer);this.timer=undefined;for(const voice of this.voices){try{voice.stop();}catch{/* Already ended. */}}this.voices.clear();}
- tone(frequency:number,duration=.1,type:OscillatorType='sine',gain=.25,delay=0){const c=this.context;if(!this.enabled||this.blocked||!c||c.state!=='running'||!this.master||this.voices.size>24)return;const o=c.createOscillator(),g=c.createGain(),t=c.currentTime+delay;o.type=type;o.frequency.value=frequency;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(gain,t+.008);g.gain.exponentialRampToValueAtTime(.0001,t+duration);o.connect(g);g.connect(this.master);this.voices.add(o);o.onended=()=>{this.voices.delete(o);o.disconnect();g.disconnect();};o.start(t);o.stop(t+duration+.01);}
+ tone(frequency:number,duration=.1,type:OscillatorType='sine',gain=.25,delay=0,endHz?:number){const c=this.context;if(!this.enabled||this.blocked||!c||c.state!=='running'||!this.master||this.voices.size>24)return;const o=c.createOscillator(),g=c.createGain(),t=c.currentTime+delay;o.type=type;o.frequency.value=frequency;if(endHz){o.frequency.setValueAtTime(frequency,t);o.frequency.exponentialRampToValueAtTime(endHz,t+duration);}g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(gain,t+.008);g.gain.exponentialRampToValueAtTime(.0001,t+duration);o.connect(g);g.connect(this.master);this.voices.add(o);o.onended=()=>{this.voices.delete(o);o.disconnect();g.disconnect();};o.start(t);o.stop(t+duration+.01);}
  /** Vibrates even with the sound off, like cues do. */
  fx(name:Fx){const effect=EFFECTS[name];if(effect.haptic&&!this.blocked)haptics.cue(effect.haptic);effect.notes.forEach(([hz,duration,type,gain,delay])=>this.tone(hz,duration,type,gain,delay??0));}
  cue(cue:Cue){if(!this.blocked)haptics.cue(cue);this.ending=cue==='win'||cue==='lose';if(this.ending)this.clear();const notes:Record<Cue,number[]>={tap:[220],good:[523,784],hit:[130,80],jump:[330,660],win:[523,659,784,1047],lose:[330,262,196]};notes[cue].forEach((hz,i)=>this.tone(hz,cue==='win'||cue==='lose'?.22:.09,cue==='hit'?'sawtooth':'sine',.32,i*.09));}
@@ -55,9 +56,19 @@ export class Soundtrack {
    const play=()=>{const beat=this.step++%total;let at=0;for(const [midi,beats]of melody){if(at===beat&&midi){const hz=440*2**((midi-69)/12);this.tone(hz,beats*.26*.9,'triangle',.2);this.tone(hz*2,Math.min(.2,beats*.2),'sine',.045);if(beat===0||beat===12||beat===24||beat===38)this.tone(130.81,.65,'sine',.16);break;}at+=beats;}};
    play();this.timer=setInterval(play,260);return;
   }
-  const calm=['sleep','night','delivery','remote'].includes(this.theme),pace=calm?420:260;
-  const patterns:Record<string,number[]>={bike:[0,4,7,12,7,4,2,7],pool:[0,7,4,9,7,4,2,4],shop:[0,4,7,4,2,5,9,5],cook:[0,7,9,7,4,2,4,7],run:[0,7,12,7,4,7,9,7],schedule:[0,2,4,7,9,7,4,2],sleep:[0,7,12,7,4,7,11,7],remote:[0,3,7,3,5,3,2,7],delivery:[0,3,7,10,7,5,3,2],night:[0,7,3,7,2,7,5,3]};
-  this.timer=setInterval(()=>{const n=this.step++,pattern=patterns[this.theme]??patterns.bike;this.tone(220*2**(pattern[n%8]/12),calm?.45:.18,'triangle',.12);if(n%4===0)this.tone(n%8===0?110:146.83,.3,'sine',.18);},pace);
+  const profile=MUSIC[this.theme];if(!profile)return;
+  this.nextNote=this.context.currentTime+.02;
+  const schedule=()=>{
+   const now=this.context!.currentTime;
+   // Schedule on the audio clock, avoiding drift and bursts after a slow frame.
+   if(this.nextNote<now-.1)this.nextNote=now+.02;
+   while(this.nextNote<now+.1){
+    for(const n of musicStep(this.theme,this.step++))this.tone(n.hz,n.duration,n.type,n.gain,this.nextNote-now,n.endHz);
+    this.nextNote+=30/profile.bpm;
+   }
+  };
+  // Defer to the timer so a terminal cue can cancel a newly requested loop.
+  this.timer=setInterval(schedule,25);
  }
 }
 export const sound=new Soundtrack();
