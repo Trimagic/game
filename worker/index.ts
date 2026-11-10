@@ -1,9 +1,11 @@
 import { authenticate } from './auth';
+import {botWebhook} from './bot';
 interface Env { DB: D1Database; ASSETS: Fetcher; BOT_TOKEN?: string }
 const json = (data: unknown, status = 200) => Response.json(data, { status, headers: { 'Cache-Control': 'no-store' } });
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
+    if(url.pathname==='/api/telegram/webhook')return botWebhook(request,env);
     if (!url.pathname.startsWith('/api/')) return env.ASSETS.fetch(request);
     if (url.pathname !== '/api/progress') return json({ error: 'Not found' }, 404);
     if (!['GET', 'POST'].includes(request.method)) return json({ error: 'Method not allowed' }, 405);

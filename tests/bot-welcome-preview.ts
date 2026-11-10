@@ -1,0 +1,1 @@
+import{WELCOME_CAPTION,WELCOME_BUTTON}from'/worker/bot-copy.ts';document.querySelector('#caption').innerHTML=WELCOME_CAPTION;document.querySelector('#play').textContent=WELCOME_BUTTON;

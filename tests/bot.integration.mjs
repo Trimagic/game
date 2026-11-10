@@ -1,0 +1,22 @@
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import {Miniflare,convertV4MiniflareOptions} from 'miniflare';
+import {botWebhook,webhookSecret} from '../worker/bot.ts';
+const token='integration-token';
+const mf=new Miniflare(convertV4MiniflareOptions({modules:true,scriptPath:'dist/telegram_comic_game/index.js',compatibilityDate:'2026-10-12',d1Databases:['DB'],bindings:{BOT_TOKEN:token}}));
+try{
+ const DB=await mf.getD1Database('DB');await DB.prepare(await readFile('migrations/0003_bot_updates.sql','utf8')).run();
+ const env={BOT_TOKEN:token,DB};let sent=0;
+ const transport=async()=>{sent++;return Response.json({ok:true})};
+ const secret=await webhookSecret(token);
+ const request=id=>new Request('https://test/api/telegram/webhook',{method:'POST',headers:{'X-Telegram-Bot-Api-Secret-Token':secret},body:JSON.stringify({update_id:id,message:{text:'/start',chat:{type:'private',id:42}}})});
+ assert.equal((await mf.dispatchFetch('https://test/api/telegram/webhook',{method:'POST',body:'{}'})).status,401);
+ assert.equal((await botWebhook(request(1),env,transport)).status,200);assert.equal(sent,1);
+ assert.equal((await botWebhook(request(1),env,transport)).status,200);assert.equal(sent,1);
+ let release,started;const waiting=new Promise(r=>release=r),entered=new Promise(r=>started=r);
+ const pending=botWebhook(request(2),env,async()=>{sent++;started();await waiting;return Response.json({ok:true})});
+ await entered;assert.equal((await botWebhook(request(2),env,transport)).status,503);release();await pending;assert.equal(sent,2);
+ await DB.prepare("INSERT INTO bot_updates VALUES (3,'pending',0)").run();assert.equal((await botWebhook(request(3),env,transport)).status,200);assert.equal(sent,3);
+ assert.equal((await DB.prepare("SELECT count(*) AS n FROM bot_updates WHERE state='sent'").first()).n,3);
+ console.log('PASS: real D1 migration, authenticated route, greeting persistence, duplicate/concurrent delivery, expired lease retry; no Telegram messages sent');
+}finally{await mf.dispose()}
