@@ -98,7 +98,7 @@ test('Every stretch of the route can be passed without losing a heart',()=>{
  assert.ok(search(at(3,{card:true}),s=>s.x>=CHECKPOINTS[4],by,260),'laundry: belts and steam');
  assert.ok(search(at(4,{card:true}),s=>s.x>=CHECKPOINTS[5],by,200),'corridor');
  for(const [name,from,to,steps] of STRETCHES)assert.ok(search(at(from,{card:true,patience:100}),s=>s.x>=to,by,steps),name);
- assert.ok(search(at(14,{card:true,used:[0,1,2,3]}),s=>s.x>=CHASE_FROM-40,by,520),'gurney, lift, deck and last nurse');
+ assert.ok(search(at(14,{card:true,used:[0,1,2,3]}),s=>s.x>=CHECKPOINTS[15],by,520),'gurney, lift, deck and last nurse');
  assert.ok(search(at(15,{card:true,used:[0,1,2,3]}),s=>s.status==='ending',by,160),'the chase');
 });
 test('Pushing against a floor from inside its edge never throws the hero to its far end',()=>{
@@ -110,8 +110,9 @@ test('A careful full run reaches the door on the patience it has',()=>{
  const by=(n:State)=>n.x-n.suspicion*40+n.patience*1.5;let s:State|null=initial();
  for(const goal of [CHECKPOINTS[1],1700]){s=search(s!,n=>n.x>=goal,by,200);assert.ok(s,'to '+goal);}
  s=search(s!,n=>n.card,n=>-Math.abs(n.x-CARD.x)-Math.abs(n.y-CARD.y)*2,160);assert.ok(s,'card');
- for(const goal of [DOOR.x+40,...CHECKPOINTS.slice(3,15),CHASE_FROM-40]){s=search(s!,n=>n.x>=goal,by,540);assert.ok(s,'to '+goal);}
- s=search(s!,n=>n.status==='ending',by,300);assert.ok(s,'door');assert.ok(s!.patience>0);
+ for(const goal of [DOOR.x+40,...CHECKPOINTS.slice(3,15),CHECKPOINTS[15]]){s=search(s!,n=>n.x>=goal,by,540);assert.ok(s,'to '+goal);}
+ // The last nurse may need waiting out behind a screen, so this stretch gets the same budget as the others.
+ s=search(s!,n=>n.status==='ending',by,540);assert.ok(s,'door');assert.ok(s!.patience>0);
 });
 test('Belts drag the hero, the vent lifts while it blows, steam hurts on a beat',()=>{
  const back=BELTS[0],on:State={...initial(),x:back.x+100,y:GROUND,checkpoint:3};let s=on;for(let i=0;i<30;i++)s=step(s,1/60,{move:0,jump:false});assert.ok(s.x<on.x-30);
@@ -156,7 +157,9 @@ test('Falling things warn first and only hit under them; the press and beam hit 
 test('Kissel slows, bouncers throw, blinking platforms vanish and wind pushes back',()=>{
  let k:State={...initial(),x:STICKY.x+20,y:GROUND,grounded:true,time:5,shield:9};const x0=k.x;for(let i=0;i<30;i++)k=step(k,1/60,{move:1,jump:false});assert.ok(k.x-x0<50,String(k.x-x0));
  const b=BOUNCERS[0];let up:State={...initial(),x:b.x+20,y:GROUND,grounded:true};let top=GROUND;for(let i=0;i<50;i++){up=step(up,1/60,{move:0,jump:i>2});top=Math.min(top,up.y);}assert.ok(top<GROUND-100,String(top));
- const l=BLINKS[0];assert.ok(blinkLeft(l,.5)>0);assert.equal(blinkLeft(l,2.5),0);let on:State={...initial(),x:l.x+30,y:GROUND,grounded:true,time:1.9,checkpoint:11,card:true};for(let i=0;i<60;i++)on=step(on,1/60,{move:0,jump:false});assert.equal(on.lives,2,'fell through');
+ const l=BLINKS[0];assert.ok(blinkLeft(l,.5)>0);assert.equal(blinkLeft(l,3),0);
+ // Walking on at a normal pace, the next platform is lit when you get there and stays lit a good while.
+ for(let k=0;k<BLINKS.length-1;k++){const arrive=.7*(k+1);assert.ok(blinkLeft(BLINKS[k+1],arrive)>1,`platform ${k+1} at ${arrive}s`);}let on:State={...initial(),x:l.x+30,y:GROUND,grounded:true,time:2.4,checkpoint:11,card:true};for(let i=0;i<60;i++)on=step(on,1/60,{move:0,jump:false});assert.equal(on.lives,2,'fell through');
  assert.equal(windAt(WIND.x+50,.5),WIND.v);assert.equal(windAt(WIND.x+50,2.5),0);assert.equal(windAt(WIND.x-50,.5),0);let w:State={...initial(),x:WIND.x+150,y:GROUND,grounded:true,time:.1};const wx=w.x;for(let i=0;i<30;i++)w=step(w,1/60,{move:0,jump:false});assert.ok(w.x<wx-20);
 });
 test('A switch dims the beam, a squeaky board raises suspicion once per step',()=>{

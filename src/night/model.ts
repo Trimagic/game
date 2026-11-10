@@ -89,8 +89,9 @@ export const SPARKS=[{x:9420,y:180},{x:9590,y:330},{x:9740,y:170}];
 export const SQUEAKS=[{x:10180,w:46},{x:10360,w:46},{x:10600,w:46},{x:10760,w:46}];
 export const PRESSES=[{x:11130,w:54,ph:0},{x:11270,w:54,ph:.9},{x:11900,w:54,ph:1.6}];
 export const PRESS_CYCLE=2.4,PRESS_DOWN=.7,PRESS_WARN=.45;
-export const BLINKS=[{x:11410,ph:0},{x:11510,ph:.5},{x:11610,ph:1},{x:11710,ph:1.5}].map(b=>({...b,w:72}));
-export const BLINK_CYCLE=3.2,BLINK_ON=2;
+export const BLINK_CYCLE=3.6,BLINK_ON=2.6,BLINK_STEP=.45;
+// The platforms light up one after another going forward, a wave the hero can follow at walking pace.
+export const BLINKS=[11410,11510,11610,11710].map((x,k)=>({x,w:72,ph:((-k*BLINK_STEP)%BLINK_CYCLE+BLINK_CYCLE)%BLINK_CYCLE}));
 export const WIND={x:12000,w:1100,v:-85,cycle:4,gust:1.7,warn:.5};
 export const CHASE_FROM=15170,CHASE_SPEED=140,CHASE_GAP=200;
 export const bonuses=[{x:505,y:302},{x:1165,y:330},{x:1450,y:340},{x:1920,y:205},{x:2390,y:262},{x:2930,y:318},{x:3400,y:355},{x:3850,y:200},{x:4050,y:345},{x:4470,y:330},{x:4830,y:330},{x:5595+F,y:240},{x:5960+F,y:345},
