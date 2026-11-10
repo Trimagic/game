@@ -8,9 +8,8 @@ Webhook: `/api/telegram/webhook`, только POST от Telegram с прове�
 
 Публикация:
 
-1. `npm run db:remote` — добавить таблицу, не затрагивая прогресс игры.
-2. `npm run deploy`.
-3. `node --experimental-strip-types scripts/configure-bot-profile.mjs --apply` — обновить описания и команды, установить webhook, проверить настройки. Скрипт проверяет имя бота и не заменяет чужой webhook.
+1. `npm run deploy`. Таблица добавляется самим Worker при первом `/start`, без изменения игрового прогресса. Миграцию `0003_bot_updates.sql` также можно применить через `npm run db:remote`, если токен Cloudflare имеет доступ к D1 API.
+2. `node --experimental-strip-types scripts/configure-bot-profile.mjs --apply` — обновить описания и команды, установить webhook, проверить настройки. Скрипт проверяет имя бота и не заменяет чужой webhook.
 
 Проверка: `node --experimental-strip-types --test tests/bot.test.ts`; после сборки — `node --experimental-strip-types tests/bot.integration.mjs` и `node tests/progress.integration.mjs`. Проверяются авторизация webhook, реальная D1, дубликаты, одновременная доставка, повтор после сбоя и сохранение 11 глав. Тесты не отправляют сообщения в Telegram.
 

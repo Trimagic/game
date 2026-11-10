@@ -25,6 +25,8 @@ export async function botWebhook(request:Request,env:BotEnv,transport:typeof fet
  if(!new RegExp(`^/(?:start|help)(?:@${BOT_USERNAME})?(?:\\s|$)`,'i').test(text))return reply();
  const now=Math.floor(Date.now()/1000);
  try{
+  // The Worker binding can initialise its own table when migration-CLI access is unavailable.
+  await env.DB.prepare("CREATE TABLE IF NOT EXISTS bot_updates (update_id INTEGER PRIMARY KEY,state TEXT NOT NULL DEFAULT 'pending' CHECK(state IN ('pending','sent')),touched_at INTEGER NOT NULL)").run();
   // Atomic lease: duplicate deliveries cannot produce simultaneous greetings.
   const lease=await env.DB.prepare("INSERT INTO bot_updates (update_id,touched_at) VALUES (?,?) ON CONFLICT(update_id) DO UPDATE SET touched_at=excluded.touched_at WHERE state='pending' AND touched_at<? RETURNING update_id").bind(id,now,now-60).first();
   if(!lease){const previous=await env.DB.prepare('SELECT state FROM bot_updates WHERE update_id=?').bind(id).first<{state:string}>();return reply(previous?.state==='sent'?200:503);}
