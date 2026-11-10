@@ -1,0 +1,7 @@
+# Обложка главного меню
+
+Asset: `public/art/main-menu-cover.png`. Generated with the built-in imagegen tool; character reference: `public/art/chapter-01-comic.png`.
+
+Prompt:
+
+Create a NEW main-menu cover illustration for the Russian birthday comic adventure game 'Ещё один годик'. Reference image is ONLY the character identity and comic rendering reference, NOT an edit target. Keep the same young chubby ginger curly-haired bearded blue-eyed man, orange T-shirt and navy shorts. One single polished landscape 3:2 illustration, no panels, absolutely NO TEXT, no letters, no UI. Medium-wide waist-up composition: hero centered-right on a sunny park path, holding his orange bicycle helmet under one arm, looking toward the viewer with a charming mischievous 'what could possibly go wrong?' smile, other hand loosely on turquoise bicycle handlebar. Around him tasteful paper-cut comic adventure motifs: a winding teal-and-gold path through floating small circles with a swimming goggles icon, shopping basket, frying pan and alarm clock; a few tiny warm confetti flecks imply a birthday. Do not show old age, hospitals, burgers, ending spoilers, or other people. Art fills the frame, excellent expressive face clearly visible even in a small mobile hero crop. Warm golden afternoon, teal sky, cream paper grain, bold dark ink outlines, hand-colored vintage graphic-novel look matching reference, cheerful and slightly absurd, generous breathing room at frame edges. This is illustration only, not a designed page, no typography.
