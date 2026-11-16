@@ -3,10 +3,8 @@ export type Direction='up'|'down'|'left'|'right';
 export const directions:Record<Direction,Cell>={up:{x:0,y:-1},down:{x:0,y:1},left:{x:-1,y:0},right:{x:1,y:0}};
 export type Patrol={role:'nurse'|'doctor'|'guard'|'camera';route:Cell[];offset:number};
 // Floor marks in the room plans: o seasoning, h potted plant to hide in, w wet floor, n spare noise charge.
-// Each room starts with at least the noises it may need; savings and tokens on top are kept.
-export const ROOM_NOISE=[2,3,3];
-// Out of noises, a new one comes after a short wait, so no room can leave you stuck.
-export const NOISE_REGEN=10;
+// Each room starts with exactly this many noises: nothing carries over, so every room has its own.
+export const ROOM_NOISE=[1,1,2];
 export const NOISE_TIME=2.6,START_NOISE=ROOM_NOISE[0],ALARM=.6,GLANCE_EVERY=5,GLANCE_FOR=.9,GLANCE_WARN=.8,CAMERA_TURN=2.2;
 export const RANGE={nurse:3.6,doctor:4.8,guard:3.6,camera:4.2};
 export type Location={name:string;hint:string;rows:string[];start:Cell;exit:Cell;patrols:Patrol[]};
@@ -26,10 +24,10 @@ export const locations:Location[]=[
  patrols:[{role:'guard',route:line(2,3,1,0,7),offset:2},{role:'doctor',route:line(2,5,1,0,7),offset:7},{role:'nurse',route:line(2,7,1,0,7),offset:4},{role:'camera',route:[{x:5,y:4}],offset:0}]},
 ];
 export type Flash={text:string;cell:Cell;good:boolean};
-export type DeliveryState={level:number;hero:Cell;time:number;cooldown:number;suspicion:number;status:'playing'|'between'|'lost'|'ending'|'done';ending:number;staffTime:number;noise:number;charges:number;regen:number;lives:number;score:number;found:string[];clock:number;slide:Direction|null;caught:number;flashes:Flash[]};
+export type DeliveryState={level:number;hero:Cell;time:number;cooldown:number;suspicion:number;status:'playing'|'between'|'lost'|'ending'|'done';ending:number;staffTime:number;noise:number;charges:number;lives:number;score:number;found:string[];clock:number;slide:Direction|null;caught:number;flashes:Flash[]};
 /** Every two losses in a row buy one spare heart, so the story never gets stuck. */
 export const spareHearts=(losses:number)=>Math.min(2,Math.floor(losses/2));
-export const initial=(spare=0):DeliveryState=>({level:0,hero:{...locations[0].start},time:0,cooldown:0,suspicion:0,status:'playing',ending:0,staffTime:0,noise:0,charges:START_NOISE,regen:0,lives:3+spare,score:0,found:[],clock:0,slide:null,caught:0,flashes:[]});
+export const initial=(spare=0):DeliveryState=>({level:0,hero:{...locations[0].start},time:0,cooldown:0,suspicion:0,status:'playing',ending:0,staffTime:0,noise:0,charges:START_NOISE,lives:3+spare,score:0,found:[],clock:0,slide:null,caught:0,flashes:[]});
 export const tileAt=(map:Location,c:Cell)=>map.rows[c.y]?.[c.x]??'#';
 const itemId=(level:number,c:Cell)=>level+':'+c.x+','+c.y;
 export const itemsIn=(map:Location,mark:string)=>map.rows.flatMap((row,y)=>[...row].flatMap((cell,x)=>cell===mark?[{x,y}]:[]));
@@ -60,8 +58,8 @@ export function sees(map:Location,g:Cell&{facing:Cell;role?:keyof typeof RANGE},
 export function nextLocation(s:DeliveryState):DeliveryState{
  if(s.status!=='between')return s;
  const level=s.level+1;
- const charges=Math.max(s.charges,ROOM_NOISE[level]);
- return {...s,level,hero:{...locations[level].start},time:0,cooldown:0,suspicion:0,staffTime:0,noise:0,slide:null,status:'playing',charges,flashes:charges>s.charges?[...s.flashes,{text:`ШУМ: ${charges}`,cell:locations[level].start,good:true}]:s.flashes};
+ const charges=ROOM_NOISE[level];
+ return {...s,level,hero:{...locations[level].start},time:0,cooldown:0,suspicion:0,staffTime:0,noise:0,slide:null,status:'playing',charges,flashes:[...s.flashes,{text:`ШУМ: ${charges}`,cell:locations[level].start,good:true}]};
 }
 /** A racket down the hall: for a moment nobody moves or looks. */
 export function makeNoise(s:DeliveryState):DeliveryState{
@@ -95,9 +93,7 @@ export function tick(state:DeliveryState,dt:number,input:Direction|null):Deliver
   const suspicion=Math.max(0,Math.min(1,s.suspicion+h*(visible?1.4:-1.1)));
   const bumped=staff.some(g=>g.role!=='camera'&&g.x===hero.x&&g.y===hero.y);
   const exit=hero.x===map.exit.x&&hero.y===map.exit.y;
-  // The waiting noise ticks only while there is none to use and none going on.
-  let regen=charges===0&&noise===0?s.regen+h:0;if(regen>=NOISE_REGEN){charges=1;regen=0;flashes.push({text:'+1 ШУМ',cell:hero,good:true});}
-  let next:DeliveryState={...s,hero,cooldown,time,suspicion,noise,staffTime,slide,score,charges,regen,found,flashes,clock:s.clock+h,status:exit?(s.level===locations.length-1?'ending':'between'):'playing'};
+  let next:DeliveryState={...s,hero,cooldown,time,suspicion,noise,staffTime,slide,score,charges,found,flashes,clock:s.clock+h,status:exit?(s.level===locations.length-1?'ending':'between'):'playing'};
   if(exit)next={...next,score:next.score+50};
   else if(bumped||suspicion>=1){
    const lives=s.lives-1;

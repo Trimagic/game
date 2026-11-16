@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {ALARM,CAMERA_TURN,deliveryRating,finalScore,GLANCE_EVERY,GLANCE_FOR,hidden,initial,itemsIn,locations,makeNoise,NOISE_TIME,RANGE,spareHearts,START_NOISE,tileAt,TOTAL_COINS,walkable,guards,sees,tick,nextLocation,type DeliveryState,type Direction,ROOM_NOISE,NOISE_REGEN} from '../src/delivery/model.ts';
+import {ALARM,CAMERA_TURN,deliveryRating,finalScore,GLANCE_EVERY,GLANCE_FOR,hidden,initial,itemsIn,locations,makeNoise,NOISE_TIME,RANGE,spareHearts,START_NOISE,tileAt,TOTAL_COINS,walkable,guards,sees,tick,nextLocation,type DeliveryState,type Direction,ROOM_NOISE} from '../src/delivery/model.ts';
 const idle=(s:DeliveryState,seconds:number)=>{for(let i=0;i<seconds*10;i++)s=tick(s,.1,null);return s;};
 test('Patrol routes and endpoints are on floor; guards never cross walls',()=>{
  for(const map of locations){
@@ -107,18 +107,12 @@ test('Rating rewards seasonings and hearts; a lost run earns none',()=>{
  assert.equal(deliveryRating(empty({status:'done',found:all,lives:3})),3);assert.equal(deliveryRating(empty({status:'done',found:all,lives:1})),2);assert.equal(deliveryRating(empty({status:'done',lives:2})),2);assert.equal(deliveryRating(empty({status:'done',lives:1})),1);assert.equal(deliveryRating(empty({status:'lost'})),0);
  assert.ok(finalScore(empty({score:100,lives:2,clock:60}))>finalScore(empty({score:100,lives:2,clock:110})));
 });
-test('Every room starts with the noises it may need; savings and tokens on top are kept',()=>{
+test('Every room starts with exactly its own noises: 1, 1 and 2, nothing carried over',()=>{
+ assert.deepEqual(ROOM_NOISE,[1,1,2]);assert.equal(initial().charges,ROOM_NOISE[0]);
  for(let level=1;level<locations.length;level++){
-  const spent=nextLocation({...initial(),level:level-1,status:'between',charges:0});assert.equal(spent.charges,ROOM_NOISE[level],'empty-handed gets the room allowance');
-  const saved=nextLocation({...initial(),level:level-1,status:'between',charges:ROOM_NOISE[level]+2});assert.equal(saved.charges,ROOM_NOISE[level]+2,'savings are kept');
+  assert.equal(nextLocation({...initial(),level:level-1,status:'between',charges:0}).charges,ROOM_NOISE[level],'spent everything: the room still gives its own');
+  assert.equal(nextLocation({...initial(),level:level-1,status:'between',charges:5}).charges,ROOM_NOISE[level],'savings do not carry over');
  }
- assert.ok(ROOM_NOISE[2]>=ROOM_NOISE[1],'the camera room gets at least as many');
  const g=guards(locations[1],0)[0];const back=tick(empty({level:1,charges:0,hero:{x:g.x,y:g.y}}),.025,null);assert.equal(back.lives,2);assert.equal(back.charges,ROOM_NOISE[1],'caught empty-handed gets the room allowance back');
-});
-test('Out of noises, a new one arrives after a wait, but not while one is going on',()=>{
- let s=empty({charges:0});for(let i=0;i<Math.floor((NOISE_REGEN-.5)/.1);i++)s=tick(s,.1,null);assert.equal(s.charges,0,'not yet');
- for(let i=0;i<10;i++)s=tick(s,.1,null);assert.equal(s.charges,1);
- let busy=empty({charges:0,noise:NOISE_TIME});for(let i=0;i<20;i++)busy=tick(busy,.1,null);assert.equal(busy.regen,0,'no countdown during a noise');
- assert.equal(tick(empty({charges:2}),.1,null).regen,0,'no countdown with noises in hand');
- assert.equal(ROOM_NOISE[1],3);
+ let s=empty({charges:0});for(let i=0;i<150;i++)s=tick(s,.1,null);assert.equal(s.charges,0,'no noise appears by waiting');
 });
