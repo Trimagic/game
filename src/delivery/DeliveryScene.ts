@@ -4,7 +4,7 @@ import SceneBase from '../arcade/SceneBase';
 import type {ArcadeEvents} from '../arcade/types';
 import {haptics} from '../haptics';
 import {saveBest} from '../best';
-import {deliveryRating,finalScore,guards,hidden,initial,locations,makeNoise,nextLocation,sees,spareHearts,tick,tileAt,TOTAL_COINS,type Direction} from './model';
+import {NOISE_REGEN,deliveryRating,finalScore,guards,hidden,initial,locations,makeNoise,nextLocation,sees,spareHearts,tick,tileAt,TOTAL_COINS,type Direction} from './model';
 // Survives retries within a visit: the scene is rebuilt, the kindness is not.
 let losses=0;
 const SIZE=32,LEFT=34,TOP=83;
@@ -44,7 +44,7 @@ export default class DeliveryScene extends SceneBase{
   const s=this.model,map=locations[s.level];
   this.view={status:'playing',title:s.status==='between'?'Прошёл незаметно!':s.status==='ending'?'Заказ совсем рядом…':`${s.level+1} / 3 · ${map.name} · подозрение ${Math.round(s.suspicion*100)}%`,
    detail:s.status==='between'?'Передохни и нажми «Дальше».':s.status==='ending'?'Сейчас наконец пообедаешь.':map.hint,
-   actions:s.status==='between'?[{id:'next',label:'ДАЛЬШЕ →'}]:s.status==='playing'?[{id:'noise',label:s.noise>0?`ТИХО ${Math.ceil(s.noise)} С`:`ШУМ ×${s.charges}`,disabled:s.charges===0||s.noise>0}]:[]};
+   actions:s.status==='between'?[{id:'next',label:'ДАЛЬШЕ →'}]:s.status==='playing'?[{id:'noise',label:s.noise>0?`ТИХО ${Math.ceil(s.noise)} С`:s.charges>0?`ШУМ ×${s.charges}`:`ШУМ ЧЕРЕЗ ${Math.max(1,Math.ceil(NOISE_REGEN-s.regen))} С`,disabled:s.charges===0||s.noise>0}]:[]};
   this.bridge.publish(this.view);
  }
  private person(x:number,y:number,color:number,hero=false){
@@ -57,7 +57,7 @@ export default class DeliveryScene extends SceneBase{
   const s=this.model,map=locations[s.level],staff=guards(map,s.staffTime),g=this.ink;g.clear();const quiet=s.noise>0;
     this.hud.setText(`ОПЕРАЦИЯ «ОБЕД» / ${s.level+1} ИЗ 3 · ОЧКИ ${s.score}\n${map.name.toUpperCase()} · ПОДОЗРЕНИЕ ${Math.round(s.suspicion*100)}%`);
   const taken=s.found.filter(id=>{const [lv,at]=id.split(':');const [x,y]=at.split(',').map(Number);return tileAt(locations[Number(lv)],{x,y})==='o';}).length;
-  this.status.setText(`${'♥'.repeat(Math.max(0,s.lives))}${'♡'.repeat(Math.max(0,3-s.lives))}   ПРИПРАВЫ ${taken}/${TOTAL_COINS}   ШУМ ${s.charges}`);
+  this.status.setText(`${'♥'.repeat(Math.max(0,s.lives))}${'♡'.repeat(Math.max(0,3-s.lives))}   ПРИПРАВЫ ${taken}/${TOTAL_COINS}   ${s.charges>0?`ШУМ ${s.charges}`:`ШУМ ЧЕРЕЗ ${Math.max(1,Math.ceil(NOISE_REGEN-s.regen))} С`}`);
   g.fillStyle(0x67786b);g.fillRect(16,58,388,5);g.fillStyle(s.suspicion>=.6?0xc4302b:0xd16b45);g.fillRect(16,58,388*s.suspicion,5);
   for(let y=0;y<11;y++)for(let x=0;x<11;x++){
    const px=LEFT+x*SIZE,py=TOP+y*SIZE,wall=map.rows[y][x]==='#';
