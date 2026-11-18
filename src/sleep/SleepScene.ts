@@ -36,7 +36,7 @@ export default class SleepScene extends Phaser.Scene {
   private swiped=false;
   private reducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   constructor(private publish:(state:State)=>void,private loaded:(controls:SleepControls)=>void,private paused:()=>void,private failed:()=>void){super('sleep');}
-  preload(){this.load.image('sleep-cast','/art/chapter-06-sprites.png');this.load.on('loaderror',this.failed);}
+  preload(){this.load.image('sleep-cast','/art/chapter-06-sprites.webp');this.load.on('loaderror',this.failed);}
   create(){
     if(!this.textures.exists('sleep-cast'))return;
     const walls=this.add.graphics();walls.fillStyle(0x294c5a);walls.lineStyle(1.2,0x527a81);

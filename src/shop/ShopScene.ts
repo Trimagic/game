@@ -15,7 +15,7 @@ export default class ShopScene extends SceneBase{
  private cartBody!:Phaser.GameObjects.Container;private cartLoad!:Phaser.GameObjects.Text;private banner!:Phaser.GameObjects.Text;
  private sprites=new Map<number,Phaser.GameObjects.Container>();private thief?:Phaser.GameObjects.Container;private thiefLoot?:Phaser.GameObjects.Image;private thiefMark?:Phaser.GameObjects.Text;private held=new Set<string>();private drag:{id:number;x:number;cart:number}|null=null;private lane!:Phaser.GameObjects.Rectangle;
  constructor(events:ArcadeEvents,initialState?:CartState){super('belt',events);if(initialState)this.model=initialState;}
- preload(){this.load.image('products','/art/chapter-03-products.png');this.load.on('loaderror',this.bridge.error);}
+ preload(){this.load.image('products','/art/chapter-03-products.webp');this.load.on('loaderror',this.bridge.error);}
  create(){if(!this.textures.exists('products'))return;frames.forEach(([x,y,w,h],i)=>this.textures.get('products').add(i,0,x,y,w,h));this.makeExtras();
   this.view={title:'Три раунда. Ни одной лишней покупки!',detail:'Список сверху. Каждый пойманный товар из списка оплачивается — даже повтор. Превысишь бюджет — проиграешь. Новый раунд начинается с нового бюджета. Готов?',status:'ready',actions:[]};
   this.setup();this.drawStatic();

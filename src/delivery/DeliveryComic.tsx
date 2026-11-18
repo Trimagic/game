@@ -18,7 +18,7 @@ export default function DeliveryComic({ onContinue, onExit, ending=false, busy=f
     <div className="section-heading"><button className="text-button" onClick={onExit}>← К главам</button><span className="eyebrow">{ending ? 'ДОСТАВКА ПРИБЫЛА' : 'ОПЕРАЦИЯ «ОБЕД»'} / {frame + 1} ИЗ {frames.length}</span></div>
     <div className="bike-comic-caption"><span>{current.place}</span><h1>{current.title}</h1></div>
     <div className="comic-panel bike-comic-panel">
-      <svg key={frame} className="bike-comic-art" role="img" aria-label={current.description} viewBox={`${frame * 384} ${ending ? 512 : 0} 384 512`} preserveAspectRatio="xMidYMid slice"><image href="/art/chapter-10-comic.png" width="1536" height="1024"/></svg>
+      <svg key={frame} className="bike-comic-art" role="img" aria-label={current.description} viewBox={`${frame * 384} ${ending ? 512 : 0} 384 512`} preserveAspectRatio="xMidYMid slice"><image href="/art/chapter-10-comic.webp" width="1536" height="1024"/></svg>
       {!ending && frame === 2 && <span className="bike-comic-lettering delivery-comic-ping" aria-hidden="true">ЗАКАЗ ПРИНЯТ!</span>}
       <div className="bike-comic-dialogue" key={`words-${frame}`} aria-label={current.speaker} aria-live="polite" aria-atomic="true">
         <svg className="bike-dialogue-outline" viewBox="0 0 360 160" preserveAspectRatio="none" aria-hidden="true">

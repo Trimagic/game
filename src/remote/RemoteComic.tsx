@@ -18,7 +18,7 @@ export default function RemoteComic({ onContinue, onExit, ending=false, busy=fal
     <div className="section-heading"><button className="text-button" onClick={onExit}>← К главам</button><span className="eyebrow">{ending ? 'ПОСЛЕ ПЕРЕДАЧИ' : 'ЧАСТЬ II'} / {frame + 1} ИЗ {frames.length}</span></div>
     <div className="bike-comic-caption"><span>{current.place}</span><h1>{current.title}</h1></div>
     <div className="comic-panel bike-comic-panel">
-      <svg key={frame} className="bike-comic-art" role="img" aria-label={current.description} viewBox={`${frame * 443.5} ${ending ? 443.5 : 0} 443.5 443.5`} preserveAspectRatio="xMidYMid slice"><image href="/art/chapter-09-comic.png" width="1774" height="887"/></svg>
+      <svg key={frame} className="bike-comic-art" role="img" aria-label={current.description} viewBox={`${frame * 443.5} ${ending ? 443.5 : 0} 443.5 443.5`} preserveAspectRatio="xMidYMid slice"><image href="/art/chapter-09-comic.webp" width="1774" height="887"/></svg>
       {ending && frame === 1 && <span className="bike-comic-lettering remote-comic-hit" aria-hidden="true">БДЫЩ!</span>}
       <div className="bike-comic-dialogue" key={`words-${frame}`} aria-label={current.speaker} aria-live="polite" aria-atomic="true">
         <svg className="bike-dialogue-outline" viewBox="0 0 360 160" preserveAspectRatio="none" aria-hidden="true">

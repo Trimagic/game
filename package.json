@@ -10,7 +10,8 @@
     "deploy": "npm run build && wrangler deploy",
     "db:local": "wrangler d1 migrations apply DB --local",
     "db:remote": "wrangler d1 migrations apply DB --remote",
-    "test:integration": "npm run build && node tests/progress.integration.mjs"
+    "test:integration": "npm run build && node tests/progress.integration.mjs",
+    "images:webp": "node scripts/to-webp.mjs"
   },
   "dependencies": {
     "phaser": "^4.2.1",
@@ -24,6 +25,7 @@
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2",
     "miniflare": "^5.20261006.1-alpha",
+    "sharp": "^0.35.5",
     "typescript": "^7.0.2",
     "vite": "^8.3.4",
     "wrangler": "^4.149.0"

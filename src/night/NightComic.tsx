@@ -20,7 +20,7 @@ export default function NightComic({ onContinue, onExit, variant="intro", busy=f
     <div className="section-heading"><button className="text-button" onClick={onExit}>← К главам</button><span className="eyebrow">{epilogue ? 'ПОСЛЕДНИЙ ПОВОРОТ' : ending ? 'ПОСЛЕ ОТБОЯ' : 'НОЧНОЙ МАРШРУТ'} / {frame + 1} ИЗ {frames.length}</span></div>
     <div className="bike-comic-caption"><span>{current.place}</span><h1>{current.title}</h1></div>
     <div className="comic-panel bike-comic-panel">
-      <svg key={frame} className="bike-comic-art" role="img" aria-label={current.description} viewBox={epilogue ? `${frame % 3 * 512} ${frame % 6 < 3 ? 0 : 512} 512 512` : `${frame * 384} ${ending ? 476 : 0} 384 ${ending ? 548 : 476}`} preserveAspectRatio="xMidYMid slice"><image href={epilogue ? `/art/epilogue-${frame < 6 ? "doctor" : "choice"}.png` : "/art/chapter-11-comic.png"} width="1536" height="1024"/></svg>
+      <svg key={frame} className="bike-comic-art" role="img" aria-label={current.description} viewBox={epilogue ? `${frame % 3 * 512} ${frame % 6 < 3 ? 0 : 512} 512 512` : `${frame * 384} ${ending ? 476 : 0} 384 ${ending ? 548 : 476}`} preserveAspectRatio="xMidYMid slice"><image href={epilogue ? `/art/epilogue-${frame < 6 ? "doctor" : "choice"}.png` : "/art/chapter-11-comic.webp"} width="1536" height="1024"/></svg>
       {!epilogue && ending && frame === 2 && <span className="bike-comic-lettering night-comic-click" aria-hidden="true">ЩЁЛК!</span>}
       <div className="bike-comic-dialogue" key={`words-${frame}`} aria-label={current.speaker} aria-live="polite" aria-atomic="true">
         <svg className="bike-dialogue-outline" viewBox="0 0 360 160" preserveAspectRatio="none" aria-hidden="true">

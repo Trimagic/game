@@ -20,7 +20,7 @@ export default class CookScene extends SceneBase{
  private stroke:{x:number;y:number;id:number}|null=null;private trail?:Phaser.GameObjects.Graphics;private trailPts:{x:number;y:number;t:number}[]=[];
  private pieces=new Map<number,Phaser.GameObjects.Image>();private chopHud?:Phaser.GameObjects.Text;private drawnBoard='';
  constructor(events:ArcadeEvents){super('kitchen',events);}
- preload(){this.load.image('food','/art/chapter-04-food.png');this.load.on('loaderror',this.bridge.error);}
+ preload(){this.load.image('food','/art/chapter-04-food.webp');this.load.on('loaderror',this.bridge.error);}
  create(){
   if(!this.textures.exists('food'))return;for(let i=0;i<6;i++)this.textures.get('food').add(i,0,i%3*512,Math.floor(i/3)*512,512,512);this.makeChopArt();
   this.view={title:'Сегодня ты — шеф.',detail:'Овощи падают на доску и подлетают снизу — режь их свайпом, по 20 каждого, несколько за раз дают бонус. Сырую курицу на овощной доске не трогай, гнилые овощи с мухами тоже. Кот запрыгивает на доску — его не режь! Золотой перец замедляет время. Потом три конфорки сразу: еда сама доходит до зелёной зоны — жми на неё вовремя. Мама позвонит в самый разгар: пока звонит, любое нажатие отвечает ей. На сковороде бывают вспышки — нажми на конфорку, чтобы потушить, иначе подгорит. Солонку, что пролетает над плитой, лови нажатием. Три подгорания — повтор.',status:'ready',actions:[]};this.setup();this.draw();

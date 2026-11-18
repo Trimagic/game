@@ -10,7 +10,7 @@ export const sleepPanels = [
  {place:'ВНУТРИ ЛЕНТЫ · БЕЗ ВЫХОДНЫХ',title:'Лента не умеет уставать.',words:'Уведомления, серия, ещё один матч… Я хотел в кровать, а попал в лабиринт.',aside:'Теперь даже сон приходится собирать по крупицам.',position:'0% 100%',description:'Во сне герой бежит по лабиринту с подушкой. За ним гонятся экраны уведомлений, видео, кино и игр.'},
  {place:'СНОВА СПАЛЬНЯ · ТВОЁ РЕШЕНИЕ',title:'Ночь снова принадлежит тебе.',words:'Планы подождут. Телефон тоже. Я правда устал — значит, пора выключаться.',aside:'Одна кнопка. И наконец-то тишина.',position:'100% 100%',description:'Герой решительно нажимает кнопку выключения на телефоне. За окном луна.'},
 ];
-export function sleepComicStyle(panel:number){const h=panel<2?744:792;return {backgroundImage:'url(/art/chapter-06-sleep-comic.png)',backgroundPosition:sleepPanels[panel].position,backgroundSize:'200% '+1536/h*100+'%',aspectRatio:'512 / '+h};}
+export function sleepComicStyle(panel:number){const h=panel<2?744:792;return {backgroundImage:'url(/art/chapter-06-sleep-comic.webp)',backgroundPosition:sleepPanels[panel].position,backgroundSize:'200% '+1536/h*100+'%',aspectRatio:'512 / '+h};}
 
 export function SleepBrief({onContinue,onComic}:{onContinue:()=>void;onComic:()=>void}){
  return <section className="paper-panel bike-intro night-brief" aria-labelledby="sleep-brief-title">
@@ -30,21 +30,26 @@ export function SleepBrief({onContinue,onComic}:{onContinue:()=>void;onComic:()=
 }
 
 const sleepFields=[
- {tab:'Свой ритм',title:'Чужой отбой не обязан тебе подходить.',text:'Люди различаются по времени естественной сонливости. Учитывай свой ритм, дела и возможность высыпаться. Красивый распорядок в планере не заменяет восстановление.'},
- {tab:'Компенсация',title:'Желание отоспаться — один из сигналов.',text:'Смотри вместе с ним на длительность и качество сна, бодрость днём. Отсутствие желания отсыпаться само по себе не доказывает, что сна достаточно.'},
- {tab:'Регулярность',title:'Свой график может быть стабильным.',text:'Более постоянное время сна и подъёма помогает внутренним часам. Подбирай выполнимый ритм с достаточным временем для сна, а не копируй чужой отбой по минутам.'},
+ {tab:'Плацебо',title:'Положительная оценка меняла результаты тестов.',text:'В экспериментах Драганич и Эрдал участникам сообщили, что доля быстрого сна у них была выше или ниже среднего. Эту оценку назначали исследователи. Группа с положительной оценкой лучше справлялась с отдельными заданиями на устный счёт и словесную беглость.'},
+ {tab:'Ноцебо',title:'Плохая оценка сна усиливала ощущение усталости.',text:'В эксперименте с 63 людьми с бессонницей часы показывали случайно назначенную оценку уже прошедшей ночи. Те, кому сказали, что они спали хорошо, к вечеру сообщали о меньшей усталости и сонливости, чем те, кому сказали обратное. В тесте скорости реакции значимой разницы между группами не обнаружили.'},
+ {tab:'График',title:'Небольшой сдвиг времени сна можно перенести.',text:'Внутренние часы способны постепенно подстроиться под новое время сна. Если ты лёг чуть позже и проспал столько же, мысль «я сбился с графика, завтра буду разбит» сама может усилить ощущение усталости. На самочувствие влияют и ожидания, и то, сколько и как ты спал.'},
 ];
 export function SleepFacts({onContinue,onBack}:{onContinue:()=>void;onBack:()=>void}){
  const [tab,setTab]=useState(0);
  return <section className="paper-panel bike-intro night-brief night-facts" aria-labelledby="sleep-facts-title">
-  <header className="bike-intro-heading"><span className="eyebrow">ДОСЬЕ НОЧИ</span><span className="bike-intro-step">Ритм и восстановление · 2/2</span></header>
-  <h1 id="sleep-facts-title">Режим — твой.<br/><em>Недосып — тоже.</em></h1>
-  <p className="bike-intro-lead">Чужой распорядок не чувствует твою усталость.</p>
-  <div className="night-sleep-card"><div><strong>7+ <small>часов</small></strong><span>сна в сутки · ориентир<br/>для взрослых 18–60 лет</span></div><ul aria-label="Ориентиры восстановления"><li>Длительность</li><li>Качество сна</li><li>Бодрость днём</li></ul></div>
-  <div className="night-info-tabs" aria-label="Сон и режим">{sleepFields.map((item,index)=><button key={item.tab} aria-pressed={tab===index} onClick={()=>setTab(index)}>{item.tab}</button>)}</div>
+  <header className="bike-intro-heading"><span className="eyebrow">ДОСЬЕ НОЧИ</span><span className="bike-intro-step">Научная справка · 2/2</span></header>
+  <h1 id="sleep-facts-title">График сна.<br/><em>Эффект ожиданий.</em></h1>
+  <p className="bike-intro-lead">Лёг чуть позже обычного и уже ждёшь, что весь день будешь разбит? В экспериментах даже сообщение о том, что ночь прошла хорошо или плохо, меняло то, насколько уставшими люди чувствовали себя на следующий день.</p>
+  <div className="night-info-tabs" aria-label="Ожидания от сна">{sleepFields.map((item,index)=><button key={item.tab} aria-pressed={tab===index} onClick={()=>setTab(index)}>{item.tab}</button>)}</div>
   <div className="night-info-field" aria-live="polite" aria-atomic="true"><strong>{sleepFields[tab].title}</strong><p>{sleepFields[tab].text}</p></div>
-  <p className="bike-facts-takeaway"><strong className="bike-underline">Режим оценивай по восстановлению.</strong></p>
-  <details className="bike-facts-sources"><summary>Источники</summary><p><a href="https://www.cdc.gov/sleep/about/index.html" target="_blank" rel="noopener noreferrer">CDC · длительность и качество сна</a>: для взрослых 18–60 лет рекомендуются 7 и более часов; сонливость и усталость даже после достаточного времени в постели могут указывать на плохое качество сна. <a href="https://www.nhlbi.nih.gov/health/sleep/sleep-wake-cycle" target="_blank" rel="noopener noreferrer">NHLBI · внутренние часы и индивидуальные различия</a>. <a href="https://www.nhlbi.nih.gov/health/sleep-deprivation/healthy-sleep-habits" target="_blank" rel="noopener noreferrer">NHLBI · регулярность сна</a>: стабильное время сна и подъёма помогает поддерживать ритм. Самочувствие и потребность отсыпаться — части общей картины.</p></details>
+  <details className="bike-facts-sources">
+   <summary>Источники и подробности</summary>
+   <p><a href="https://pubmed.ncbi.nlm.nih.gov/24417326/" target="_blank" rel="noopener noreferrer">Draganich и Erdal · плацебо сна и результаты тестов · 2014</a><br/>
+    <a href="https://pubmed.ncbi.nlm.nih.gov/29989248/" target="_blank" rel="noopener noreferrer">Gavriloff и соавторы · подставная оценка сна и дневная усталость</a><br/>
+    <a href="https://www.nhlbi.nih.gov/health/sleep-deprivation/healthy-sleep-habits" target="_blank" rel="noopener noreferrer">NHLBI · регулярность и продолжительность сна</a><br/>
+    <a href="https://www.nhlbi.nih.gov/news/2018/sweet-dreams-researchers-explore-link-between-sleep-and-health" target="_blank" rel="noopener noreferrer">NHLBI · постепенная адаптация к новому расписанию</a>
+   </p>
+  </details>
   <div className="bike-intro-actions"><button className="full-button" onClick={onContinue}>В ночной лабиринт →</button><button className="text-button" onClick={onBack}>← Как играть</button></div>
  </section>;
 }

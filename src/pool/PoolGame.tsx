@@ -51,7 +51,7 @@ export default function PoolGame({ onWin, onExit }: { onWin: () => void; onExit:
         private scoreSeen = 0;
         private reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         preload() {
-          this.load.image('pool-cast', '/art/chapter-02-sprites.png');
+          this.load.image('pool-cast', '/art/chapter-02-sprites.webp');
           this.load.on('loaderror', () => { if (!disposed) setStatus('error'); });
         }
         create() {

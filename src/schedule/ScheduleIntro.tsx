@@ -9,7 +9,7 @@ export const schedulePanels=[
  {place:'ВХОДЯЩИЙ · «ЭТО НЕНАДОЛГО»',title:'Есть минутка? Уже нет.',words:'Срочный созвон? Как удачно: я как раз собирался ничего не делать. Теперь не собираюсь.',aside:'У чужого «на минутку» нет кнопки завершения.',position:'0% 100%',description:'На заваленном заметками столе загорается телефон. Герой отвлекается от ежедневника.'},
  {place:'ПЕРЕДЫШКА · ПЛАН МОЖНО МЕНЯТЬ',title:'В расписании появился я.',words:'Это перенесу. Это отменю. А чай выпью сейчас — без таймера и отчёта о пользе.',aside:'Пустое место в плане. Наконец-то не ошибка.',position:'100% 100%',description:'Герой расслабленно пьёт чай за столом. Рядом лежит ежедневник с более свободным планом.'},
 ];
-export function scheduleComicStyle(panel:number){const h=panel<2?744:792;return {backgroundImage:'url(/art/chapter-08-comic.png)',backgroundPosition:schedulePanels[panel].position,backgroundSize:`200% ${1536/h*100}%`,aspectRatio:`512 / ${h}`};}
+export function scheduleComicStyle(panel:number){const h=panel<2?744:792;return {backgroundImage:'url(/art/chapter-08-comic.webp)',backgroundPosition:schedulePanels[panel].position,backgroundSize:`200% ${1536/h*100}%`,aspectRatio:`512 / ${h}`};}
 export function ScheduleBrief({onContinue,onComic}:{onContinue:()=>void;onComic:()=>void}){
  return <section className="paper-panel bike-intro planner-brief" aria-labelledby="schedule-brief-title">
   <header className="bike-intro-heading"><span className="eyebrow">08 / ВСЁ ПО РАСПИСАНИЮ</span><span className="bike-intro-step">Как играть · 1/2</span></header>
@@ -27,20 +27,27 @@ export function ScheduleBrief({onContinue,onComic}:{onContinue:()=>void;onComic:
  </section>;
 }
 const fields=[
- {tab:'Переработки',title:'Дополнительные часы не проходят бесследно.',text:'Работа по 55 и более часов в неделю связана с повышенным риском инсульта и смерти от ишемической болезни сердца по сравнению с 35–40 часами. ВОЗ и МОТ оценили связанную с такими переработками смертность в 745 тысяч случаев в мире за 2016 год.',note:'Это оценка последствий длительной рабочей нагрузки, а не одного насыщенного дня.'},
- {tab:'Выгорание',title:'Всё выполнено. Сил больше нет.',text:'Хронический стресс на работе, с которым не удалось справиться, может привести к выгоранию: истощению, отчуждению или цинизму по отношению к работе и снижению профессиональной эффективности.',note:'В определении ВОЗ выгорание относится именно к работе. Полный ежедневник сам по себе не ставит диагноз.'},
- {tab:'Без отдыха',title:'Недосып крадёт время обратно.',text:'Когда график отнимает сон, задачи могут занимать больше времени: реакция замедляется, ошибок становится больше. Труднее принимать решения, удерживать эмоции и справляться с изменениями. Так перегруженный день создаёт новые переделки и задержки.',note:'В игре отдых замедляет падающие дела. В жизни потерянный сон не заменяется ещё одним пунктом плана.'},
+ {tab:'Монотонность',title:'Монотонность может сказываться и после работы.',text:'Согласно исследованию молодых сотрудников, скука на работе была связана со снижением удовлетворённости жизнью и усилением симптомов тревоги и депрессии при повторном опросе.',note:'Если дни заполнены однообразными задачами, а поменять их порядок или содержание нельзя, психологическая нагрузка может сохраняться даже при умеренном темпе.'},
+ {tab:'Депрессия',title:'Высокие требования особенно тяжело переносить без контроля.',text:'Согласно метаанализу Мадсена и соавторов, у сотрудников с высокими требованиями и малой возможностью влиять на свою работу чаще диагностировали депрессию.',note:'В двух наборах данных относительный риск был выше на 27% и 77%. Исследователи сравнивали условия труда, включая возможность принимать решения о своей работе.'},
+ {tab:'Выгорание',title:'Возможность менять график может снизить истощение.',text:'По определению ВОЗ, выгорание связано с хроническим рабочим стрессом и проявляется истощением, отстранением от работы и снижением профессиональной эффективности.',note:'В эксперименте среди сотрудников ИТ-компании в части выборки выгорание и психологическое напряжение снизились после того, как людям дали больше контроля над рабочим временем и усилили поддержку руководителей.'},
 ];
 export function ScheduleFacts({onContinue,onBack}:{onContinue:()=>void;onBack:()=>void}){
  const [tab,setTab]=useState(0);
  return <section className="paper-panel bike-intro planner-brief planner-facts" aria-labelledby="schedule-facts-title">
-  <header className="bike-intro-heading"><span className="eyebrow">ЦЕНА ПЛОТНОГО ГРАФИКА</span><span className="bike-intro-step">Досье недели · 2/2</span></header>
-  <h1 id="schedule-facts-title">Всё по плану.<br/><em>А сил — нет.</em></h1>
-  <p className="bike-intro-lead">Забитое расписание не увеличивает запас сил.</p>
-  <div className="planner-risk-card"><strong>55+ <small>ч/нед.</small></strong><div><b>рабочих часов</b><span>Нагрузка, связанная с повышенным риском.<br/>Сравнение: 35–40 часов · ВОЗ / МОТ, 2021.</span></div></div>
-  <div className="planner-info-tabs" aria-label="Последствия перегруженного графика">{fields.map((item,index)=><button key={item.tab} aria-pressed={tab===index} onClick={()=>setTab(index)}>{item.tab}</button>)}</div>
+  <header className="bike-intro-heading"><span className="eyebrow">ДОСЬЕ НЕДЕЛИ</span><span className="bike-intro-step">Научная справка · 2/2</span></header>
+  <h1 id="schedule-facts-title">Жёсткий распорядок.<br/><em>Когда дни сливаются.</em></h1>
+  <p className="bike-intro-lead">Строгое соблюдение расписания может превратить день в повтор вчерашнего: те же дела, в том же порядке, без возможности что-то поменять. Согласно исследованиям условий труда, такая монотонность связана с усилением тревожных и депрессивных симптомов. Когда к ней добавляются постоянные требования и мало контроля над своим временем, растёт риск истощения и выгорания.</p>
+  <div className="planner-risk-card"><strong>+27 <small>%</small></strong><div><b>относительный риск клинической депрессии</b><span>Одна из оценок для сочетания высоких рабочих требований и низкого контроля · метаанализ, 2017.</span></div></div>
+  <div className="planner-info-tabs" aria-label="Последствия монотонного и жёсткого графика">{fields.map((item,index)=><button key={item.tab} aria-pressed={tab===index} onClick={()=>setTab(index)}>{item.tab}</button>)}</div>
   <div className="planner-info-field" aria-live="polite" aria-atomic="true"><strong>{fields[tab].title}</strong><p>{fields[tab].text}</p><p className="planner-consequence">{fields[tab].note}</p></div>
-  <details className="bike-facts-sources"><summary>Источники и границы данных</summary><p><a href="https://www.who.int/news/item/17-05-2021-long-working-hours-increasing-deaths-from-heart-disease-and-stroke-who-ilo" target="_blank" rel="noopener noreferrer">ВОЗ / МОТ, 2021 · длительная работа</a>: глобальная оценка за 2016 год — 745 000 смертей от инсульта и ишемической болезни сердца, связанных с работой от 55 часов в неделю. Это модельная оценка для населения, не индивидуальный прогноз и не риск любого расписания. <a href="https://www.who.int/standards/classifications/frequently-asked-questions/burn-out-an-occupational-phenomenon" target="_blank" rel="noopener noreferrer">ВОЗ · выгорание</a>: профессиональный феномен, не отдельное заболевание в МКБ-11. <a href="https://www.nhlbi.nih.gov/health/sleep-deprivation/health-effects" target="_blank" rel="noopener noreferrer">NHLBI · последствия дефицита сна</a>: ошибки, реакция, решения и эмоциональная регуляция.</p></details>
+  <details className="bike-facts-sources">
+   <summary>Источники и подробности</summary>
+   <p><a href="https://doi.org/10.1186/s12889-024-18430-z" target="_blank" rel="noopener noreferrer">BMC Public Health · скука на работе, тревожные и депрессивные симптомы</a><br/>
+    <a href="https://pubmed.ncbi.nlm.nih.gov/28122650/" target="_blank" rel="noopener noreferrer">Psychological Medicine · высокие требования, низкий контроль и депрессия</a><br/>
+    <a href="https://doi.org/10.1177/0003122415622391" target="_blank" rel="noopener noreferrer">American Sociological Review · эксперимент с гибкостью графика и поддержкой</a><br/>
+    <a href="https://www.who.int/standards/classifications/frequently-asked-questions/burn-out-an-occupational-phenomenon" target="_blank" rel="noopener noreferrer">ВОЗ · выгорание и хронический стресс на работе</a>
+   </p>
+  </details>
   <div className="bike-intro-actions"><button className="full-button" onClick={onContinue}>Открыть ежедневник →</button><button className="text-button" onClick={onBack}>← Как играть</button></div>
  </section>;
 }

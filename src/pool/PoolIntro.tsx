@@ -21,14 +21,21 @@ export function PoolBrief({ onContinue, onComic }: { onContinue: () => void; onC
 export function PoolFacts({ onContinue, onBack }: { onContinue: () => void; onBack: () => void }) {
   return <section className="paper-panel bike-intro pool-brief pool-facts" aria-labelledby="pool-facts-title">
     <header className="bike-intro-heading"><span className="eyebrow">ПЕРЕД ЗАПЛЫВОМ</span><span className="bike-intro-step">Коротко о важном · 2/2</span></header>
-    <h1 id="pool-facts-title">Вода общая.<br/><em>Забота — тоже.</em></h1>
-    <p className="bike-intro-lead">Какун — выдумка. А вот <span className="bike-underline">душ перед бассейном</span> нужен по-настоящему.</p>
+    <h1 id="pool-facts-title">Кал в бассейне.<br/><em>Риск кишечной инфекции.</em></h1>
+    <p className="bike-intro-lead">С калом в воду могут попасть криптоспоридии, лямблии и норовирус. Если проглотить загрязнённую воду, возможны <span className="bike-underline">диарея, рвота и спазмы в животе</span>. При сильной диарее и рвоте организм теряет воду и соли, что может привести к обезвоживанию.</p>
+    <span className="bike-facts-period">ДАННЫЕ ИССЛЕДОВАНИЙ И CDC</span>
     <dl className="bike-fact-list">
-      <div><dt>следов кала на коже вокруг ануса</dt><dd>≈ 0,14 <small>г</small></dd><p>Средняя оценка, которую приводит CDC. Это не количество в воде бассейна.</p></div>
-      <div><dt>минимум под душем перед плаванием</dt><dd>1 <small>минута</small></dd><p>Рекомендация CDC: смыть грязь и загрязнения с тела.</p></div>
+      <div><dt>следов кала на коже вокруг ануса</dt><dd>≈ 0,14 <small>г</small></dd><p>Средняя оценка остатков на коже, которую приводит CDC.</p></div>
+      <div><dt>проб промывной воды из фильтров содержали ДНК кишечной палочки</dt><dd>58 <small>%</small></dd><p>93 из 161 пробы · 127 бассейнов в районе Атланты · лето 2012 года.</p></div>
+      <div><dt>могут выживать криптоспоридии даже в правильно хлорированной воде</dt><dd>&gt; 7 <small>дней</small></dd><p>Оценка CDC для воды бассейна.</p></div>
+      <div><dt>от заражения криптоспоридиями до первых симптомов</dt><dd>2–10 <small>дней</small></dd><p>Симптомы обычно длятся 1–2 недели. При ослабленном иммунитете болезнь может протекать тяжело.</p></div>
     </dl>
-    <p className="bike-facts-takeaway">В игре — уворачивайся.<br/><strong className="bike-underline">В жизни — выйди и сообщи персоналу.</strong></p>
-    <details className="bike-facts-sources"><summary>Источники и подробности</summary><p>0,14 г — оценка на коже человека, а не результат замера воды. CDC приводит её в публикации 2013 года со ссылкой на исследование 2000 года. Душ с мылом помогает смыть такие следы перед плаванием. Если в бассейне обнаружен кал, нужно выйти из воды и сообщить персоналу.</p><p><a href="https://www.cdc.gov/mmwr/preview/mmwrhtml/mm6219a3.htm" target="_blank" rel="noopener noreferrer">CDC · исследование и оценка</a><br/><a href="https://www.cdc.gov/healthy-swimming/safety/what-you-can-do-to-stay-healthy-in-swimming-pools.html" target="_blank" rel="noopener noreferrer">CDC · душ перед плаванием</a><br/><a href="https://www.cdc.gov/healthy-swimming/response/what-to-do-when-there-is-poop-in-the-pool.html" target="_blank" rel="noopener noreferrer">CDC · загрязнение бассейна</a></p></details>
+    <p className="bike-facts-takeaway"><strong className="bike-underline">Если в воде обнаружен кал, выйди из бассейна и сообщи персоналу.</strong><br/>Перед плаванием CDC рекомендует принять душ хотя бы 1 минуту и не глотать воду во время заплыва.</p>
+    <details className="bike-facts-sources">
+      <summary>Источники и подробности</summary>
+      <p>Показатель 58% относится к пробам из фильтров в одном регионе. По обнаруженной ДНК нельзя определить, были ли бактерии живыми, или рассчитать вероятность заболевания.</p>
+      <p><a href="https://www.cdc.gov/mmwr/preview/mmwrhtml/mm6219a3.htm" target="_blank" rel="noopener noreferrer">CDC · исследование и оценка</a><br/><a href="https://www.cdc.gov/healthy-swimming/safety/what-you-can-do-to-stay-healthy-in-swimming-pools.html" target="_blank" rel="noopener noreferrer">CDC · душ перед плаванием</a><br/><a href="https://www.cdc.gov/healthy-swimming/response/what-to-do-when-there-is-poop-in-the-pool.html" target="_blank" rel="noopener noreferrer">CDC · загрязнение бассейна</a><br/><a href="https://www.cdc.gov/healthy-swimming/prevention/preventing-diarrheal-illnesses.html" target="_blank" rel="noopener noreferrer">CDC · кишечные инфекции при плавании</a><br/><a href="https://www.cdc.gov/cryptosporidium/about/" target="_blank" rel="noopener noreferrer">CDC · течение криптоспоридиоза</a></p>
+    </details>
     <div className="bike-intro-actions"><button className="full-button" onClick={onContinue}>Начать заплыв →</button><button className="text-button" onClick={onBack}>← Как играть</button></div>
   </section>;
 }

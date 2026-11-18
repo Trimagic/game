@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { NEED } from './chop';
 import { DISHES } from './stove';
 import '../bike/bike-intro.css';
@@ -11,7 +10,7 @@ export const cookPanels = [
  {place:'СОРОК МИНУТ СПУСТЯ · РЕАЛЬНОСТЬ',title:'Быстро — это прочитать рецепт.',words:'Так. Всё помыл, всё нарезал. Если считать только готовку, автор почти не соврал.',aside:'Ужин уже не быстрый. Зато будет домашний.',position:'0% 100%',description:'Герой вытирает лоб. Перед ним много мисок и подготовленные ингредиенты.'},
  {place:'У ПЛИТЫ · СЕМЕЙНЫЙ КОНТРОЛЬ',title:'Всё под контролем. Почти.',words:'Перевернуть курицу, помешать рис… Мам? Да, я поел. Почти. Нет, не подгорело!',aside:'Три конфорки. Один повар. И звонок мамы.',position:'100% 100%',description:'Герой готовит на плите, отвлекаясь на звонящий телефон. На огне сковорода и кастрюля.'},
 ];
-export function cookComicStyle(panel:number){const height=panel<2?715:821;return {backgroundImage:'url(/art/chapter-04-comic.png)',backgroundPosition:cookPanels[panel].position,backgroundSize:'200% '+1536/height*100+'%',aspectRatio:'512 / '+height};}
+export function cookComicStyle(panel:number){const height=panel<2?715:821;return {backgroundImage:'url(/art/chapter-04-comic.webp)',backgroundPosition:cookPanels[panel].position,backgroundSize:'200% '+1536/height*100+'%',aspectRatio:'512 / '+height};}
 
 export function CookBrief({onContinue,onComic}:{onContinue:()=>void;onComic:()=>void}){
  return <section className="paper-panel bike-intro kitchen-brief" aria-labelledby="cook-brief-title">
@@ -26,26 +25,25 @@ export function CookBrief({onContinue,onComic}:{onContinue:()=>void;onComic:()=>
   </ul>
   <div className="bike-pickup-tip"><span aria-hidden="true">★</span><p><strong>Золотой перец замедлит время.</strong><br/>Лови солонку нажатием — получишь бонус.</p></div>
   <details className="bike-facts-sources kitchen-extra-rules"><summary>Нарезка и клавиши</summary><p>Сначала {NEED.veg.tomato} помидоров и {NEED.veg.broccoli} брокколи, затем {NEED.meat.chicken} кусков курицы на отдельной доске. Пробел — нарезка, 1 / 2 / 3 — конфорки, M — ответить маме. Время и количество продуктов в игре условные.</p></details>
-  <div className="bike-intro-actions"><button className="full-button" onClick={onContinue}>Дальше: без чудо-диет →</button><button className="text-button" onClick={onComic}>Перечитать комикс</button></div>
+  <div className="bike-intro-actions"><button className="full-button" onClick={onContinue}>Дальше: месяц на диете →</button><button className="text-button" onClick={onComic}>Перечитать комикс</button></div>
  </section>;
 }
 
-const myths=[
- {tab:'Результат',title:'Не один ужин, а привычный рацион.',text:'Быстрый детокс и идеальная тарелка не заменяют привычки. Для устойчивых изменений нужен подход, который можно повторять. Универсального срока результата нет.'},
- {tab:'Возраст',title:'У пользы нет порога «42 года».',text:'Здоровое питание важно на протяжении всей жизни. Потребности меняются с возрастом, но ждать определённого дня рождения, чтобы заботиться о рационе, не нужно.'},
- {tab:'Послабления',title:'Один десерт не обнуляет привычки.',text:'Разовое отступление от плана не означает провал. Важнее общий рацион и возвращение к привычкам. Режим «идеально или никак» мешает продолжать.'},
-];
 export function CookFacts({onContinue,onBack}:{onContinue:()=>void;onBack:()=>void}){
- const [tab,setTab]=useState(0);
  return <section className="paper-panel bike-intro kitchen-brief kitchen-facts" aria-labelledby="cook-facts-title">
-  <header className="bike-intro-heading"><span className="eyebrow">ПЕРЕД ГОТОВКОЙ</span><span className="bike-intro-step">Без чудо-диет · 2/2</span></header>
-  <h1 id="cook-facts-title">Ужин без магии.<br/><em>Привычки без паники.</em></h1>
-  <p className="bike-intro-lead">Герой готовит еду. Лента обещает новую жизнь за три дня.</p>
-  <div className="kitchen-myth-card"><span>МИФ ИЗ ЛЕНТЫ</span><blockquote>«Одно послабление —<br/>и вся польза насмарку».</blockquote><p>Такого счётчика обнуления у питания нет.</p></div>
-  <div className="kitchen-info-tabs" aria-label="Мифы о питании">{myths.map((item,index)=><button key={item.tab} aria-pressed={tab===index} onClick={()=>setTab(index)}>{item.tab}</button>)}</div>
-  <div className="kitchen-info-field" aria-live="polite" aria-atomic="true"><strong>{myths[tab].title}</strong><p>{myths[tab].text}</p></div>
-  <p className="bike-facts-takeaway"><strong className="bike-underline">Не идеальный день. Привычка продолжать.</strong></p>
-  <details className="bike-facts-sources"><summary>Источники и контекст</summary><p>Это общие сведения, а не индивидуальная диета. <a href="https://www.who.int/news-room/fact-sheets/detail/healthy-diet" target="_blank" rel="noopener noreferrer">ВОЗ</a> описывает значение разнообразного, сбалансированного питания на протяжении жизни. <a href="https://www.niddk.nih.gov/health-information/diet-nutrition/changing-habits-better-health" target="_blank" rel="noopener noreferrer">NIDDK</a> подчёркивает: отступление от плана не означает провал, к привычкам можно вернуться. Ни граница в 42 года, ни обнуление всей пользы из-за одного послабления из этих рекомендаций не следуют.</p></details>
+  <header className="bike-intro-heading"><span className="eyebrow">ПЕРЕД ГОТОВКОЙ</span><span className="bike-intro-step">Научная справка · 2/2</span></header>
+  <h1 id="cook-facts-title">ПП на месяц.<br/><em>Курс закончился. Рацион прежний.</em></h1>
+  <p className="bike-intro-lead">Садиться на «правильное питание» на месяц 2–4 раза в год бессмысленно, если цель — надолго изменить рацион, а после каждого курса возвращается прежнее меню. Повторение курса оставляет ту же проблему: всё, что менялось, было привязано к сроку.</p>
+  <div className="kitchen-info-field">
+   <strong>Что показали исследования диет.</strong>
+   <p>Согласно <a href="https://doi.org/10.1136/bmj.m696" target="_blank" rel="noopener noreferrer">обзору 121 исследования в BMJ</a>, многие популярные диеты помогали немного снизить вес и артериальное давление к шести месяцам. Через год эффект на вес был слабее, а большинство улучшений показателей сердечно-сосудистого риска почти исчезло.</p>
+   <p>Согласно <a href="https://doi.org/10.1136/bmj.n1840" target="_blank" rel="noopener noreferrer">другому обзору BMJ</a>, после окончания программ снижения веса участники в среднем постепенно набирали часть потерянного веса обратно.</p>
+  </div>
+  <p className="bike-facts-takeaway"><strong className="bike-underline">Очередной месяц ПП заканчивается. Прежние привычки остаются.</strong></p>
+  <details className="bike-facts-sources">
+   <summary>Источники и подробности</summary>
+   <p><a href="https://doi.org/10.1136/bmj.m696" target="_blank" rel="noopener noreferrer">BMJ · сравнение популярных диет через полгода и год</a><br/><a href="https://doi.org/10.1136/bmj.n1840" target="_blank" rel="noopener noreferrer">BMJ · изменение веса после окончания программы</a></p>
+  </details>
   <div className="bike-intro-actions"><button className="full-button" onClick={onContinue}>Начать готовить →</button><button className="text-button" onClick={onBack}>← Как играть</button></div>
  </section>;
 }

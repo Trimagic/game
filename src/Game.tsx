@@ -53,7 +53,7 @@ export default function Game({ onWin, onExit }: { onWin: () => void; onExit: () 
         private done = false;
         private hudTimer = 0;
         preload() {
-          this.load.image('cast', '/art/chapter-01-sprites.png');
+          this.load.image('cast', '/art/chapter-01-sprites.webp');
           this.load.on('loaderror', () => { if (!disposed) setState('error'); });
         }
         create() {

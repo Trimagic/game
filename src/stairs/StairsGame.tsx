@@ -4,7 +4,7 @@ import './stairs.css';
 
 function Sprite({ frame, x, y, w = 70, h = 70, flip = false }: { frame: number; x: number; y: number; w?: number; h?: number; flip?: boolean }) {
   const regions = ['50 0 460 580','550 0 490 580','1060 0 450 580','45 595 480 400','560 580 450 440','1060 575 440 449'];
-  return <g transform={`translate(${x},${y})${flip ? ` translate(${w},0) scale(-1,1)` : ''}`}><svg width={w} height={h} viewBox={regions[frame]} preserveAspectRatio="xMidYMax meet" overflow="hidden"><image href="/art/chapter-06-sprites.png" width="1536" height="1024"/></svg></g>;
+  return <g transform={`translate(${x},${y})${flip ? ` translate(${w},0) scale(-1,1)` : ''}`}><svg width={w} height={h} viewBox={regions[frame]} preserveAspectRatio="xMidYMax meet" overflow="hidden"><image href="/art/chapter-06-sprites.webp" width="1536" height="1024"/></svg></g>;
 }
 export default function StairsGame({ onWin, onExit }: { onWin: () => void; onExit: () => void }) {
   const state = useRef(initial()); const active = useRef(false);
@@ -66,7 +66,7 @@ export default function StairsGame({ onWin, onExit }: { onWin: () => void; onExi
         {y(FINISH)>-120&&<Sprite frame={5} x={225} y={y(FINISH)-110} w={110} h={110}/>}
         <g opacity={view.invincible>0&&Math.floor(view.time*12)%2===0?0.55:1}><ellipse cx={view.x} cy={y(view.y)+3} rx="19" ry="4" fill="#243332" opacity=".15"/><Sprite frame={view.status==='rest'||view.status==='won'?2:view.vy>0?0:1} x={view.x-36} y={y(view.y)-69} w={72} h={72} flip={facing.current<0}/></g>
       </svg>
-      <img className="stairs-preload" src="/art/chapter-06-sprites.png" alt="" onError={()=>{pause();setArtError(true);}}/>
+      <img className="stairs-preload" src="/art/chapter-06-sprites.webp" alt="" onError={()=>{pause();setArtError(true);}}/>
       {overlay&&<div className="stairs-overlay"><div className="paper-panel" role="dialog" aria-modal="true" aria-label="Подъём по лестнице">
         <span className="eyebrow">ЛИФТ НЕ ДЛЯ НАС / 06</span><h2>{artError?'Не загрузился герой':view.status==='won'?'Десятый. Дошли!':view.status==='rest'?'Можно выдохнуть.':view.status==='fallen'?'Перила выручили.':mode==='paused'?'Лестница подождёт.':'Арбуз с нами?'}</h2>
         <p>{artError?'Вернись к главам и попробуй открыть игру снова.':view.status==='won'?`Прыжков: ${view.bounces}. Возвращений: ${view.falls}. Отлично. Ключи остались в машине.`:view.status==='rest'?`Контрольная точка: ${view.checkpoint===1200?4:7}-й этаж. После падения вернёшься сюда.`:view.status==='fallen'?`Продолжим с ${1+view.checkpoint/400}-го этажа. Попытки не ограничены.`:mode==='paused'?'Время остановлено. Движение продолжится только после нажатия кнопки.':'Прыжки автоматические. Удерживай ← / → или кнопки, чтобы попадать на площадки. Первый шаг — налево.'}</p>

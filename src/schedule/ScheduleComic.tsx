@@ -17,7 +17,7 @@ export default function ScheduleComic({ onContinue, onExit }: { onContinue: () =
     <div className="section-heading"><button className="text-button" onClick={onExit}>← К главам</button><span className="eyebrow">НЕДЕЛЯ / {frame + 1} ИЗ {frames.length}</span></div>
     <div className="bike-comic-caption"><span>{current.place}</span><h1>{current.title}</h1></div>
     <div className="comic-panel bike-comic-panel">
-      <svg key={frame} className="bike-comic-art" role="img" aria-label={current.description} viewBox={`${frame % 2 * 512} ${frame < 2 ? 0 : 744} 512 ${frame < 2 ? 744 : 792}`} preserveAspectRatio="xMidYMid slice"><image href="/art/chapter-08-comic.png" width="1024" height="1536"/></svg>
+      <svg key={frame} className="bike-comic-art" role="img" aria-label={current.description} viewBox={`${frame % 2 * 512} ${frame < 2 ? 0 : 744} 512 ${frame < 2 ? 744 : 792}`} preserveAspectRatio="xMidYMid slice"><image href="/art/chapter-08-comic.webp" width="1024" height="1536"/></svg>
       {frame === 2 && <span className="bike-comic-lettering schedule-comic-ping" aria-hidden="true">ДЗЫНЬ!</span>}
       <div className="bike-comic-dialogue" key={`words-${frame}`} aria-label={'Мысли героя'} aria-live="polite" aria-atomic="true">
         <svg className="bike-dialogue-outline" viewBox="0 0 360 160" preserveAspectRatio="none" aria-hidden="true">

@@ -10,7 +10,7 @@ export const gymPanels = [
  {place:'ПРИСЕДАНИЯ · ДЕРЖИМ',title:'У тренера свои секунды.',words:'Вниз. Держим… Ещё держим? А можно включить обычную скорость времени?',aside:'Мышцы уже всё поняли.',position:'0% 100%',description:'Герой приседает с гантелью перед грудью, тренер за его спиной отсчитывает время.'},
  {place:'ФИНАЛ · ПОВТОР ПОСЛЕДНЕГО ПОВТОРА',title:'Последний. Версия третья.',words:'«Ещё один» — это число или образ жизни? Последний же уже был!',aside:'Ты управляешь ритмом. Тренер только считает.',position:'100% 100%',description:'Герой выжимает две гантели над головой, а тренер снова показывает один палец.'},
 ];
-export function gymComicStyle(panel:number){const height=panel<2?744:792;return {backgroundImage:'url(/art/chapter-05-comic.png)',backgroundPosition:gymPanels[panel].position,backgroundSize:'200% '+1536/height*100+'%',aspectRatio:'512 / '+height};}
+export function gymComicStyle(panel:number){const height=panel<2?744:792;return {backgroundImage:'url(/art/chapter-05-comic.webp)',backgroundPosition:gymPanels[panel].position,backgroundSize:'200% '+1536/height*100+'%',aspectRatio:'512 / '+height};}
 
 export function GymBrief({onContinue,onComic}:{onContinue:()=>void;onComic:()=>void}){
  return <section className="paper-panel bike-intro training-brief" aria-labelledby="gym-brief-title">
@@ -30,23 +30,35 @@ export function GymBrief({onContinue,onComic}:{onContinue:()=>void;onComic:()=>v
 }
 
 const injuryFields=[
- {tab:'Сразу',title:'Ушиб. Растяжение. Разрыв.',text:'Упавший снаряд и сорванное движение могут закончиться болью, отёком и потерей подвижности. Тяжёлые повреждения требуют реабилитации, иногда операции.'},
- {tab:'Со временем',title:'Перегрузка накапливается.',text:'Повторная перегрузка повреждает сухожилия и кости. Развиваются хронические травмы, в том числе тендинит и стрессовые переломы. Боль возвращается при нагрузке и ограничивает движения.'},
+ {tab:'Острая травма',title:'Разрыв сухожилия при жиме лёжа.',text:'Во время жима может разорваться сухожилие большой грудной мышцы. Возможны резкая боль, обширный синяк и слабость руки. При полном разрыве может потребоваться операция. Согласно систематическому обзору, среди вернувшихся в спорт после восстановления сухожилия возвращение заняло в среднем около полугода.'},
+ {tab:'Перегрузка',title:'Боль может сохраняться неделями.',text:'Повторные нагрузки могут приводить к травмам сухожилий и костей. Боль сначала появляется при упражнении, а затем может мешать обычным движениям. В исследовании элитных атлетов симптомы дольше четырёх недель отмечались также при 85% травм поясницы и 80% травм колена.'},
+ {tab:'Долгосрочные риски',title:'Последствия могут проявиться через годы.',text:'Согласно обзорам исследований, у спортсменов некоторых дисциплин чаще встречаются нарушения сердечного ритма и остеоартроз, особенно после травм суставов. При больших нагрузках и длительном недостатке энергии из пищи могут снижаться плотность костей и устойчивость к переломам, а также нарушаться гормональная функция. Риски зависят от вида спорта, объёма нагрузки и перенесённых травм.'},
 ];
 export function GymFacts({onContinue,onBack}:{onContinue:()=>void;onBack:()=>void}){
  const [tab,setTab]=useState(0);
  return <section className="paper-panel bike-intro training-brief training-facts" aria-labelledby="gym-facts-title">
-  <header className="bike-intro-heading"><span className="eyebrow">ДОСЬЕ ЗАЛА</span><span className="bike-intro-step">Цена нагрузки · 2/2</span></header>
-  <h1 id="gym-facts-title">Подход закончится.<br/><em>Травма — не всегда.</em></h1>
-  <p className="bike-intro-lead">Одни травмы случаются сразу. Другие накапливаются с перегрузкой.</p>
+  <header className="bike-intro-heading"><span className="eyebrow">ДОСЬЕ ЗАЛА</span><span className="bike-intro-step">Научная справка · 2/2</span></header>
+  <h1 id="gym-facts-title">Травмы в спортзале.<br/><em>Последствия нагрузки.</em></h1>
+  <p className="bike-intro-lead">Одно неудачное повторение может закончиться разрывом сухожилия. Последствия многолетних интенсивных тренировок могут затронуть суставы, кости и сердечный ритм.</p>
   <dl className="training-injury-stats">
-   <div><dt>травм с отягощениями, леченных в неотложке</dt><dd>≈ 547 <small>тыс.</small></dd><p>США · 2014–2023 · оценка NEISS</p></div>
-   <div><dt>травм плеча — симптомы дольше 4 недель</dt><dd>93 <small>%</small></dd><p>Исследование элитных тяжелоатлетов и пауэрлифтеров · 2002</p></div>
+   <div><dt>травм при занятиях с отягощениями потребовали обращения в неотложку</dt><dd>≈ 547 <small>тыс.</small></dd><p>Согласно анализу NEISS, США · 2014–2023.</p></div>
+   <div><dt>травмы на 1000 часов тренировок по тяжёлой атлетике</dt><dd>2,4–3,3</dd><p>Согласно обновлённому систематическому обзору 2024 года.</p></div>
+   <div><dt>травм плеча сопровождались симптомами дольше 4 недель</dt><dd>93 <small>%</small></dd><p>Согласно исследованию элитных тяжелоатлетов и пауэрлифтеров, приведённому в обзоре 2017 года.</p></div>
   </dl>
-  <div className="training-info-tabs" aria-label="Травмы и последствия">{injuryFields.map((item,index)=><button key={item.tab} aria-pressed={tab===index} onClick={()=>setTab(index)}>{item.tab}</button>)}</div>
+  <div className="training-info-tabs" aria-label="Риски и последствия нагрузки">{injuryFields.map((item,index)=><button key={item.tab} aria-pressed={tab===index} onClick={()=>setTab(index)}>{item.tab}</button>)}</div>
   <div className="training-info-field" aria-live="polite" aria-atomic="true"><strong>{injuryFields[tab].title}</strong><p>{injuryFields[tab].text}</p></div>
-  <p className="bike-facts-takeaway"><strong className="bike-underline">Повтор — секунды. Восстановление — недели.</strong></p>
-  <details className="bike-facts-sources"><summary>Источники</summary><p><a href="https://pubmed.ncbi.nlm.nih.gov/42367316/" target="_blank" rel="noopener noreferrer">NEISS · анализ травм за 2014–2023 годы</a>: национальная оценка — 546 655 травм с отягощениями, леченных в отделениях неотложной помощи США. <a href="https://bjsm.bmj.com/content/51/4/211" target="_blank" rel="noopener noreferrer">Систематический обзор 2017</a> приводит результат Raske и Norlin: симптомы более 4 недель при 93% травм плеча, 85% травм поясницы и 80% травм колена у обследованных элитных атлетов. <a href="https://www.niams.nih.gov/health-topics/sports-injuries" target="_blank" rel="noopener noreferrer">NIAMS · острые и хронические спортивные травмы</a>.</p></details>
+  <details className="bike-facts-sources">
+   <summary>Источники и подробности</summary>
+   <p><a href="https://pubmed.ncbi.nlm.nih.gov/42367316/" target="_blank" rel="noopener noreferrer">NEISS · анализ травм за 2014–2023 годы</a><br/>
+    <a href="https://bjsm.bmj.com/content/51/4/211" target="_blank" rel="noopener noreferrer">BJSM · длительность симптомов у элитных атлетов</a><br/>
+    <a href="https://bmjopensem.bmj.com/content/10/4/e001884" target="_blank" rel="noopener noreferrer">BMJ Open Sport &amp; Exercise Medicine · частота травм</a><br/>
+    <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC6391551/" target="_blank" rel="noopener noreferrer">Систематический обзор · восстановление после разрыва сухожилия</a><br/>
+    <a href="https://www.niams.nih.gov/health-topics/sports-injuries" target="_blank" rel="noopener noreferrer">NIAMS · острые и хронические спортивные травмы</a><br/>
+    <a href="https://bjsm.bmj.com/content/55/21/1233" target="_blank" rel="noopener noreferrer">BJSM · обзор исследований фибрилляции предсердий у спортсменов</a><br/>
+    <a href="https://bjsm.bmj.com/content/50/23/1459" target="_blank" rel="noopener noreferrer">BJSM · спорт, травмы и остеоартроз</a><br/>
+    <a href="https://bjsm.bmj.com/content/57/17/1073" target="_blank" rel="noopener noreferrer">МОК · последствия дефицита энергии в спорте</a>
+   </p>
+  </details>
   <div className="bike-intro-actions"><button className="full-button" onClick={onContinue}>Начать тренировку →</button><button className="text-button" onClick={onBack}>← Как играть</button></div>
  </section>;
 }
